@@ -17,7 +17,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // ============================================================
 // ВСТАВЬТЕ СВОЮ СТРОКУ ИЗ NEON НИЖЕ
 // ============================================================
-const HARDCODED_DB_URL = 'postgresql://neondb_owner:npg_XXXXXX@ep-xxx-xxx.neon.tech/neondb';
+const HARDCODED_DB_URL = 'postgresql://neondb_owner:npg_yOQcIwub8V6N@ep-solitary-rain-a5orxtnv-pooler.us-east-2.aws.neon.tech/neondb';
 const HARDCODED_JWT_SECRET = 'retro2010secret123';
 
 // ГЛАВНЫЙ АДМИН (создатель) — его логин
