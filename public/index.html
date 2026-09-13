@@ -26,16 +26,30 @@
     justify-content: space-between;
     margin-bottom: 10px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    flex-wrap: wrap;
+    gap: 6px;
   }
   .header .logo { font-weight: bold; font-size: 16px; text-shadow: 1px 1px 0 #2a4370; }
-  .nav { display: flex; gap: 4px; }
+  .nav { display: flex; gap: 4px; flex-wrap: wrap; }
   .nav button {
     background: rgba(255,255,255,0.15);
     border: 1px solid rgba(255,255,255,0.3);
     color: white;
-    padding: 4px 12px;
+    padding: 4px 10px;
+    font-size: 11px;
   }
   .nav button.active { background: rgba(255,255,255,0.35); font-weight: bold; }
+
+  .search-bar { display: flex; gap: 4px; flex: 1; min-width: 180px; max-width: 280px; }
+  .search-bar input {
+    padding: 4px 8px; font-size: 12px;
+    border: 1px solid #2a4370; border-radius: 3px;
+  }
+  .search-bar button {
+    background: rgba(255,255,255,0.2);
+    border: 1px solid rgba(255,255,255,0.3);
+    color: white; padding: 4px 8px;
+  }
 
   button, .btn {
     font-family: inherit;
@@ -49,7 +63,6 @@
     box-shadow: inset 0 1px 0 #fff;
   }
   button:hover { background: linear-gradient(#fff, #e3e6ea); }
-  button:active { background: #d0d4da; }
   .btn-primary {
     background: linear-gradient(#6d8fc7, #4a76a8);
     border-color: #3a5c8a;
@@ -57,6 +70,8 @@
     text-shadow: 0 1px 0 #2a4370;
   }
   .btn-primary:hover { background: linear-gradient(#7d9fd7, #5a86b8); }
+  .btn-danger { background: linear-gradient(#e88, #c55); color: white; border-color: #a33; }
+  .btn-small { font-size: 10px; padding: 2px 6px; }
 
   .card {
     background: #fff;
@@ -74,7 +89,7 @@
     margin-bottom: 10px;
   }
 
-  input, textarea {
+  input, textarea, select {
     font-family: inherit;
     font-size: 12px;
     border: 1px solid #a0a8b3;
@@ -83,10 +98,11 @@
     width: 100%;
     background: #fff;
   }
-  input:focus, textarea:focus { outline: none; border-color: #4a76a8; }
+  input:focus, textarea:focus, select:focus { outline: none; border-color: #4a76a8; }
   textarea { resize: vertical; min-height: 50px; }
   .row { display: flex; gap: 8px; margin-bottom: 8px; }
   .row > * { flex: 1; }
+  .row input, .row select { margin: 0; }
 
   .post { border-bottom: 1px solid #e8ebf0; padding: 10px 0; }
   .post:last-child { border-bottom: none; }
@@ -101,11 +117,20 @@
     overflow: hidden; flex-shrink: 0;
   }
   .avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .avatar.sm { width: 30px; height: 30px; font-size: 13px; }
   .post-author { font-weight: bold; color: #3b5998; cursor: pointer; }
   .post-date { color: #888; font-size: 11px; }
-  .post-content { margin: 6px 0; line-height: 1.4; }
-  .post-content img { max-width: 100%; border: 1px solid #c5cad3; border-radius: 3px; margin-top: 6px; }
-  .post-actions { display: flex; gap: 10px; margin-top: 6px; font-size: 11px; }
+  .post-content { margin: 6px 0; line-height: 1.4; word-wrap: break-word; }
+  .post-content img.media { max-width: 100%; border: 1px solid #c5cad3; border-radius: 3px; margin-top: 6px; display: block; }
+  .post-content .video-wrap {
+    position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden;
+    margin-top: 6px; border: 1px solid #c5cad3; border-radius: 3px;
+  }
+  .post-content .video-wrap iframe {
+    position: absolute; top:0; left:0; width:100%; height:100%; border:0;
+  }
+  .post-content video { max-width: 100%; border-radius: 3px; margin-top: 6px; }
+  .post-actions { display: flex; gap: 10px; margin-top: 8px; font-size: 11px; align-items: center; }
   .post-actions button { font-size: 11px; padding: 2px 8px; }
   .liked { color: #c0392b; font-weight: bold; }
 
@@ -115,19 +140,14 @@
     padding: 4px; border-radius: 3px; cursor: pointer;
   }
   .friend:hover { background: #eef1f6; }
-  .friend .avatar { width: 30px; height: 30px; font-size: 13px; }
 
   .chat-box {
-    position: fixed;
-    bottom: 0; right: 20px;
-    width: 320px;
-    background: #fff;
-    border: 1px solid #a0a8b3;
-    border-bottom: none;
+    position: fixed; bottom: 0; right: 20px;
+    width: 320px; background: #fff;
+    border: 1px solid #a0a8b3; border-bottom: none;
     border-radius: 4px 4px 0 0;
     box-shadow: 0 -2px 8px rgba(0,0,0,0.15);
-    display: none;
-    z-index: 100;
+    display: none; z-index: 100;
   }
   .chat-box.open { display: block; }
   .chat-head {
@@ -162,13 +182,12 @@
     margin-right: 4px; box-shadow: 0 0 4px #4caf50;
   }
 
-  /* Форумы */
-  .forum-item {
+  .forum-item, .group-item {
     padding: 10px; border: 1px solid #d8dce3;
     border-radius: 3px; margin-bottom: 8px;
     background: #f8f9fb; cursor: pointer;
   }
-  .forum-item:hover { background: #eef1f6; border-color: #4a76a8; }
+  .forum-item:hover, .group-item:hover { background: #eef1f6; border-color: #4a76a8; }
   .forum-title { font-weight: bold; color: #3b5998; font-size: 13px; }
   .forum-desc { color: #555; margin: 4px 0; font-size: 11px; }
   .forum-meta { color: #888; font-size: 10px; }
@@ -183,22 +202,64 @@
   .topic-meta { color: #888; font-size: 10px; }
 
   .forum-post {
-    padding: 10px;
-    border-bottom: 1px solid #e8ebf0;
+    padding: 10px; border-bottom: 1px solid #e8ebf0;
     display: flex; gap: 10px;
   }
   .forum-post:last-child { border-bottom: none; }
   .forum-post .body { flex: 1; }
-  .forum-post .head { margin-bottom: 4px; }
 
   .breadcrumb { color: #888; font-size: 11px; margin-bottom: 8px; }
   .breadcrumb a { color: #3b5998; cursor: pointer; text-decoration: none; }
   .breadcrumb a:hover { text-decoration: underline; }
 
+  /* Новости */
+  .news-item {
+    padding: 12px; border: 1px solid #d8dce3;
+    border-left: 4px solid #3b5998;
+    border-radius: 3px; margin-bottom: 10px;
+    background: #f8f9fb;
+  }
+  .news-title { font-weight: bold; color: #3b5998; font-size: 14px; margin-bottom: 4px; }
+  .news-date { color: #888; font-size: 10px; margin-bottom: 6px; }
+  .news-content { line-height: 1.5; margin-bottom: 6px; }
+  .news-content img { max-width: 100%; border: 1px solid #c5cad3; border-radius: 3px; margin-top: 6px; }
+
+  /* Админка */
+  .admin-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; margin-bottom: 10px; }
+  .stat-box {
+    background: linear-gradient(#f8f9fb, #eef1f6);
+    border: 1px solid #c5cad3; border-radius: 3px;
+    padding: 10px; text-align: center;
+  }
+  .stat-num { font-size: 22px; font-weight: bold; color: #3b5998; }
+  .stat-label { font-size: 11px; color: #666; margin-top: 2px; }
+  .admin-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  .admin-table th, .admin-table td {
+    padding: 6px; border-bottom: 1px solid #e8ebf0; text-align: left;
+  }
+  .admin-table th { background: #f5f7fa; color: #3b5998; font-size: 11px; }
+  .banned { color: #c0392b; font-weight: bold; }
+  .role-admin { color: #c0392b; font-weight: bold; }
+  .role-user { color: #666; }
+
+  /* Поиск */
+  .search-section { margin-bottom: 15px; }
+  .search-section h4 {
+    font-size: 12px; color: #3b5998; margin-bottom: 6px;
+    border-bottom: 1px solid #e0e4ea; padding-bottom: 4px;
+  }
+  .search-item {
+    padding: 6px; border-radius: 3px; cursor: pointer;
+    display: flex; align-items: center; gap: 8px;
+    border-bottom: 1px solid #f0f2f5;
+  }
+  .search-item:hover { background: #eef1f6; }
+
   @media (max-width: 700px) {
     .grid { grid-template-columns: 1fr; }
     .chat-box { width: calc(100% - 20px); right: 10px; }
     .nav button { font-size: 10px; padding: 3px 6px; }
+    .search-bar { max-width: none; }
   }
 </style>
 </head>
@@ -218,8 +279,8 @@
       <button class="btn-primary" style="width:100%; padding:6px;" onclick="doLogin()">Войти</button>
     </div>
     <div id="regForm" style="display:none;">
-      <input id="regUser" placeholder="Логин" style="margin-bottom:8px;">
-      <input id="regPass" type="password" placeholder="Пароль" style="margin-bottom:8px;">
+      <input id="regUser" placeholder="Логин (мин. 3)" style="margin-bottom:8px;">
+      <input id="regPass" type="password" placeholder="Пароль (мин. 4)" style="margin-bottom:8px;">
       <button class="btn-primary" style="width:100%; padding:6px;" onclick="doRegister()">Создать аккаунт</button>
     </div>
     <div id="authErr" style="color:#c0392b; text-align:center; margin-top:8px; font-size:11px;"></div>
@@ -232,7 +293,14 @@
     <div class="logo">РетроСеть</div>
     <div class="nav">
       <button id="navFeed" class="active" onclick="showPage('feed')">Стена</button>
+      <button id="navNews" onclick="showPage('news')">Новости</button>
+      <button id="navGroups" onclick="showPage('groups')">Группы</button>
       <button id="navForums" onclick="showPage('forums')">Форумы</button>
+      <button id="navAdmin" style="display:none;" onclick="showPage('admin')">Админка</button>
+    </div>
+    <div class="search-bar">
+      <input id="searchInput" placeholder="Поиск..." onkeydown="if(event.key==='Enter')doSearch()">
+      <button onclick="doSearch()">🔍</button>
     </div>
     <div>
       <span id="meName" style="margin-right:8px;"></span>
@@ -240,7 +308,7 @@
     </div>
   </div>
 
-  <!-- СТРАНИЦА: СТЕНА -->
+  <!-- СТЕНА -->
   <div id="pageFeed" class="grid">
     <div class="sidebar">
       <div class="card">
@@ -262,9 +330,13 @@
         <h3>Что нового?</h3>
         <textarea id="postContent" placeholder="Поделись чем-нибудь..."></textarea>
         <div class="row" style="margin-top:6px;">
-          <input id="postImage" placeholder="URL картинки (необязательно)">
-          <button class="btn-primary" style="flex:0 0 auto;" onclick="createPost()">Опубликовать</button>
+          <input id="postImage" placeholder="URL картинки">
         </div>
+        <div class="row">
+          <input id="postVideo" placeholder="URL видео (YouTube, VK, mp4)">
+          <input id="postGif" placeholder="URL GIF">
+        </div>
+        <button class="btn-primary" onclick="createPost()">Опубликовать</button>
       </div>
       <div class="card">
         <h3>Стена</h3>
@@ -273,13 +345,77 @@
     </div>
   </div>
 
-  <!-- СТРАНИЦА: ФОРУМЫ -->
+  <!-- НОВОСТИ -->
+  <div id="pageNews" style="display:none;">
+    <div id="newsAdmin" class="card" style="display:none;">
+      <h3>📢 Добавить новость (только для создателя)</h3>
+      <input id="newsTitle" placeholder="Заголовок" style="margin-bottom:6px;">
+      <textarea id="newsContent" placeholder="Текст новости..." style="min-height:80px;"></textarea>
+      <input id="newsImage" placeholder="URL картинки (необязательно)" style="margin-top:6px;">
+      <button class="btn-primary" style="margin-top:6px;" onclick="createNews()">Опубликовать новость</button>
+    </div>
+    <div class="card">
+      <h3>📰 Новости от создателя</h3>
+      <div id="newsBox"></div>
+    </div>
+  </div>
+
+  <!-- ГРУППЫ -->
+  <div id="pageGroups" style="display:none;">
+    <div id="groupsList">
+      <div class="card">
+        <h3>Создать группу</h3>
+        <input id="groupName" placeholder="Название группы" style="margin-bottom:6px;">
+        <textarea id="groupDesc" placeholder="Описание" style="min-height:40px;"></textarea>
+        <input id="groupAvatar" placeholder="URL аватарки (необязательно)" style="margin-top:6px;">
+        <button class="btn-primary" style="margin-top:6px;" onclick="createGroup()">Создать</button>
+      </div>
+      <div class="card">
+        <h3>Все группы</h3>
+        <div id="groupsBox"></div>
+      </div>
+    </div>
+
+    <div id="groupView" style="display:none;">
+      <div class="breadcrumb"><a onclick="showPage('groups')">Группы</a> / <span id="gCrumb"></span></div>
+      <div class="card">
+        <div style="display:flex; gap:12px; align-items:center; margin-bottom:10px;">
+          <div class="avatar" style="width:60px; height:60px; font-size:24px;" id="gAvatar"></div>
+          <div style="flex:1;">
+            <h3 style="border:none; margin:0 0 4px;" id="gTitle"></h3>
+            <div style="color:#666; font-size:11px;" id="gMeta"></div>
+          </div>
+          <button id="gJoinBtn" class="btn-primary" onclick="toggleJoinGroup()">Вступить</button>
+        </div>
+        <div style="color:#555; font-size:11px; margin-bottom:10px;" id="gDesc"></div>
+        <div id="gMembersBox"></div>
+      </div>
+      <div class="card" id="gPostForm" style="display:none;">
+        <h3>Написать в группу</h3>
+        <textarea id="gPostContent" placeholder="Что нового?"></textarea>
+        <div class="row" style="margin-top:6px;">
+          <input id="gPostImage" placeholder="URL картинки">
+        </div>
+        <div class="row">
+          <input id="gPostVideo" placeholder="URL видео">
+          <input id="gPostGif" placeholder="URL GIF">
+        </div>
+        <button class="btn-primary" onclick="createGroupPost()">Опубликовать</button>
+      </div>
+      <div class="card">
+        <h3>Посты группы</h3>
+        <div id="gPosts"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ФОРУМЫ -->
   <div id="pageForums" style="display:none;">
     <div id="forumsList">
       <div class="card">
         <h3>Создать форум</h3>
         <input id="forumTitle" placeholder="Название форума" style="margin-bottom:6px;">
-        <textarea id="forumDesc" placeholder="Описание (необязательно)" style="min-height:40px;"></textarea>
+        <textarea id="forumDesc" placeholder="Описание" style="min-height:40px;"></textarea>
         <button class="btn-primary" style="margin-top:6px;" onclick="createForum()">Создать</button>
       </div>
       <div class="card">
@@ -319,6 +455,32 @@
       </div>
     </div>
   </div>
+
+  <!-- АДМИНКА -->
+  <div id="pageAdmin" style="display:none;">
+    <div class="card">
+      <h3>📊 Статистика</h3>
+      <div class="admin-stats" id="adminStats"></div>
+    </div>
+    <div class="card">
+      <h3>👥 Пользователи</h3>
+      <div style="overflow-x:auto;">
+        <table class="admin-table" id="adminUsersTable"></table>
+      </div>
+    </div>
+    <div class="card">
+      <h3>🗑 Управление контентом</h3>
+      <div id="adminContent"></div>
+    </div>
+  </div>
+
+  <!-- ПОИСК -->
+  <div id="pageSearch" style="display:none;">
+    <div class="card">
+      <h3>🔍 Результаты поиска: <span id="searchQuery"></span></h3>
+      <div id="searchResults"></div>
+    </div>
+  </div>
 </div>
 
 <!-- ЧАТ -->
@@ -344,6 +506,7 @@ let onlineIds = [];
 let currentPage = 'feed';
 let currentForumId = null;
 let currentTopicId = null;
+let currentGroupId = null;
 
 // === API ===
 async function api(url, method = 'GET', body = null) {
@@ -373,9 +536,7 @@ async function doLogin() {
     token = data.token;
     localStorage.setItem('token', token);
     startApp();
-  } catch (e) {
-    document.getElementById('authErr').textContent = e.message;
-  }
+  } catch (e) { document.getElementById('authErr').textContent = e.message; }
 }
 
 async function doRegister() {
@@ -386,9 +547,7 @@ async function doRegister() {
     token = data.token;
     localStorage.setItem('token', token);
     startApp();
-  } catch (e) {
-    document.getElementById('authErr').textContent = e.message;
-  }
+  } catch (e) { document.getElementById('authErr').textContent = e.message; }
 }
 
 function logout() {
@@ -410,14 +569,21 @@ async function startApp() {
   document.getElementById('auth').style.display = 'none';
   document.getElementById('main').style.display = 'block';
 
-  document.getElementById('meName').textContent = me.username;
+  document.getElementById('meName').textContent = me.username + (me.role === 'admin' ? ' 👑' : '');
   document.getElementById('myName').textContent = me.username;
   document.getElementById('myAvatar').textContent = me.username[0].toUpperCase();
   document.getElementById('myStatus').value = me.status || '';
 
+  if (me.role === 'admin') {
+    document.getElementById('navAdmin').style.display = 'inline-block';
+    document.getElementById('newsAdmin').style.display = 'block';
+  }
+
   initSocket();
   loadPosts();
   loadFriends();
+  loadNews();
+  loadGroups();
   loadForums();
 }
 
@@ -429,16 +595,27 @@ function showAuth() {
 // === НАВИГАЦИЯ ===
 function showPage(page) {
   currentPage = page;
-  document.getElementById('navFeed').classList.toggle('active', page === 'feed');
-  document.getElementById('navForums').classList.toggle('active', page === 'forums');
-  document.getElementById('pageFeed').style.display = page === 'feed' ? 'grid' : 'none';
-  document.getElementById('pageForums').style.display = page === 'forums' ? 'block' : 'none';
-  if (page === 'forums') {
-    document.getElementById('forumsList').style.display = 'block';
-    document.getElementById('forumView').style.display = 'none';
-    document.getElementById('topicView').style.display = 'none';
-    loadForums();
-  }
+  ['feed','news','groups','forums','admin','search'].forEach(p => {
+    document.getElementById('nav' + p.charAt(0).toUpperCase() + p.slice(1))?.classList.toggle('active', p === page);
+    const el = document.getElementById('page' + p.charAt(0).toUpperCase() + p.slice(1));
+    if (el) el.style.display = 'none';
+  });
+
+  const map = {
+    feed: 'pageFeed',
+    news: 'pageNews',
+    groups: 'pageGroups',
+    forums: 'pageForums',
+    admin: 'pageAdmin',
+    search: 'pageSearch'
+  };
+  const el = document.getElementById(map[page]);
+  if (el) el.style.display = (page === 'feed' ? 'grid' : 'block');
+
+  if (page === 'news') loadNews();
+  if (page === 'groups') { document.getElementById('groupsList').style.display = 'block'; document.getElementById('groupView').style.display = 'none'; loadGroups(); }
+  if (page === 'forums') { document.getElementById('forumsList').style.display = 'block'; document.getElementById('forumView').style.display = 'none'; document.getElementById('topicView').style.display = 'none'; loadForums(); }
+  if (page === 'admin') loadAdmin();
 }
 
 // === SOCKET ===
@@ -446,12 +623,45 @@ function initSocket() {
   socket = io({ auth: { token } });
   socket.on('online', ids => { onlineIds = ids; renderFriends(); });
   socket.on('new_post', () => { if (currentPage === 'feed') loadPosts(); });
+  socket.on('new_news', () => { if (currentPage === 'news') loadNews(); });
   socket.on('new_message', msg => {
     if (currentChat && msg.from_id === currentChat.id) addChatMsg(msg, false);
   });
   socket.on('new_forum_post', data => {
     if (currentPage === 'forums' && currentTopicId == data.topic_id) loadTopic(currentTopicId);
   });
+  socket.on('new_group_post', data => {
+    if (currentPage === 'groups' && currentGroupId == data.group_id) loadGroupPosts();
+  });
+}
+
+// === МЕДИА ===
+function renderMedia(p) {
+  let html = '';
+  if (p.image) html += `<img class="media" src="${esc(p.image)}" onerror="this.style.display='none'">`;
+  if (p.gif) html += `<img class="media" src="${esc(p.gif)}" onerror="this.style.display='none'">`;
+  if (p.video) html += renderVideo(p.video);
+  return html;
+}
+
+function renderVideo(url) {
+  if (!url) return '';
+  // YouTube
+  const yt = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  if (yt) {
+    return `<div class="video-wrap"><iframe src="https://www.youtube.com/embed/${yt[1]}" allowfullscreen></iframe></div>`;
+  }
+  // VK Video
+  const vk = url.match(/vk\.com\/video(-?\d+)_(\d+)/);
+  if (vk) {
+    return `<div class="video-wrap"><iframe src="https://vk.com/video_ext.php?oid=${vk[1]}&id=${vk[2]}&hd=2" allowfullscreen></iframe></div>`;
+  }
+  // Прямая ссылка mp4/webm
+  if (/\.(mp4|webm|ogg)(\?.*)?$/i.test(url)) {
+    return `<video controls src="${esc(url)}"></video>`;
+  }
+  // Просто ссылка
+  return `<div style="margin-top:6px;"><a href="${esc(url)}" target="_blank" style="color:#3b5998;">📹 Видео: ${esc(url)}</a></div>`;
 }
 
 // === ПОСТЫ ===
@@ -471,14 +681,12 @@ async function loadPosts() {
           <div class="post-date">${fmtDate(p.created_at)}</div>
         </div>
       </div>
-      <div class="post-content">
-        ${esc(p.content)}
-        ${p.image ? `<img src="${esc(p.image)}" onerror="this.style.display='none'">` : ''}
-      </div>
+      <div class="post-content">${esc(p.content)}${renderMedia(p)}</div>
       <div class="post-actions">
         <button onclick="toggleLike(${p.id})" class="${p.liked ? 'liked' : ''}">
           ${p.liked ? '♥' : '♡'} ${p.likes}
         </button>
+        ${me.role === 'admin' || p.user_id === me.id ? `<button class="btn-danger btn-small" onclick="deletePost(${p.id})">✕</button>` : ''}
       </div>
     </div>
   `).join('');
@@ -487,14 +695,24 @@ async function loadPosts() {
 async function createPost() {
   const content = document.getElementById('postContent').value.trim();
   const image = document.getElementById('postImage').value.trim();
-  if (!content) return;
-  await api('/posts', 'POST', { content, image });
+  const video = document.getElementById('postVideo').value.trim();
+  const gif = document.getElementById('postGif').value.trim();
+  if (!content && !image && !video && !gif) return;
+  await api('/posts', 'POST', { content, image, video, gif });
   document.getElementById('postContent').value = '';
   document.getElementById('postImage').value = '';
+  document.getElementById('postVideo').value = '';
+  document.getElementById('postGif').value = '';
   loadPosts();
 }
 
 async function toggleLike(id) { await api('/like/' + id, 'POST'); loadPosts(); }
+
+async function deletePost(id) {
+  if (!confirm('Удалить пост?')) return;
+  await api('/posts/' + id, 'DELETE');
+  loadPosts();
+}
 
 // === ДРУЗЬЯ ===
 async function loadFriends() {
@@ -509,7 +727,7 @@ function renderFriends() {
     const isOnline = onlineIds.includes(u.id);
     return `
       <div class="friend" onclick="openChat(${u.id}, '${esc(u.username)}')">
-        <div class="avatar">${u.avatar ? `<img src="${esc(u.avatar)}">` : u.username[0].toUpperCase()}</div>
+        <div class="avatar sm">${u.avatar ? `<img src="${esc(u.avatar)}">` : u.username[0].toUpperCase()}</div>
         <div>
           <div>${isOnline ? '<span class="online-dot"></span>' : ''}${esc(u.username)}</div>
           <div style="color:#888; font-size:10px;">${isOnline ? 'в сети' : 'не в сети'}</div>
@@ -519,7 +737,6 @@ function renderFriends() {
   }).join('') || '<div style="color:#888; font-size:11px;">Пока никого нет</div>';
 }
 
-// === СТАТУС ===
 async function saveStatus() {
   const status = document.getElementById('myStatus').value;
   await api('/me', 'PUT', { status, avatar: me.avatar || '' });
@@ -561,21 +778,177 @@ async function sendMsg() {
   addChatMsg({ ...m, from_username: me.username }, true);
 }
 
+// === НОВОСТИ ===
+async function loadNews() {
+  const news = await api('/news');
+  const el = document.getElementById('newsBox');
+  if (!news.length) {
+    el.innerHTML = '<div style="color:#888; text-align:center; padding:20px;">Новостей пока нет</div>';
+    return;
+  }
+  el.innerHTML = news.map(n => `
+    <div class="news-item">
+      <div class="news-title">${esc(n.title)}</div>
+      <div class="news-date">${fmtDate(n.created_at)}</div>
+      <div class="news-content">${esc(n.content)}${n.image ? `<img src="${esc(n.image)}" onerror="this.style.display='none'">` : ''}</div>
+      ${me.role === 'admin' ? `<button class="btn-danger btn-small" onclick="deleteNews(${n.id})">Удалить</button>` : ''}
+    </div>
+  `).join('');
+}
+
+async function createNews() {
+  const title = document.getElementById('newsTitle').value.trim();
+  const content = document.getElementById('newsContent').value.trim();
+  const image = document.getElementById('newsImage').value.trim();
+  if (!title || !content) return alert('Заполните заголовок и текст');
+  await api('/news', 'POST', { title, content, image });
+  document.getElementById('newsTitle').value = '';
+  document.getElementById('newsContent').value = '';
+  document.getElementById('newsImage').value = '';
+  loadNews();
+}
+
+async function deleteNews(id) {
+  if (!confirm('Удалить новость?')) return;
+  await api('/news/' + id, 'DELETE');
+  loadNews();
+}
+
+// === ГРУППЫ ===
+async function loadGroups() {
+  const groups = await api('/groups');
+  const el = document.getElementById('groupsBox');
+  if (!groups.length) {
+    el.innerHTML = '<div style="color:#888; text-align:center; padding:20px;">Групп пока нет</div>';
+    return;
+  }
+  el.innerHTML = groups.map(g => `
+    <div class="group-item" onclick="openGroup(${g.id})">
+      <div style="display:flex; gap:8px; align-items:center;">
+        <div class="avatar sm">${g.avatar ? `<img src="${esc(g.avatar)}">` : g.name[0].toUpperCase()}</div>
+        <div style="flex:1;">
+          <div class="forum-title">${esc(g.name)} ${g.is_member ? '✓' : ''}</div>
+          <div class="forum-desc">${esc(g.description || '')}</div>
+          <div class="forum-meta">Создал: ${esc(g.author || '—')} · Участников: ${g.members_count}</div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function createGroup() {
+  const name = document.getElementById('groupName').value.trim();
+  const description = document.getElementById('groupDesc').value.trim();
+  const avatar = document.getElementById('groupAvatar').value.trim();
+  if (!name) return alert('Введите название');
+  await api('/groups', 'POST', { name, description, avatar });
+  document.getElementById('groupName').value = '';
+  document.getElementById('groupDesc').value = '';
+  document.getElementById('groupAvatar').value = '';
+  loadGroups();
+}
+
+async function openGroup(id) {
+  currentGroupId = id;
+  document.getElementById('groupsList').style.display = 'none';
+  document.getElementById('groupView').style.display = 'block';
+  await loadGroupView();
+  await loadGroupPosts();
+}
+
+async function loadGroupView() {
+  const g = await api('/groups/' + currentGroupId);
+  document.getElementById('gCrumb').textContent = g.name;
+  document.getElementById('gTitle').textContent = g.name;
+  document.getElementById('gAvatar').innerHTML = g.avatar ? `<img src="${esc(g.avatar)}">` : g.name[0].toUpperCase();
+  document.getElementById('gMeta').textContent = `Участников: ${g.members_count} · Создал: ${g.author || '—'}`;
+  document.getElementById('gDesc').textContent = g.description || '';
+
+  const joinBtn = document.getElementById('gJoinBtn');
+  joinBtn.textContent = g.is_member ? 'Выйти' : 'Вступить';
+  joinBtn.className = g.is_member ? 'btn-danger' : 'btn-primary';
+
+  document.getElementById('gPostForm').style.display = g.is_member ? 'block' : 'none';
+
+  const members = await api('/groups/' + currentGroupId + '/members');
+  document.getElementById('gMembersBox').innerHTML = `
+    <div style="font-size:11px; color:#666; margin-bottom:4px;">Участники:</div>
+    <div style="display:flex; flex-wrap:wrap; gap:6px;">
+      ${members.map(m => `
+        <span style="background:#eef1f6; padding:2px 8px; border-radius:3px; font-size:11px;">
+          ${m.role === 'admin' ? '👑 ' : ''}${esc(m.username)}
+        </span>
+      `).join('')}
+    </div>
+  `;
+}
+
+async function toggleJoinGroup() {
+  await api('/groups/' + currentGroupId + '/join', 'POST');
+  await loadGroupView();
+  await loadGroupPosts();
+}
+
+async function loadGroupPosts() {
+  const posts = await api('/groups/' + currentGroupId + '/posts');
+  const el = document.getElementById('gPosts');
+  if (!posts.length) {
+    el.innerHTML = '<div style="color:#888; text-align:center; padding:15px;">Постов пока нет</div>';
+    return;
+  }
+  el.innerHTML = posts.map(p => `
+    <div class="post">
+      <div class="post-head">
+        <div class="avatar">${p.avatar ? `<img src="${esc(p.avatar)}">` : p.username[0].toUpperCase()}</div>
+        <div>
+          <div class="post-author">${esc(p.username)}</div>
+          <div class="post-date">${fmtDate(p.created_at)}</div>
+        </div>
+      </div>
+      <div class="post-content">${esc(p.content)}${renderMedia(p)}</div>
+      <div class="post-actions">
+        <button onclick="toggleGroupLike(${p.id})" class="${p.liked ? 'liked' : ''}">
+          ${p.liked ? '♥' : '♡'} ${p.likes}
+        </button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function createGroupPost() {
+  const content = document.getElementById('gPostContent').value.trim();
+  const image = document.getElementById('gPostImage').value.trim();
+  const video = document.getElementById('gPostVideo').value.trim();
+  const gif = document.getElementById('gPostGif').value.trim();
+  if (!content && !image && !video && !gif) return;
+  try {
+    await api('/groups/' + currentGroupId + '/posts', 'POST', { content, image, video, gif });
+    document.getElementById('gPostContent').value = '';
+    document.getElementById('gPostImage').value = '';
+    document.getElementById('gPostVideo').value = '';
+    document.getElementById('gPostGif').value = '';
+    loadGroupPosts();
+  } catch (e) { alert(e.message); }
+}
+
+async function toggleGroupLike(id) {
+  await api('/group-like/' + id, 'POST');
+  loadGroupPosts();
+}
+
 // === ФОРУМЫ ===
 async function loadForums() {
   const forums = await api('/forums');
   const el = document.getElementById('forumsBox');
   if (!forums.length) {
-    el.innerHTML = '<div style="color:#888; text-align:center; padding:20px;">Форумов пока нет. Создайте первый!</div>';
+    el.innerHTML = '<div style="color:#888; text-align:center; padding:20px;">Форумов пока нет</div>';
     return;
   }
   el.innerHTML = forums.map(f => `
     <div class="forum-item" onclick="openForum(${f.id})">
       <div class="forum-title">${esc(f.title)}</div>
       <div class="forum-desc">${esc(f.description || '')}</div>
-      <div class="forum-meta">
-        Создал: ${esc(f.author || '—')} · Тем: ${f.topics_count} · Сообщений: ${f.posts_count}
-      </div>
+      <div class="forum-meta">Создал: ${esc(f.author || '—')} · Тем: ${f.topics_count} · Сообщений: ${f.posts_count}</div>
     </div>
   `).join('');
 }
@@ -652,11 +1025,11 @@ async function loadTopic(id) {
     <div class="forum-post">
       <div class="avatar">${p.avatar ? `<img src="${esc(p.avatar)}">` : p.username[0].toUpperCase()}</div>
       <div class="body">
-        <div class="head">
+        <div>
           <span class="post-author">${esc(p.username)}</span>
           <span class="post-date" style="margin-left:8px;">${fmtDate(p.created_at)}</span>
         </div>
-        <div>${esc(p.content)}</div>
+        <div style="margin-top:4px;">${esc(p.content)}</div>
       </div>
     </div>
   `).join('');
@@ -668,6 +1041,142 @@ async function replyTopic() {
   await api(`/topics/${currentTopicId}/posts`, 'POST', { content });
   document.getElementById('topicReply').value = '';
   loadTopic(currentTopicId);
+}
+
+// === ПОИСК ===
+async function doSearch() {
+  const q = document.getElementById('searchInput').value.trim();
+  if (!q) return;
+  showPage('search');
+  document.getElementById('searchQuery').textContent = q;
+  const data = await api('/search?q=' + encodeURIComponent(q));
+
+  let html = '';
+
+  if (data.users.length) {
+    html += '<div class="search-section"><h4>👥 Люди (' + data.users.length + ')</h4>';
+    html += data.users.map(u => `
+      <div class="search-item" onclick="openChat(${u.id}, '${esc(u.username)}')">
+        <div class="avatar sm">${u.avatar ? `<img src="${esc(u.avatar)}">` : u.username[0].toUpperCase()}</div>
+        <div><b>${esc(u.username)}</b><div style="color:#888; font-size:10px;">${esc(u.status || '')}</div></div>
+      </div>
+    `).join('');
+    html += '</div>';
+  }
+
+  if (data.posts.length) {
+    html += '<div class="search-section"><h4>📝 Посты (' + data.posts.length + ')</h4>';
+    html += data.posts.map(p => `
+      <div class="search-item" style="cursor:default;">
+        <div class="avatar sm">${p.avatar ? `<img src="${esc(p.avatar)}">` : p.username[0].toUpperCase()}</div>
+        <div style="flex:1;">
+          <div><b>${esc(p.username)}</b> <span style="color:#888; font-size:10px;">${fmtDate(p.created_at)}</span></div>
+          <div>${esc(p.content.slice(0, 150))}</div>
+        </div>
+      </div>
+    `).join('');
+    html += '</div>';
+  }
+
+  if (data.groups.length) {
+    html += '<div class="search-section"><h4>👥 Группы (' + data.groups.length + ')</h4>';
+    html += data.groups.map(g => `
+      <div class="search-item" onclick="openGroup(${g.id})">
+        <div class="avatar sm">${g.avatar ? `<img src="${esc(g.avatar)}">` : g.name[0].toUpperCase()}</div>
+        <div><b>${esc(g.name)}</b><div style="color:#888; font-size:10px;">Участников: ${g.members_count}</div></div>
+      </div>
+    `).join('');
+    html += '</div>';
+  }
+
+  if (data.forums.length) {
+    html += '<div class="search-section"><h4>💬 Форумы (' + data.forums.length + ')</h4>';
+    html += data.forums.map(f => `
+      <div class="search-item" onclick="openForum(${f.id})">
+        <div style="flex:1;"><b>${esc(f.title)}</b><div style="color:#888; font-size:10px;">Тем: ${f.topics_count}</div></div>
+      </div>
+    `).join('');
+    html += '</div>';
+  }
+
+  if (!html) html = '<div style="color:#888; text-align:center; padding:20px;">Ничего не найдено</div>';
+  document.getElementById('searchResults').innerHTML = html;
+}
+
+// === АДМИНКА ===
+async function loadAdmin() {
+  const stats = await api('/admin/stats');
+  document.getElementById('adminStats').innerHTML = `
+    <div class="stat-box"><div class="stat-num">${stats.users}</div><div class="stat-label">Пользователей</div></div>
+    <div class="stat-box"><div class="stat-num">${stats.posts}</div><div class="stat-label">Постов</div></div>
+    <div class="stat-box"><div class="stat-num">${stats.groups}</div><div class="stat-label">Групп</div></div>
+    <div class="stat-box"><div class="stat-num">${stats.forums}</div><div class="stat-label">Форумов</div></div>
+    <div class="stat-box"><div class="stat-num">${stats.topics}</div><div class="stat-label">Тем</div></div>
+    <div class="stat-box"><div class="stat-num">${stats.messages}</div><div class="stat-label">Сообщений</div></div>
+    <div class="stat-box"><div class="stat-num">${stats.news}</div><div class="stat-label">Новостей</div></div>
+  `;
+
+  const users = await api('/admin/users');
+  document.getElementById('adminUsersTable').innerHTML = `
+    <tr><th>ID</th><th>Логин</th><th>Роль</th><th>Постов</th><th>Дата</th><th>Действия</th></tr>
+    ${users.map(u => `
+      <tr>
+        <td>${u.id}</td>
+        <td>${esc(u.username)} ${u.banned ? '<span class="banned">(бан)</span>' : ''}</td>
+        <td class="${u.role === 'admin' ? 'role-admin' : 'role-user'}">${u.role}</td>
+        <td>${u.posts_count}</td>
+        <td>${fmtDate(u.created_at)}</td>
+        <td>
+          ${u.id !== me.id ? `
+            <button class="btn-small" onclick="adminBan(${u.id})">${u.banned ? 'Разбан' : 'Бан'}</button>
+            <button class="btn-danger btn-small" onclick="adminDeleteUser(${u.id})">Удалить</button>
+          ` : '—'}
+        </td>
+      </tr>
+    `).join('')}
+  `;
+
+  const groups = await api('/groups');
+  const forums = await api('/forums');
+  document.getElementById('adminContent').innerHTML = `
+    <div style="margin-bottom:8px;"><b>Группы:</b></div>
+    ${groups.map(g => `
+      <div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid #eee;">
+        <span>${esc(g.name)} (${g.members_count} участников)</span>
+        <button class="btn-danger btn-small" onclick="adminDeleteGroup(${g.id})">Удалить</button>
+      </div>
+    `).join('') || '<div style="color:#888;">Групп нет</div>'}
+    <div style="margin:10px 0 8px;"><b>Форумы:</b></div>
+    ${forums.map(f => `
+      <div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid #eee;">
+        <span>${esc(f.title)} (${f.topics_count} тем)</span>
+        <button class="btn-danger btn-small" onclick="adminDeleteForum(${f.id})">Удалить</button>
+      </div>
+    `).join('') || '<div style="color:#888;">Форумов нет</div>'}
+  `;
+}
+
+async function adminBan(id) {
+  await api('/admin/ban/' + id, 'POST');
+  loadAdmin();
+}
+
+async function adminDeleteUser(id) {
+  if (!confirm('Удалить пользователя? Все его посты и сообщения тоже удалятся.')) return;
+  await api('/admin/users/' + id, 'DELETE');
+  loadAdmin();
+}
+
+async function adminDeleteGroup(id) {
+  if (!confirm('Удалить группу?')) return;
+  await api('/admin/groups/' + id, 'DELETE');
+  loadAdmin();
+}
+
+async function adminDeleteForum(id) {
+  if (!confirm('Удалить форум?')) return;
+  await api('/admin/forums/' + id, 'DELETE');
+  loadAdmin();
 }
 
 // === УТИЛИТЫ ===
