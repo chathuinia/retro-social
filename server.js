@@ -1,4 +1,4 @@
-// server.js — бэкенд соцсети в стиле 2010
+// server.js — соцсеть + мессенджер + форумы
 const express = require('express');
 const http = require('http');
 const path = require('path');
@@ -14,7 +14,7 @@ const io = new Server(server, { cors: { origin: '*' } });
 app.use(express.json({ limit: '5mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// === БАЗА ДАННЫХ ===
+// === БАЗА ===
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
@@ -64,10 +64,34 @@ async function initDB() {
       content TEXT NOT NULL,
       created_at TIMESTAMP DEFAULT NOW()
     );
+
+    CREATE TABLE IF NOT EXISTS forums (
+      id SERIAL PRIMARY KEY,
+      title VARCHAR(200) NOT NULL,
+      description TEXT DEFAULT '',
+      created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      created_at TIMESTAMP DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS forum_topics (
+      id SERIAL PRIMARY KEY,
+      forum_id INTEGER REFERENCES forums(id) ON DELETE CASCADE,
+      user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      title VARCHAR(200) NOT NULL,
+      created_at TIMESTAMP DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS forum_posts (
+      id SERIAL PRIMARY KEY,
+      topic_id INTEGER REFERENCES forum_topics(id) ON DELETE CASCADE,
+      user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      content TEXT NOT NULL,
+      created_at TIMESTAMP DEFAULT NOW()
+    );
   `);
   console.log('✅ Таблицы готовы');
 }
-initDB().catch(e => console.error('DB error:', e));
+initDB().catch(e => console.error('DB INIT ERROR:', e));
 
 // === АУТЕНТИФИКАЦИЯ ===
 function auth(req, res, next) {
@@ -85,6 +109,9 @@ app.post('/api/register', async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) return res.status(400).json({ error: 'Заполните поля' });
   try {
+    const existing = await pool.query('SELECT id FROM users WHERE username=$1', [username]);
+    if (existing.rows.length > 0) return res.status(400).json({ error: 'Логин занят' });
+
     const hash = await bcrypt.hash(password, 10);
     const r = await pool.query(
       'INSERT INTO users(username, password) VALUES($1,$2) RETURNING id, username',
@@ -93,18 +120,24 @@ app.post('/api/register', async (req, res) => {
     const token = jwt.sign({ id: r.rows[0].id, username }, JWT_SECRET);
     res.json({ token, user: r.rows[0] });
   } catch (e) {
-    res.status(400).json({ error: 'Логин занят' });
+    console.error('REGISTER ERROR:', e);
+    res.status(500).json({ error: 'Ошибка сервера: ' + e.message });
   }
 });
 
 app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
-  const r = await pool.query('SELECT * FROM users WHERE username=$1', [username]);
-  if (!r.rows[0]) return res.status(400).json({ error: 'Нет такого пользователя' });
-  const ok = await bcrypt.compare(password, r.rows[0].password);
-  if (!ok) return res.status(400).json({ error: 'Неверный пароль' });
-  const token = jwt.sign({ id: r.rows[0].id, username }, JWT_SECRET);
-  res.json({ token, user: { id: r.rows[0].id, username } });
+  try {
+    const r = await pool.query('SELECT * FROM users WHERE username=$1', [username]);
+    if (!r.rows[0]) return res.status(400).json({ error: 'Нет такого пользователя' });
+    const ok = await bcrypt.compare(password, r.rows[0].password);
+    if (!ok) return res.status(400).json({ error: 'Неверный пароль' });
+    const token = jwt.sign({ id: r.rows[0].id, username }, JWT_SECRET);
+    res.json({ token, user: { id: r.rows[0].id, username } });
+  } catch (e) {
+    console.error('LOGIN ERROR:', e);
+    res.status(500).json({ error: 'Ошибка сервера: ' + e.message });
+  }
 });
 
 // === ПОСТЫ ===
@@ -145,7 +178,7 @@ app.post('/api/like/:id', auth, async (req, res) => {
   }
 });
 
-// === ПОЛЬЗОВАТЕЛИ / ДРУЗЬЯ ===
+// === ПОЛЬЗОВАТЕЛИ ===
 app.get('/api/users', auth, async (req, res) => {
   const r = await pool.query(
     'SELECT id, username, avatar, status FROM users WHERE id != $1 LIMIT 100',
@@ -189,7 +222,97 @@ app.post('/api/messages/:userId', auth, async (req, res) => {
   res.json(r.rows[0]);
 });
 
-// === SOCKET.IO (онлайн + сообщения) ===
+// === ФОРУМЫ ===
+app.get('/api/forums', auth, async (req, res) => {
+  const r = await pool.query(`
+    SELECT f.*, u.username AS author,
+      (SELECT COUNT(*) FROM forum_topics WHERE forum_id=f.id) AS topics_count,
+      (SELECT COUNT(*) FROM forum_posts fp
+        JOIN forum_topics ft ON ft.id=fp.topic_id
+        WHERE ft.forum_id=f.id) AS posts_count
+    FROM forums f
+    LEFT JOIN users u ON u.id=f.created_by
+    ORDER BY f.created_at DESC
+  `);
+  res.json(r.rows);
+});
+
+app.post('/api/forums', auth, async (req, res) => {
+  const { title, description } = req.body;
+  if (!title?.trim()) return res.status(400).json({ error: 'Введите название' });
+  const r = await pool.query(
+    'INSERT INTO forums(title, description, created_by) VALUES($1,$2,$3) RETURNING *',
+    [title, description || '', req.user.id]
+  );
+  res.json(r.rows[0]);
+});
+
+app.get('/api/forums/:id', auth, async (req, res) => {
+  const f = await pool.query(`
+    SELECT f.*, u.username AS author FROM forums f
+    LEFT JOIN users u ON u.id=f.created_by WHERE f.id=$1
+  `, [req.params.id]);
+  if (!f.rows[0]) return res.status(404).json({ error: 'Форум не найден' });
+
+  const topics = await pool.query(`
+    SELECT t.*, u.username AS author,
+      (SELECT COUNT(*) FROM forum_posts WHERE topic_id=t.id) AS posts_count
+    FROM forum_topics t
+    LEFT JOIN users u ON u.id=t.user_id
+    WHERE t.forum_id=$1
+    ORDER BY t.created_at DESC
+  `, [req.params.id]);
+
+  res.json({ forum: f.rows[0], topics: topics.rows });
+});
+
+app.post('/api/forums/:id/topics', auth, async (req, res) => {
+  const { title } = req.body;
+  if (!title?.trim()) return res.status(400).json({ error: 'Введите название темы' });
+  const r = await pool.query(
+    'INSERT INTO forum_topics(forum_id, user_id, title) VALUES($1,$2,$3) RETURNING *',
+    [req.params.id, req.user.id, title]
+  );
+  res.json(r.rows[0]);
+});
+
+app.get('/api/topics/:id', auth, async (req, res) => {
+  const t = await pool.query(`
+    SELECT t.*, u.username AS author, f.title AS forum_title, f.id AS forum_id
+    FROM forum_topics t
+    LEFT JOIN users u ON u.id=t.user_id
+    LEFT JOIN forums f ON f.id=t.forum_id
+    WHERE t.id=$1
+  `, [req.params.id]);
+  if (!t.rows[0]) return res.status(404).json({ error: 'Тема не найдена' });
+
+  const posts = await pool.query(`
+    SELECT fp.*, u.username, u.avatar
+    FROM forum_posts fp
+    LEFT JOIN users u ON u.id=fp.user_id
+    WHERE fp.topic_id=$1
+    ORDER BY fp.created_at ASC
+  `, [req.params.id]);
+
+  res.json({ topic: t.rows[0], posts: posts.rows });
+});
+
+app.post('/api/topics/:id/posts', auth, async (req, res) => {
+  const { content } = req.body;
+  if (!content?.trim()) return res.status(400).json({ error: 'Пустое сообщение' });
+  const r = await pool.query(
+    'INSERT INTO forum_posts(topic_id, user_id, content) VALUES($1,$2,$3) RETURNING *',
+    [req.params.id, req.user.id, content]
+  );
+  const full = await pool.query(`
+    SELECT fp.*, u.username, u.avatar FROM forum_posts fp
+    LEFT JOIN users u ON u.id=fp.user_id WHERE fp.id=$1
+  `, [r.rows[0].id]);
+  io.emit('new_forum_post', { topic_id: Number(req.params.id) });
+  res.json(full.rows[0]);
+});
+
+// === SOCKET.IO ===
 io.use((socket, next) => {
   const token = socket.handshake.auth.token;
   try {
