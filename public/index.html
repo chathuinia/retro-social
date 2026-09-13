@@ -10,12 +10,11 @@
   body {
     font-family: Tahoma, Verdana, Arial, sans-serif;
     font-size: 12px;
-    background: #e8ebf0 url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4"><rect width="4" height="4" fill="%23e8ebf0"/><circle cx="1" cy="1" r="0.5" fill="%23d8dce3"/></svg>');
+    background: #e8ebf0;
     color: #2a2a2a;
   }
-  #app { max-width: 960px; margin: 0 auto; padding: 10px; }
+  #app { max-width: 1000px; margin: 0 auto; padding: 10px; }
 
-  /* Шапка в стиле VK 2010 */
   .header {
     background: linear-gradient(#5b7bb5, #3b5998);
     border: 1px solid #2a4370;
@@ -29,9 +28,15 @@
     box-shadow: 0 1px 3px rgba(0,0,0,0.2);
   }
   .header .logo { font-weight: bold; font-size: 16px; text-shadow: 1px 1px 0 #2a4370; }
-  .header .user { font-size: 12px; }
+  .nav { display: flex; gap: 4px; }
+  .nav button {
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.3);
+    color: white;
+    padding: 4px 12px;
+  }
+  .nav button.active { background: rgba(255,255,255,0.35); font-weight: bold; }
 
-  /* Кнопки */
   button, .btn {
     font-family: inherit;
     font-size: 12px;
@@ -44,7 +49,7 @@
     box-shadow: inset 0 1px 0 #fff;
   }
   button:hover { background: linear-gradient(#fff, #e3e6ea); }
-  button:active { background: #d0d4da; box-shadow: inset 0 1px 2px rgba(0,0,0,0.2); }
+  button:active { background: #d0d4da; }
   .btn-primary {
     background: linear-gradient(#6d8fc7, #4a76a8);
     border-color: #3a5c8a;
@@ -53,7 +58,6 @@
   }
   .btn-primary:hover { background: linear-gradient(#7d9fd7, #5a86b8); }
 
-  /* Карточки */
   .card {
     background: #fff;
     border: 1px solid #c5cad3;
@@ -70,7 +74,6 @@
     margin-bottom: 10px;
   }
 
-  /* Формы */
   input, textarea {
     font-family: inherit;
     font-size: 12px;
@@ -79,14 +82,12 @@
     padding: 5px 8px;
     width: 100%;
     background: #fff;
-    box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
   }
   input:focus, textarea:focus { outline: none; border-color: #4a76a8; }
   textarea { resize: vertical; min-height: 50px; }
   .row { display: flex; gap: 8px; margin-bottom: 8px; }
   .row > * { flex: 1; }
 
-  /* Пост */
   .post { border-bottom: 1px solid #e8ebf0; padding: 10px 0; }
   .post:last-child { border-bottom: none; }
   .post-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
@@ -97,7 +98,7 @@
     border-radius: 3px;
     display: flex; align-items: center; justify-content: center;
     font-weight: bold; color: #4a76a8; font-size: 16px;
-    overflow: hidden;
+    overflow: hidden; flex-shrink: 0;
   }
   .avatar img { width: 100%; height: 100%; object-fit: cover; }
   .post-author { font-weight: bold; color: #3b5998; cursor: pointer; }
@@ -108,23 +109,18 @@
   .post-actions button { font-size: 11px; padding: 2px 8px; }
   .liked { color: #c0392b; font-weight: bold; }
 
-  /* Сетка */
   .grid { display: grid; grid-template-columns: 200px 1fr; gap: 10px; }
-  .sidebar .card { padding: 8px; }
   .friend {
     display: flex; align-items: center; gap: 6px;
-    padding: 4px;
-    border-radius: 3px;
-    cursor: pointer;
+    padding: 4px; border-radius: 3px; cursor: pointer;
   }
   .friend:hover { background: #eef1f6; }
   .friend .avatar { width: 30px; height: 30px; font-size: 13px; }
 
-  /* Чат */
   .chat-box {
     position: fixed;
     bottom: 0; right: 20px;
-    width: 300px;
+    width: 320px;
     background: #fff;
     border: 1px solid #a0a8b3;
     border-bottom: none;
@@ -136,66 +132,79 @@
   .chat-box.open { display: block; }
   .chat-head {
     background: linear-gradient(#5b7bb5, #3b5998);
-    color: white;
-    padding: 6px 10px;
-    font-weight: bold;
-    font-size: 12px;
+    color: white; padding: 6px 10px;
+    font-weight: bold; font-size: 12px;
     border-radius: 4px 4px 0 0;
-    display: flex; justify-content: space-between; align-items: center;
+    display: flex; justify-content: space-between;
   }
   .chat-head .close { cursor: pointer; padding: 0 4px; }
   .chat-msgs {
-    height: 250px;
-    overflow-y: auto;
-    padding: 8px;
-    background: #f5f7fa;
-    font-size: 12px;
+    height: 250px; overflow-y: auto; padding: 8px;
+    background: #f5f7fa; font-size: 12px;
   }
   .msg { margin-bottom: 6px; }
   .msg .from { font-weight: bold; color: #3b5998; }
   .msg.mine .from { color: #c0392b; }
   .chat-input { display: flex; border-top: 1px solid #c5cad3; }
-  .chat-input input { border: none; border-radius: 0; box-shadow: none; flex: 1; }
+  .chat-input input { border: none; border-radius: 0; flex: 1; }
   .chat-input button { border-radius: 0; border: none; border-left: 1px solid #c5cad3; }
 
-  /* Авторизация */
-  .auth-screen {
-    max-width: 320px;
-    margin: 80px auto;
-  }
+  .auth-screen { max-width: 320px; margin: 80px auto; }
   .tabs { display: flex; margin-bottom: 10px; }
-  .tabs button {
-    flex: 1;
-    border-radius: 0;
-    border-bottom: none;
-  }
+  .tabs button { flex: 1; border-radius: 0; }
   .tabs button:first-child { border-radius: 3px 0 0 0; }
   .tabs button:last-child { border-radius: 0 3px 0 0; }
-  .tabs button.active {
-    background: #fff;
-    border-bottom: 1px solid #fff;
-    position: relative; top: 1px;
-    font-weight: bold;
-  }
+  .tabs button.active { background: #fff; font-weight: bold; }
 
   .online-dot {
-    display: inline-block;
-    width: 8px; height: 8px;
-    background: #4caf50;
-    border-radius: 50%;
-    margin-right: 4px;
-    box-shadow: 0 0 4px #4caf50;
+    display: inline-block; width: 8px; height: 8px;
+    background: #4caf50; border-radius: 50%;
+    margin-right: 4px; box-shadow: 0 0 4px #4caf50;
   }
+
+  /* Форумы */
+  .forum-item {
+    padding: 10px; border: 1px solid #d8dce3;
+    border-radius: 3px; margin-bottom: 8px;
+    background: #f8f9fb; cursor: pointer;
+  }
+  .forum-item:hover { background: #eef1f6; border-color: #4a76a8; }
+  .forum-title { font-weight: bold; color: #3b5998; font-size: 13px; }
+  .forum-desc { color: #555; margin: 4px 0; font-size: 11px; }
+  .forum-meta { color: #888; font-size: 10px; }
+
+  .topic-item {
+    padding: 8px; border-bottom: 1px solid #e8ebf0;
+    display: flex; justify-content: space-between;
+    cursor: pointer;
+  }
+  .topic-item:hover { background: #f5f7fa; }
+  .topic-title { font-weight: bold; color: #3b5998; }
+  .topic-meta { color: #888; font-size: 10px; }
+
+  .forum-post {
+    padding: 10px;
+    border-bottom: 1px solid #e8ebf0;
+    display: flex; gap: 10px;
+  }
+  .forum-post:last-child { border-bottom: none; }
+  .forum-post .body { flex: 1; }
+  .forum-post .head { margin-bottom: 4px; }
+
+  .breadcrumb { color: #888; font-size: 11px; margin-bottom: 8px; }
+  .breadcrumb a { color: #3b5998; cursor: pointer; text-decoration: none; }
+  .breadcrumb a:hover { text-decoration: underline; }
 
   @media (max-width: 700px) {
     .grid { grid-template-columns: 1fr; }
     .chat-box { width: calc(100% - 20px); right: 10px; }
+    .nav button { font-size: 10px; padding: 3px 6px; }
   }
 </style>
 </head>
 <body>
 
-<!-- ЭКРАН АВТОРИЗАЦИИ -->
+<!-- АВТОРИЗАЦИЯ -->
 <div id="auth" class="auth-screen" style="display:none;">
   <div class="card">
     <h3 style="text-align:center; font-size:18px;">РетроСеть 2010</h3>
@@ -217,16 +226,22 @@
   </div>
 </div>
 
-<!-- ОСНОВНОЕ ПРИЛОЖЕНИЕ -->
+<!-- ОСНОВНОЕ -->
 <div id="main" style="display:none;">
   <div class="header">
     <div class="logo">РетроСеть</div>
-    <div class="user">
-      <span id="meName"></span>
-      <button onclick="logout()" style="margin-left:8px;">Выйти</button>
+    <div class="nav">
+      <button id="navFeed" class="active" onclick="showPage('feed')">Стена</button>
+      <button id="navForums" onclick="showPage('forums')">Форумы</button>
+    </div>
+    <div>
+      <span id="meName" style="margin-right:8px;"></span>
+      <button onclick="logout()">Выйти</button>
     </div>
   </div>
-  <div class="grid">
+
+  <!-- СТРАНИЦА: СТЕНА -->
+  <div id="pageFeed" class="grid">
     <div class="sidebar">
       <div class="card">
         <h3>Мой профиль</h3>
@@ -235,11 +250,11 @@
         </div>
         <div style="font-weight:bold; text-align:center; margin-bottom:6px;" id="myName"></div>
         <textarea id="myStatus" placeholder="Статус..." style="min-height:40px; font-size:11px;"></textarea>
-        <button style="width:100%; margin-top:4px;" onclick="saveStatus()">Сохранить статус</button>
+        <button style="width:100%; margin-top:4px;" onclick="saveStatus()">Сохранить</button>
       </div>
       <div class="card">
-        <h3>Друзья онлайн</h3>
-        <div id="friendsList" style="max-height:300px; overflow-y:auto;"></div>
+        <h3>Люди</h3>
+        <div id="friendsList" style="max-height:400px; overflow-y:auto;"></div>
       </div>
     </div>
     <div class="main-col">
@@ -254,6 +269,53 @@
       <div class="card">
         <h3>Стена</h3>
         <div id="posts"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- СТРАНИЦА: ФОРУМЫ -->
+  <div id="pageForums" style="display:none;">
+    <div id="forumsList">
+      <div class="card">
+        <h3>Создать форум</h3>
+        <input id="forumTitle" placeholder="Название форума" style="margin-bottom:6px;">
+        <textarea id="forumDesc" placeholder="Описание (необязательно)" style="min-height:40px;"></textarea>
+        <button class="btn-primary" style="margin-top:6px;" onclick="createForum()">Создать</button>
+      </div>
+      <div class="card">
+        <h3>Все форумы</h3>
+        <div id="forumsBox"></div>
+      </div>
+    </div>
+
+    <div id="forumView" style="display:none;">
+      <div class="breadcrumb"><a onclick="showPage('forums')">Форумы</a> / <span id="fCrumb"></span></div>
+      <div class="card">
+        <h3 id="fTitle"></h3>
+        <div id="fDesc" style="color:#555; font-size:11px; margin-bottom:10px;"></div>
+        <input id="topicTitle" placeholder="Новая тема" style="margin-bottom:6px;">
+        <button class="btn-primary" onclick="createTopic()">Создать тему</button>
+      </div>
+      <div class="card">
+        <h3>Темы</h3>
+        <div id="topicsBox"></div>
+      </div>
+    </div>
+
+    <div id="topicView" style="display:none;">
+      <div class="breadcrumb">
+        <a onclick="showPage('forums')">Форумы</a> /
+        <a id="tCrumbForum"></a> /
+        <span id="tCrumb"></span>
+      </div>
+      <div class="card">
+        <h3 id="tTitle"></h3>
+        <div id="tPosts"></div>
+      </div>
+      <div class="card">
+        <h3>Ответить</h3>
+        <textarea id="topicReply" placeholder="Ваше сообщение..."></textarea>
+        <button class="btn-primary" style="margin-top:6px;" onclick="replyTopic()">Отправить</button>
       </div>
     </div>
   </div>
@@ -279,13 +341,13 @@ let me = null;
 let socket = null;
 let currentChat = null;
 let onlineIds = [];
+let currentPage = 'feed';
+let currentForumId = null;
+let currentTopicId = null;
 
-// === API ХЕЛПЕР ===
+// === API ===
 async function api(url, method = 'GET', body = null) {
-  const opts = {
-    method,
-    headers: { 'Content-Type': 'application/json' }
-  };
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
   if (token) opts.headers['Authorization'] = 'Bearer ' + token;
   if (body) opts.body = JSON.stringify(body);
   const r = await fetch('/api' + url, opts);
@@ -356,6 +418,7 @@ async function startApp() {
   initSocket();
   loadPosts();
   loadFriends();
+  loadForums();
 }
 
 function showAuth() {
@@ -363,18 +426,31 @@ function showAuth() {
   document.getElementById('main').style.display = 'none';
 }
 
-// === WEBSOCKET ===
+// === НАВИГАЦИЯ ===
+function showPage(page) {
+  currentPage = page;
+  document.getElementById('navFeed').classList.toggle('active', page === 'feed');
+  document.getElementById('navForums').classList.toggle('active', page === 'forums');
+  document.getElementById('pageFeed').style.display = page === 'feed' ? 'grid' : 'none';
+  document.getElementById('pageForums').style.display = page === 'forums' ? 'block' : 'none';
+  if (page === 'forums') {
+    document.getElementById('forumsList').style.display = 'block';
+    document.getElementById('forumView').style.display = 'none';
+    document.getElementById('topicView').style.display = 'none';
+    loadForums();
+  }
+}
+
+// === SOCKET ===
 function initSocket() {
   socket = io({ auth: { token } });
-  socket.on('online', ids => {
-    onlineIds = ids;
-    renderFriends();
-  });
-  socket.on('new_post', () => loadPosts());
+  socket.on('online', ids => { onlineIds = ids; renderFriends(); });
+  socket.on('new_post', () => { if (currentPage === 'feed') loadPosts(); });
   socket.on('new_message', msg => {
-    if (currentChat && msg.from_id === currentChat.id) {
-      addChatMsg(msg, false);
-    }
+    if (currentChat && msg.from_id === currentChat.id) addChatMsg(msg, false);
+  });
+  socket.on('new_forum_post', data => {
+    if (currentPage === 'forums' && currentTopicId == data.topic_id) loadTopic(currentTopicId);
   });
 }
 
@@ -389,7 +465,7 @@ async function loadPosts() {
   el.innerHTML = posts.map(p => `
     <div class="post">
       <div class="post-head">
-        <div class="avatar">${p.avatar ? `<img src="${p.avatar}">` : p.username[0].toUpperCase()}</div>
+        <div class="avatar">${p.avatar ? `<img src="${esc(p.avatar)}">` : p.username[0].toUpperCase()}</div>
         <div>
           <div class="post-author">${esc(p.username)}</div>
           <div class="post-date">${fmtDate(p.created_at)}</div>
@@ -418,15 +494,11 @@ async function createPost() {
   loadPosts();
 }
 
-async function toggleLike(id) {
-  await api('/like/' + id, 'POST');
-  loadPosts();
-}
+async function toggleLike(id) { await api('/like/' + id, 'POST'); loadPosts(); }
 
 // === ДРУЗЬЯ ===
 async function loadFriends() {
-  const users = await api('/users');
-  window._friends = users;
+  window._friends = await api('/users');
   renderFriends();
 }
 
@@ -437,7 +509,7 @@ function renderFriends() {
     const isOnline = onlineIds.includes(u.id);
     return `
       <div class="friend" onclick="openChat(${u.id}, '${esc(u.username)}')">
-        <div class="avatar">${u.avatar ? `<img src="${u.avatar}">` : u.username[0].toUpperCase()}</div>
+        <div class="avatar">${u.avatar ? `<img src="${esc(u.avatar)}">` : u.username[0].toUpperCase()}</div>
         <div>
           <div>${isOnline ? '<span class="online-dot"></span>' : ''}${esc(u.username)}</div>
           <div style="color:#888; font-size:10px;">${isOnline ? 'в сети' : 'не в сети'}</div>
@@ -489,9 +561,118 @@ async function sendMsg() {
   addChatMsg({ ...m, from_username: me.username }, true);
 }
 
+// === ФОРУМЫ ===
+async function loadForums() {
+  const forums = await api('/forums');
+  const el = document.getElementById('forumsBox');
+  if (!forums.length) {
+    el.innerHTML = '<div style="color:#888; text-align:center; padding:20px;">Форумов пока нет. Создайте первый!</div>';
+    return;
+  }
+  el.innerHTML = forums.map(f => `
+    <div class="forum-item" onclick="openForum(${f.id})">
+      <div class="forum-title">${esc(f.title)}</div>
+      <div class="forum-desc">${esc(f.description || '')}</div>
+      <div class="forum-meta">
+        Создал: ${esc(f.author || '—')} · Тем: ${f.topics_count} · Сообщений: ${f.posts_count}
+      </div>
+    </div>
+  `).join('');
+}
+
+async function createForum() {
+  const title = document.getElementById('forumTitle').value.trim();
+  const description = document.getElementById('forumDesc').value.trim();
+  if (!title) return alert('Введите название');
+  await api('/forums', 'POST', { title, description });
+  document.getElementById('forumTitle').value = '';
+  document.getElementById('forumDesc').value = '';
+  loadForums();
+}
+
+async function openForum(id) {
+  currentForumId = id;
+  document.getElementById('forumsList').style.display = 'none';
+  document.getElementById('forumView').style.display = 'block';
+  document.getElementById('topicView').style.display = 'none';
+  await loadForumView();
+}
+
+async function loadForumView() {
+  const data = await api('/forums/' + currentForumId);
+  document.getElementById('fCrumb').textContent = data.forum.title;
+  document.getElementById('fTitle').textContent = data.forum.title;
+  document.getElementById('fDesc').textContent = data.forum.description || '';
+
+  const el = document.getElementById('topicsBox');
+  if (!data.topics.length) {
+    el.innerHTML = '<div style="color:#888; text-align:center; padding:15px;">Тем пока нет</div>';
+    return;
+  }
+  el.innerHTML = data.topics.map(t => `
+    <div class="topic-item" onclick="openTopic(${t.id})">
+      <div>
+        <div class="topic-title">${esc(t.title)}</div>
+        <div class="topic-meta">Автор: ${esc(t.author || '—')} · ${fmtDate(t.created_at)}</div>
+      </div>
+      <div class="topic-meta">${t.posts_count} сообщ.</div>
+    </div>
+  `).join('');
+}
+
+async function createTopic() {
+  const title = document.getElementById('topicTitle').value.trim();
+  if (!title) return alert('Введите название темы');
+  await api(`/forums/${currentForumId}/topics`, 'POST', { title });
+  document.getElementById('topicTitle').value = '';
+  loadForumView();
+}
+
+async function openTopic(id) {
+  currentTopicId = id;
+  document.getElementById('forumsList').style.display = 'none';
+  document.getElementById('forumView').style.display = 'none';
+  document.getElementById('topicView').style.display = 'block';
+  await loadTopic(id);
+}
+
+async function loadTopic(id) {
+  const data = await api('/topics/' + id);
+  document.getElementById('tCrumb').textContent = data.topic.title;
+  document.getElementById('tCrumbForum').textContent = data.topic.forum_title;
+  document.getElementById('tCrumbForum').onclick = () => openForum(data.topic.forum_id);
+  document.getElementById('tTitle').textContent = data.topic.title;
+
+  const el = document.getElementById('tPosts');
+  if (!data.posts.length) {
+    el.innerHTML = '<div style="color:#888; text-align:center; padding:15px;">Сообщений пока нет</div>';
+    return;
+  }
+  el.innerHTML = data.posts.map(p => `
+    <div class="forum-post">
+      <div class="avatar">${p.avatar ? `<img src="${esc(p.avatar)}">` : p.username[0].toUpperCase()}</div>
+      <div class="body">
+        <div class="head">
+          <span class="post-author">${esc(p.username)}</span>
+          <span class="post-date" style="margin-left:8px;">${fmtDate(p.created_at)}</span>
+        </div>
+        <div>${esc(p.content)}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function replyTopic() {
+  const content = document.getElementById('topicReply').value.trim();
+  if (!content) return;
+  await api(`/topics/${currentTopicId}/posts`, 'POST', { content });
+  document.getElementById('topicReply').value = '';
+  loadTopic(currentTopicId);
+}
+
 // === УТИЛИТЫ ===
 function esc(s) {
-  return String(s).replace(/[&<>"']/g, c => ({
+  return String(s ?? '').replace(/[&<>"']/g, c => ({
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
   }[c]));
 }
