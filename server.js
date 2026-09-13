@@ -1,4 +1,4 @@
-// server.js — соцсеть + мессенджер + форумы (с хардкодом DATABASE_URL)
+// server.js — соцсеть + мессенджер + форумы + группы + поиск + видео/GIF + новости + админка
 const express = require('express');
 const http = require('http');
 const path = require('path');
@@ -11,25 +11,28 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });
 
-app.use(express.json({ limit: '5mb' }));
+app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ============================================================
-// ВСТАВЬТЕ СВОЮ СТРОКУ ИЗ NEON НИЖЕ, МЕЖДУ КАВЫЧКАМИ
+// ВСТАВЬТЕ СВОЮ СТРОКУ ИЗ NEON НИЖЕ
 // ============================================================
-const HARDCODED_DB_URL = 'postgresql://neondb_owner:npg_yOQcIwub8V6N@ep-solitary-rain-a5orxtnv-pooler.us-east-2.aws.neon.tech/neondb';
+const HARDCODED_DB_URL = 'postgresql://neondb_owner:npg_XXXXXX@ep-xxx-xxx.neon.tech/neondb';
 const HARDCODED_JWT_SECRET = 'retro2010secret123';
+
+// ГЛАВНЫЙ АДМИН (создатель) — его логин
+const OWNER_USERNAME = 'lol';
 // ============================================================
 
-const JWT_SECRET = HARDCODED_JWT_SECRET || process.env.JWT_SECRET || 'retro-2010-secret';
+const JWT_SECRET = process.env.JWT_SECRET || HARDCODED_JWT_SECRET || 'retro-2010-secret';
 
 let dbUrl = process.env.DATABASE_URL || HARDCODED_DB_URL || '';
-dbUrl = dbUrl.replace(/[?&]sslmode=[^&]*/g, '').replace(/\?$/, '').trim();
+dbUrl = dbUrl.replace(/[?&]sslmode=[^&]*/g, '').replace(/[?&]channel_binding=[^&]*/g, '').replace(/\?$/, '').trim();
 
 console.log('=== DB CONFIG ===');
 console.log('Источник DATABASE_URL:', process.env.DATABASE_URL ? 'ENV' : 'HARDCODED');
 console.log('Длина строки:', dbUrl.length);
-console.log('Начало:', dbUrl.slice(0, 40) + '...');
+console.log('Владелец (админ):', OWNER_USERNAME);
 
 const pool = new Pool({
   connectionString: dbUrl,
@@ -39,9 +42,7 @@ const pool = new Pool({
   max: 5
 });
 
-pool.on('error', (err) => {
-  console.error('POOL ERROR:', err.message);
-});
+pool.on('error', (err) => console.error('POOL ERROR:', err.message));
 
 // === ИНИЦИАЛИЗАЦИЯ ТАБЛИЦ ===
 async function initDB() {
@@ -53,6 +54,8 @@ async function initDB() {
       password VARCHAR(255) NOT NULL,
       avatar TEXT DEFAULT '',
       status VARCHAR(255) DEFAULT 'Всем привет! Я в сети!',
+      role VARCHAR(20) DEFAULT 'user',
+      banned BOOLEAN DEFAULT FALSE,
       created_at TIMESTAMP DEFAULT NOW()
     );
 
@@ -61,6 +64,8 @@ async function initDB() {
       user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
       content TEXT NOT NULL,
       image TEXT DEFAULT '',
+      video TEXT DEFAULT '',
+      gif TEXT DEFAULT '',
       created_at TIMESTAMP DEFAULT NOW()
     );
 
@@ -69,14 +74,6 @@ async function initDB() {
       post_id INTEGER REFERENCES posts(id) ON DELETE CASCADE,
       user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
       UNIQUE(post_id, user_id)
-    );
-
-    CREATE TABLE IF NOT EXISTS friendships (
-      id SERIAL PRIMARY KEY,
-      user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-      friend_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-      status VARCHAR(20) DEFAULT 'pending',
-      UNIQUE(user_id, friend_id)
     );
 
     CREATE TABLE IF NOT EXISTS messages (
@@ -110,11 +107,72 @@ async function initDB() {
       content TEXT NOT NULL,
       created_at TIMESTAMP DEFAULT NOW()
     );
+
+    CREATE TABLE IF NOT EXISTS groups (
+      id SERIAL PRIMARY KEY,
+      name VARCHAR(200) NOT NULL,
+      description TEXT DEFAULT '',
+      avatar TEXT DEFAULT '',
+      created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      created_at TIMESTAMP DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS group_members (
+      id SERIAL PRIMARY KEY,
+      group_id INTEGER REFERENCES groups(id) ON DELETE CASCADE,
+      user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      role VARCHAR(20) DEFAULT 'member',
+      joined_at TIMESTAMP DEFAULT NOW(),
+      UNIQUE(group_id, user_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS group_posts (
+      id SERIAL PRIMARY KEY,
+      group_id INTEGER REFERENCES groups(id) ON DELETE CASCADE,
+      user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      content TEXT NOT NULL,
+      image TEXT DEFAULT '',
+      video TEXT DEFAULT '',
+      gif TEXT DEFAULT '',
+      created_at TIMESTAMP DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS group_post_likes (
+      id SERIAL PRIMARY KEY,
+      post_id INTEGER REFERENCES group_posts(id) ON DELETE CASCADE,
+      user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      UNIQUE(post_id, user_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS news (
+      id SERIAL PRIMARY KEY,
+      title VARCHAR(200) NOT NULL,
+      content TEXT NOT NULL,
+      image TEXT DEFAULT '',
+      created_at TIMESTAMP DEFAULT NOW()
+    );
   `);
+
+  // Добавляем недостающие колонки, если таблицы уже были
+  const alterQueries = [
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(20) DEFAULT 'user'`,
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS banned BOOLEAN DEFAULT FALSE`,
+    `ALTER TABLE posts ADD COLUMN IF NOT EXISTS video TEXT DEFAULT ''`,
+    `ALTER TABLE posts ADD COLUMN IF NOT EXISTS gif TEXT DEFAULT ''`
+  ];
+  for (const q of alterQueries) {
+    try { await pool.query(q); } catch (e) { /* ignore */ }
+  }
+
+  // Автоназначение админа логину lol
+  try {
+    await pool.query(`UPDATE users SET role='admin' WHERE username=$1`, [OWNER_USERNAME]);
+  } catch (e) { /* ignore */ }
+
   console.log('✅ Таблицы готовы');
 }
 
-// === АУТЕНТИФИКАЦИЯ ===
+// === AUTH ===
 function auth(req, res, next) {
   const token = req.headers.authorization?.split(' ')[1];
   if (!token) return res.status(401).json({ error: 'Нет токена' });
@@ -126,54 +184,39 @@ function auth(req, res, next) {
   }
 }
 
-// === ДИАГНОСТИКА ===
-app.get('/api/debug', async (req, res) => {
-  const info = {
-    hasEnvDbUrl: !!process.env.DATABASE_URL,
-    usingHardcoded: !process.env.DATABASE_URL && !!HARDCODED_DB_URL,
-    dbUrlLength: dbUrl.length,
-    dbUrlStart: dbUrl.slice(0, 50) + '...',
-    hasJwt: !!JWT_SECRET,
-    dbConnection: null,
-    tables: null,
-    error: null
-  };
+async function adminOnly(req, res, next) {
   try {
-    await pool.query('SELECT 1');
-    info.dbConnection = 'OK';
+    const r = await pool.query('SELECT role FROM users WHERE id=$1', [req.user.id]);
+    if (!r.rows[0] || r.rows[0].role !== 'admin') {
+      return res.status(403).json({ error: 'Только для админа' });
+    }
+    next();
   } catch (e) {
-    info.dbConnection = 'FAIL';
-    info.error = e.message;
-    return res.json(info);
+    res.status(500).json({ error: e.message });
   }
-  try {
-    const r = await pool.query(`
-      SELECT table_name FROM information_schema.tables
-      WHERE table_schema='public' ORDER BY table_name
-    `);
-    info.tables = r.rows.map(x => x.table_name);
-  } catch (e) {
-    info.tables = 'ERROR: ' + e.message;
-  }
-  res.json(info);
-});
+}
 
-// === РЕГИСТРАЦИЯ ===
+// === РЕГИСТРАЦИЯ / ВХОД ===
 app.post('/api/register', async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) return res.status(400).json({ error: 'Заполните поля' });
+  if (username.length < 3) return res.status(400).json({ error: 'Логин минимум 3 символа' });
+  if (password.length < 4) return res.status(400).json({ error: 'Пароль минимум 4 символа' });
 
   try {
     const existing = await pool.query('SELECT id FROM users WHERE username=$1', [username]);
     if (existing.rows.length > 0) return res.status(400).json({ error: 'Логин занят' });
 
+    // Если это владелец — сразу admin
+    const role = username === OWNER_USERNAME ? 'admin' : 'user';
+
     const hash = await bcrypt.hash(password, 10);
     const r = await pool.query(
-      'INSERT INTO users(username, password) VALUES($1,$2) RETURNING id, username',
-      [username, hash]
+      'INSERT INTO users(username, password, role) VALUES($1,$2,$3) RETURNING id, username, role',
+      [username, hash, role]
     );
-    const token = jwt.sign({ id: r.rows[0].id, username }, JWT_SECRET);
-    console.log('✅ Новый пользователь:', username);
+    const token = jwt.sign({ id: r.rows[0].id, username, role }, JWT_SECRET);
+    console.log('✅ Новый пользователь:', username, '(' + role + ')');
     res.json({ token, user: r.rows[0] });
   } catch (e) {
     console.error('REGISTER ERROR:', e.message);
@@ -181,20 +224,53 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
-// === ВХОД ===
 app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
   try {
     const r = await pool.query('SELECT * FROM users WHERE username=$1', [username]);
     if (!r.rows[0]) return res.status(400).json({ error: 'Нет такого пользователя' });
+    if (r.rows[0].banned) return res.status(403).json({ error: 'Вы забанены' });
     const ok = await bcrypt.compare(password, r.rows[0].password);
     if (!ok) return res.status(400).json({ error: 'Неверный пароль' });
-    const token = jwt.sign({ id: r.rows[0].id, username }, JWT_SECRET);
-    res.json({ token, user: { id: r.rows[0].id, username } });
+    const token = jwt.sign(
+      { id: r.rows[0].id, username: r.rows[0].username, role: r.rows[0].role },
+      JWT_SECRET
+    );
+    res.json({ token, user: { id: r.rows[0].id, username: r.rows[0].username, role: r.rows[0].role } });
   } catch (e) {
     console.error('LOGIN ERROR:', e.message);
     res.status(500).json({ error: 'Ошибка сервера: ' + e.message });
   }
+});
+
+// === ПОЛЬЗОВАТЕЛИ ===
+app.get('/api/users', auth, async (req, res) => {
+  try {
+    const r = await pool.query(
+      'SELECT id, username, avatar, status FROM users WHERE id != $1 AND banned=FALSE LIMIT 100',
+      [req.user.id]
+    );
+    res.json(r.rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/me', auth, async (req, res) => {
+  try {
+    const r = await pool.query(
+      'SELECT id, username, avatar, status, role FROM users WHERE id=$1',
+      [req.user.id]
+    );
+    res.json(r.rows[0]);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.put('/api/me', auth, async (req, res) => {
+  const { status, avatar } = req.body;
+  try {
+    await pool.query('UPDATE users SET status=$1, avatar=$2 WHERE id=$3',
+      [status || '', avatar || '', req.user.id]);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // === ПОСТЫ ===
@@ -208,26 +284,36 @@ app.get('/api/posts', auth, async (req, res) => {
       ORDER BY p.created_at DESC LIMIT 50
     `, [req.user.id]);
     res.json(r.rows);
-  } catch (e) {
-    console.error('POSTS ERROR:', e.message);
-    res.status(500).json({ error: e.message });
-  }
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.post('/api/posts', auth, async (req, res) => {
-  const { content, image } = req.body;
-  if (!content?.trim()) return res.status(400).json({ error: 'Пустой пост' });
+  const { content, image, video, gif } = req.body;
+  if (!content?.trim() && !image && !video && !gif) {
+    return res.status(400).json({ error: 'Пустой пост' });
+  }
   try {
     const r = await pool.query(
-      'INSERT INTO posts(user_id, content, image) VALUES($1,$2,$3) RETURNING *',
-      [req.user.id, content, image || '']
+      'INSERT INTO posts(user_id, content, image, video, gif) VALUES($1,$2,$3,$4,$5) RETURNING *',
+      [req.user.id, content || '', image || '', video || '', gif || '']
     );
     io.emit('new_post');
     res.json(r.rows[0]);
-  } catch (e) {
-    console.error('CREATE POST ERROR:', e.message);
-    res.status(500).json({ error: e.message });
-  }
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/posts/:id', auth, async (req, res) => {
+  try {
+    const p = await pool.query('SELECT user_id FROM posts WHERE id=$1', [req.params.id]);
+    if (!p.rows[0]) return res.status(404).json({ error: 'Нет поста' });
+    const me = await pool.query('SELECT role FROM users WHERE id=$1', [req.user.id]);
+    if (p.rows[0].user_id !== req.user.id && me.rows[0]?.role !== 'admin') {
+      return res.status(403).json({ error: 'Не ваш пост' });
+    }
+    await pool.query('DELETE FROM posts WHERE id=$1', [req.params.id]);
+    io.emit('new_post');
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.post('/api/like/:id', auth, async (req, res) => {
@@ -244,43 +330,7 @@ app.post('/api/like/:id', auth, async (req, res) => {
       await pool.query('INSERT INTO likes(post_id, user_id) VALUES($1,$2)', [postId, req.user.id]);
       res.json({ liked: true });
     }
-  } catch (e) {
-    console.error('LIKE ERROR:', e.message);
-    res.status(500).json({ error: e.message });
-  }
-});
-
-// === ПОЛЬЗОВАТЕЛИ ===
-app.get('/api/users', auth, async (req, res) => {
-  try {
-    const r = await pool.query(
-      'SELECT id, username, avatar, status FROM users WHERE id != $1 LIMIT 100',
-      [req.user.id]
-    );
-    res.json(r.rows);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
-app.get('/api/me', auth, async (req, res) => {
-  try {
-    const r = await pool.query('SELECT id, username, avatar, status FROM users WHERE id=$1', [req.user.id]);
-    res.json(r.rows[0]);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
-app.put('/api/me', auth, async (req, res) => {
-  const { status, avatar } = req.body;
-  try {
-    await pool.query('UPDATE users SET status=$1, avatar=$2 WHERE id=$3',
-      [status || '', avatar || '', req.user.id]);
-    res.json({ ok: true });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // === СООБЩЕНИЯ ===
@@ -293,9 +343,7 @@ app.get('/api/messages/:userId', auth, async (req, res) => {
       ORDER BY created_at ASC LIMIT 200
     `, [req.user.id, other]);
     res.json(r.rows);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.post('/api/messages/:userId', auth, async (req, res) => {
@@ -309,9 +357,7 @@ app.post('/api/messages/:userId', auth, async (req, res) => {
     );
     io.to('user_' + to).emit('new_message', { ...r.rows[0], from_username: req.user.username });
     res.json(r.rows[0]);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // === ФОРУМЫ ===
@@ -328,9 +374,7 @@ app.get('/api/forums', auth, async (req, res) => {
       ORDER BY f.created_at DESC
     `);
     res.json(r.rows);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.post('/api/forums', auth, async (req, res) => {
@@ -342,9 +386,7 @@ app.post('/api/forums', auth, async (req, res) => {
       [title, description || '', req.user.id]
     );
     res.json(r.rows[0]);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.get('/api/forums/:id', auth, async (req, res) => {
@@ -365,9 +407,7 @@ app.get('/api/forums/:id', auth, async (req, res) => {
     `, [req.params.id]);
 
     res.json({ forum: f.rows[0], topics: topics.rows });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.post('/api/forums/:id/topics', auth, async (req, res) => {
@@ -379,9 +419,7 @@ app.post('/api/forums/:id/topics', auth, async (req, res) => {
       [req.params.id, req.user.id, title]
     );
     res.json(r.rows[0]);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.get('/api/topics/:id', auth, async (req, res) => {
@@ -404,9 +442,7 @@ app.get('/api/topics/:id', auth, async (req, res) => {
     `, [req.params.id]);
 
     res.json({ topic: t.rows[0], posts: posts.rows });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.post('/api/topics/:id/posts', auth, async (req, res) => {
@@ -423,9 +459,294 @@ app.post('/api/topics/:id/posts', auth, async (req, res) => {
     `, [r.rows[0].id]);
     io.emit('new_forum_post', { topic_id: Number(req.params.id) });
     res.json(full.rows[0]);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// === ГРУППЫ ===
+app.get('/api/groups', auth, async (req, res) => {
+  try {
+    const r = await pool.query(`
+      SELECT g.*, u.username AS author,
+        (SELECT COUNT(*) FROM group_members WHERE group_id=g.id) AS members_count,
+        EXISTS(SELECT 1 FROM group_members WHERE group_id=g.id AND user_id=$1) AS is_member
+      FROM groups g
+      LEFT JOIN users u ON u.id=g.created_by
+      ORDER BY g.created_at DESC
+    `, [req.user.id]);
+    res.json(r.rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/groups', auth, async (req, res) => {
+  const { name, description, avatar } = req.body;
+  if (!name?.trim()) return res.status(400).json({ error: 'Введите название' });
+  try {
+    const r = await pool.query(
+      'INSERT INTO groups(name, description, avatar, created_by) VALUES($1,$2,$3,$4) RETURNING *',
+      [name, description || '', avatar || '', req.user.id]
+    );
+    await pool.query(
+      'INSERT INTO group_members(group_id, user_id, role) VALUES($1,$2,$3)',
+      [r.rows[0].id, req.user.id, 'admin']
+    );
+    res.json(r.rows[0]);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/groups/:id', auth, async (req, res) => {
+  try {
+    const g = await pool.query(`
+      SELECT g.*, u.username AS author,
+        (SELECT COUNT(*) FROM group_members WHERE group_id=g.id) AS members_count,
+        EXISTS(SELECT 1 FROM group_members WHERE group_id=g.id AND user_id=$1) AS is_member,
+        (SELECT role FROM group_members WHERE group_id=g.id AND user_id=$1) AS my_role
+      FROM groups g
+      LEFT JOIN users u ON u.id=g.created_by
+      WHERE g.id=$2
+    `, [req.user.id, req.params.id]);
+    if (!g.rows[0]) return res.status(404).json({ error: 'Группа не найдена' });
+    res.json(g.rows[0]);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/groups/:id/join', auth, async (req, res) => {
+  try {
+    const exists = await pool.query(
+      'SELECT 1 FROM group_members WHERE group_id=$1 AND user_id=$2',
+      [req.params.id, req.user.id]
+    );
+    if (exists.rows[0]) {
+      await pool.query('DELETE FROM group_members WHERE group_id=$1 AND user_id=$2',
+        [req.params.id, req.user.id]);
+      res.json({ joined: false });
+    } else {
+      await pool.query(
+        'INSERT INTO group_members(group_id, user_id, role) VALUES($1,$2,$3)',
+        [req.params.id, req.user.id, 'member']
+      );
+      res.json({ joined: true });
+    }
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/groups/:id/posts', auth, async (req, res) => {
+  try {
+    const r = await pool.query(`
+      SELECT gp.*, u.username, u.avatar,
+        (SELECT COUNT(*) FROM group_post_likes WHERE post_id=gp.id) AS likes,
+        EXISTS(SELECT 1 FROM group_post_likes WHERE post_id=gp.id AND user_id=$1) AS liked
+      FROM group_posts gp
+      JOIN users u ON u.id=gp.user_id
+      WHERE gp.group_id=$2
+      ORDER BY gp.created_at DESC LIMIT 50
+    `, [req.user.id, req.params.id]);
+    res.json(r.rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/groups/:id/posts', auth, async (req, res) => {
+  const { content, image, video, gif } = req.body;
+  if (!content?.trim() && !image && !video && !gif) {
+    return res.status(400).json({ error: 'Пустой пост' });
   }
+  try {
+    const member = await pool.query(
+      'SELECT 1 FROM group_members WHERE group_id=$1 AND user_id=$2',
+      [req.params.id, req.user.id]
+    );
+    if (!member.rows[0]) return res.status(403).json({ error: 'Вы не в группе' });
+
+    const r = await pool.query(
+      'INSERT INTO group_posts(group_id, user_id, content, image, video, gif) VALUES($1,$2,$3,$4,$5,$6) RETURNING *',
+      [req.params.id, req.user.id, content || '', image || '', video || '', gif || '']
+    );
+    io.emit('new_group_post', { group_id: Number(req.params.id) });
+    res.json(r.rows[0]);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/group-like/:id', auth, async (req, res) => {
+  const postId = req.params.id;
+  try {
+    const exists = await pool.query(
+      'SELECT 1 FROM group_post_likes WHERE post_id=$1 AND user_id=$2',
+      [postId, req.user.id]
+    );
+    if (exists.rows[0]) {
+      await pool.query('DELETE FROM group_post_likes WHERE post_id=$1 AND user_id=$2', [postId, req.user.id]);
+      res.json({ liked: false });
+    } else {
+      await pool.query('INSERT INTO group_post_likes(post_id, user_id) VALUES($1,$2)', [postId, req.user.id]);
+      res.json({ liked: true });
+    }
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/groups/:id/members', auth, async (req, res) => {
+  try {
+    const r = await pool.query(`
+      SELECT u.id, u.username, u.avatar, gm.role
+      FROM group_members gm
+      JOIN users u ON u.id=gm.user_id
+      WHERE gm.group_id=$1
+      ORDER BY gm.joined_at ASC
+    `, [req.params.id]);
+    res.json(r.rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// === НОВОСТИ ОТ СОЗДАТЕЛЯ ===
+app.get('/api/news', auth, async (req, res) => {
+  try {
+    const r = await pool.query('SELECT * FROM news ORDER BY created_at DESC LIMIT 50');
+    res.json(r.rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/news', auth, adminOnly, async (req, res) => {
+  const { title, content, image } = req.body;
+  if (!title?.trim() || !content?.trim()) {
+    return res.status(400).json({ error: 'Заполните заголовок и текст' });
+  }
+  try {
+    const r = await pool.query(
+      'INSERT INTO news(title, content, image) VALUES($1,$2,$3) RETURNING *',
+      [title, content, image || '']
+    );
+    io.emit('new_news');
+    res.json(r.rows[0]);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/news/:id', auth, adminOnly, async (req, res) => {
+  try {
+    await pool.query('DELETE FROM news WHERE id=$1', [req.params.id]);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// === АДМИН-ПАНЕЛЬ ===
+app.get('/api/admin/stats', auth, adminOnly, async (req, res) => {
+  try {
+    const [users, posts, groups, forums, topics, messages, news] = await Promise.all([
+      pool.query('SELECT COUNT(*) FROM users'),
+      pool.query('SELECT COUNT(*) FROM posts'),
+      pool.query('SELECT COUNT(*) FROM groups'),
+      pool.query('SELECT COUNT(*) FROM forums'),
+      pool.query('SELECT COUNT(*) FROM forum_topics'),
+      pool.query('SELECT COUNT(*) FROM messages'),
+      pool.query('SELECT COUNT(*) FROM news')
+    ]);
+    res.json({
+      users: Number(users.rows[0].count),
+      posts: Number(posts.rows[0].count),
+      groups: Number(groups.rows[0].count),
+      forums: Number(forums.rows[0].count),
+      topics: Number(topics.rows[0].count),
+      messages: Number(messages.rows[0].count),
+      news: Number(news.rows[0].count)
+    });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/admin/users', auth, adminOnly, async (req, res) => {
+  try {
+    const r = await pool.query(`
+      SELECT id, username, role, banned, created_at,
+        (SELECT COUNT(*) FROM posts WHERE user_id=users.id) AS posts_count
+      FROM users ORDER BY created_at DESC
+    `);
+    res.json(r.rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/admin/ban/:id', auth, adminOnly, async (req, res) => {
+  if (Number(req.params.id) === req.user.id) {
+    return res.status(400).json({ error: 'Себя банить нельзя' });
+  }
+  try {
+    const r = await pool.query('SELECT banned FROM users WHERE id=$1', [req.params.id]);
+    if (!r.rows[0]) return res.status(404).json({ error: 'Нет юзера' });
+    await pool.query('UPDATE users SET banned=$1 WHERE id=$2', [!r.rows[0].banned, req.params.id]);
+    res.json({ banned: !r.rows[0].banned });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/admin/users/:id', auth, adminOnly, async (req, res) => {
+  if (Number(req.params.id) === req.user.id) {
+    return res.status(400).json({ error: 'Себя удалять нельзя' });
+  }
+  try {
+    await pool.query('DELETE FROM users WHERE id=$1', [req.params.id]);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/admin/posts/:id', auth, adminOnly, async (req, res) => {
+  try {
+    await pool.query('DELETE FROM posts WHERE id=$1', [req.params.id]);
+    io.emit('new_post');
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/admin/groups/:id', auth, adminOnly, async (req, res) => {
+  try {
+    await pool.query('DELETE FROM groups WHERE id=$1', [req.params.id]);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/admin/forums/:id', auth, adminOnly, async (req, res) => {
+  try {
+    await pool.query('DELETE FROM forums WHERE id=$1', [req.params.id]);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// === ПОИСК ===
+app.get('/api/search', auth, async (req, res) => {
+  const q = (req.query.q || '').trim();
+  if (!q) return res.json({ users: [], posts: [], groups: [], forums: [] });
+  const pattern = '%' + q.toLowerCase() + '%';
+
+  try {
+    const users = await pool.query(`
+      SELECT id, username, avatar, status FROM users
+      WHERE LOWER(username) LIKE $1 AND id != $2 AND banned=FALSE LIMIT 20
+    `, [pattern, req.user.id]);
+
+    const posts = await pool.query(`
+      SELECT p.*, u.username, u.avatar,
+        (SELECT COUNT(*) FROM likes WHERE post_id=p.id) AS likes
+      FROM posts p JOIN users u ON u.id=p.user_id
+      WHERE LOWER(p.content) LIKE $1
+      ORDER BY p.created_at DESC LIMIT 20
+    `, [pattern]);
+
+    const groups = await pool.query(`
+      SELECT g.*,
+        (SELECT COUNT(*) FROM group_members WHERE group_id=g.id) AS members_count
+      FROM groups g
+      WHERE LOWER(g.name) LIKE $1 OR LOWER(g.description) LIKE $1
+      ORDER BY g.created_at DESC LIMIT 20
+    `, [pattern]);
+
+    const forums = await pool.query(`
+      SELECT f.*,
+        (SELECT COUNT(*) FROM forum_topics WHERE forum_id=f.id) AS topics_count
+      FROM forums f
+      WHERE LOWER(f.title) LIKE $1 OR LOWER(f.description) LIKE $1
+      ORDER BY f.created_at DESC LIMIT 20
+    `, [pattern]);
+
+    res.json({
+      users: users.rows,
+      posts: posts.rows,
+      groups: groups.rows,
+      forums: forums.rows
+    });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // === SOCKET.IO ===
@@ -457,14 +778,10 @@ const PORT = process.env.PORT || 3000;
 
 initDB()
   .then(() => {
-    server.listen(PORT, () => {
-      console.log(`🚀 Сервер запущен на порту ${PORT}`);
-    });
+    server.listen(PORT, () => console.log(`🚀 Сервер запущен на порту ${PORT}`));
   })
   .catch((err) => {
     console.error('❌ FATAL: Не удалось инициализировать БД');
     console.error(err);
-    server.listen(PORT, () => {
-      console.log(`⚠️  Сервер запущен БЕЗ БД на порту ${PORT}`);
-    });
+    server.listen(PORT, () => console.log(`⚠️  Сервер запущен БЕЗ БД на порту ${PORT}`));
   });
