@@ -1,4 +1,4 @@
-// server.js — соцсеть + мессенджер + форумы (финальная версия)
+// server.js — соцсеть + мессенджер + форумы (с хардкодом DATABASE_URL)
 const express = require('express');
 const http = require('http');
 const path = require('path');
@@ -14,21 +14,29 @@ const io = new Server(server, { cors: { origin: '*' } });
 app.use(express.json({ limit: '5mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-const JWT_SECRET = process.env.JWT_SECRET || 'retro-2010-secret';
+// ============================================================
+// ВСТАВЬТЕ СВОЮ СТРОКУ ИЗ NEON НИЖЕ, МЕЖДУ КАВЫЧКАМИ
+// ============================================================
+const HARDCODED_DB_URL = 'postgresql://neondb_owner:npg_yOQcIwub8V6N@ep-solitary-rain-a5orxtnv-pooler.us-east-2.aws.neon.tech/neondb';
+const HARDCODED_JWT_SECRET = 'retro2010secret123';
+// ============================================================
 
-// === БАЗА ===
-// Убираем ?sslmode=require из строки, чтобы не было двойного SSL-конфликта
-let dbUrl = process.env.DATABASE_URL || '';
-dbUrl = dbUrl.replace(/[?&]sslmode=[^&]*/g, '').replace(/\?$/, '');
+const JWT_SECRET = HARDCODED_JWT_SECRET || process.env.JWT_SECRET || 'retro-2010-secret';
+
+let dbUrl = process.env.DATABASE_URL || HARDCODED_DB_URL || '';
+dbUrl = dbUrl.replace(/[?&]sslmode=[^&]*/g, '').replace(/\?$/, '').trim();
 
 console.log('=== DB CONFIG ===');
-console.log('DATABASE_URL задан:', !!process.env.DATABASE_URL);
+console.log('Источник DATABASE_URL:', process.env.DATABASE_URL ? 'ENV' : 'HARDCODED');
 console.log('Длина строки:', dbUrl.length);
 console.log('Начало:', dbUrl.slice(0, 40) + '...');
 
 const pool = new Pool({
   connectionString: dbUrl,
-  ssl: dbUrl ? { rejectUnauthorized: false } : false
+  ssl: dbUrl ? { rejectUnauthorized: false } : false,
+  connectionTimeoutMillis: 10000,
+  idleTimeoutMillis: 30000,
+  max: 5
 });
 
 pool.on('error', (err) => {
@@ -121,10 +129,11 @@ function auth(req, res, next) {
 // === ДИАГНОСТИКА ===
 app.get('/api/debug', async (req, res) => {
   const info = {
-    hasDbUrl: !!process.env.DATABASE_URL,
+    hasEnvDbUrl: !!process.env.DATABASE_URL,
+    usingHardcoded: !process.env.DATABASE_URL && !!HARDCODED_DB_URL,
     dbUrlLength: dbUrl.length,
-    dbUrlStart: dbUrl.slice(0, 40) + '...',
-    hasJwt: !!process.env.JWT_SECRET,
+    dbUrlStart: dbUrl.slice(0, 50) + '...',
+    hasJwt: !!JWT_SECRET,
     dbConnection: null,
     tables: null,
     error: null
@@ -153,20 +162,6 @@ app.get('/api/debug', async (req, res) => {
 app.post('/api/register', async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) return res.status(400).json({ error: 'Заполните поля' });
-
-  try {
-    await pool.query('SELECT 1');
-  } catch (e) {
-    console.error('DB CONNECTION ERROR:', e.message);
-    return res.status(500).json({ error: 'Нет связи с БД: ' + e.message });
-  }
-
-  try {
-    await pool.query('SELECT id FROM users LIMIT 1');
-  } catch (e) {
-    console.error('TABLE ERROR:', e.message);
-    return res.status(500).json({ error: 'Таблица users не готова: ' + e.message });
-  }
 
   try {
     const existing = await pool.query('SELECT id FROM users WHERE username=$1', [username]);
@@ -460,7 +455,6 @@ io.on('connection', (socket) => {
 // === ЗАПУСК ===
 const PORT = process.env.PORT || 3000;
 
-// Сначала инициализируем БД, ПОТОМ стартуем сервер
 initDB()
   .then(() => {
     server.listen(PORT, () => {
@@ -470,7 +464,6 @@ initDB()
   .catch((err) => {
     console.error('❌ FATAL: Не удалось инициализировать БД');
     console.error(err);
-    // Всё равно стартуем, чтобы отдать /api/debug
     server.listen(PORT, () => {
       console.log(`⚠️  Сервер запущен БЕЗ БД на порту ${PORT}`);
     });
