@@ -29,7 +29,7 @@ app.use((req, res, next) => {
 });
 
 // ============================================================
-const HARDCODED_DB_URL = 'postgresql://neondb_owner:npg_XXXXXX@ep-xxx-xxx.neon.tech/neondb';
+const HARDCODED_DB_URL = 'postgresql://neondb_owner:npg_yOQcIwub8V6N@ep-solitary-rain-a5orxtnv-pooler.us-east-2.aws.neon.tech/neondb';
 const HARDCODED_JWT_SECRET = 'retro2010secret123';
 const OWNER_USERNAME = 'lol';
 // ============================================================
