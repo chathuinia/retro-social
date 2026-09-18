@@ -18,7 +18,7 @@
     margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
     flex-wrap: wrap; gap: 6px;
   }
-  .header .logo { font-weight: bold; font-size: 16px; text-shadow: 1px 1px 0 #2a4370; }
+  .header .logo { font-weight: bold; font-size: 16px; text-shadow: 1px 1px 0 #2a4370; cursor: pointer; }
   .nav { display: flex; gap: 4px; flex-wrap: wrap; }
   .nav button {
     background: rgba(255,255,255,0.15);
@@ -27,9 +27,24 @@
   }
   .nav button.active { background: rgba(255,255,255,0.35); font-weight: bold; }
 
-  .search-bar { display: flex; gap: 4px; flex: 1; min-width: 180px; max-width: 280px; }
+  .search-wrap { position: relative; flex: 1; min-width: 200px; max-width: 320px; }
+  .search-bar { display: flex; gap: 4px; }
   .search-bar input { padding: 4px 8px; font-size: 12px; border: 1px solid #2a4370; border-radius: 3px; }
   .search-bar button { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 4px 8px; }
+  .search-suggest {
+    position: absolute; top: 100%; left: 0; right: 0;
+    background: white; color: #2a2a2a;
+    border: 1px solid #a0a8b3; border-radius: 3px;
+    margin-top: 2px; max-height: 400px; overflow-y: auto;
+    z-index: 200; display: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  }
+  .search-suggest.open { display: block; }
+  .suggest-section { padding: 4px 8px; background: #f0f2f5; font-size: 10px; color: #666; font-weight: bold; }
+  .suggest-item { padding: 6px 8px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 12px; }
+  .suggest-item:hover { background: #eef1f6; }
+  .suggest-avatar { width: 24px; height: 24px; border-radius: 3px; background: #d8dce3; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; color: #4a76a8; overflow: hidden; flex-shrink: 0; }
+  .suggest-avatar img { width: 100%; height: 100%; object-fit: cover; }
 
   button, .btn {
     font-family: inherit; font-size: 12px;
@@ -70,13 +85,15 @@
   }
   .avatar img { width: 100%; height: 100%; object-fit: cover; }
   .avatar.sm { width: 30px; height: 30px; font-size: 13px; }
+  .avatar.lg { width: 80px; height: 80px; font-size: 32px; }
   .post-author { font-weight: bold; color: #3b5998; cursor: pointer; }
   .post-date { color: #888; font-size: 11px; }
-  .post-content { margin: 6px 0; line-height: 1.4; word-wrap: break-word; }
-  .post-content img.media { max-width: 100%; border: 1px solid #c5cad3; border-radius: 3px; margin-top: 6px; display: block; }
+  .post-content { margin: 6px 0; line-height: 1.4; word-wrap: break-word; white-space: pre-wrap; }
+  .post-content img.media { max-width: 100%; border: 1px solid #c5cad3; border-radius: 3px; margin-top: 6px; display: block; cursor: pointer; }
   .post-content .video-wrap { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; margin-top: 6px; border: 1px solid #c5cad3; border-radius: 3px; }
   .post-content .video-wrap iframe { position: absolute; top:0; left:0; width:100%; height:100%; border:0; }
   .post-content video { max-width: 100%; border-radius: 3px; margin-top: 6px; }
+  .post-content .sticker-big { font-size: 80px; line-height: 1; margin: 8px 0; }
   .post-actions { display: flex; gap: 10px; margin-top: 8px; font-size: 11px; align-items: center; }
   .post-actions button { font-size: 11px; padding: 2px 8px; }
   .liked { color: #c0392b; font-weight: bold; }
@@ -84,27 +101,41 @@
   .grid { display: grid; grid-template-columns: 200px 1fr; gap: 10px; }
   .friend { display: flex; align-items: center; gap: 6px; padding: 4px; border-radius: 3px; cursor: pointer; }
   .friend:hover { background: #eef1f6; }
+  .friend.unread { background: #fff8e0; }
 
-  .chat-box {
-    position: fixed; bottom: 0; right: 20px; width: 340px;
-    background: #fff; border: 1px solid #a0a8b3; border-bottom: none;
-    border-radius: 4px 4px 0 0; box-shadow: 0 -2px 8px rgba(0,0,0,0.15);
-    display: none; z-index: 100;
+  .stories-bar {
+    background: #fff; border: 1px solid #c5cad3; border-radius: 4px;
+    padding: 10px; margin-bottom: 10px;
+    display: flex; gap: 10px; overflow-x: auto;
   }
+  .story-circle { display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; flex-shrink: 0; min-width: 70px; }
+  .story-ring { width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); padding: 3px; display: flex; align-items: center; justify-content: center; }
+  .story-ring.viewed { background: #c5cad3; }
+  .story-ring-inner { width: 100%; height: 100%; border-radius: 50%; background: linear-gradient(#d8dce3, #b0b8c3); border: 2px solid #fff; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #4a76a8; font-size: 20px; overflow: hidden; }
+  .story-ring-inner img { width: 100%; height: 100%; object-fit: cover; }
+  .story-name { font-size: 10px; color: #666; max-width: 70px; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .story-viewer { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: none; align-items: center; justify-content: center; z-index: 2000; flex-direction: column; }
+  .story-viewer.open { display: flex; }
+  .story-progress { position: absolute; top: 10px; left: 10px; right: 10px; height: 3px; background: rgba(255,255,255,0.3); border-radius: 2px; display: flex; gap: 2px; }
+  .story-progress-bar { flex: 1; height: 100%; background: rgba(255,255,255,0.3); border-radius: 2px; overflow: hidden; }
+  .story-progress-fill { height: 100%; background: white; width: 0%; transition: width 0.1s linear; }
+  .story-content { background: #3b5998; width: 90%; max-width: 400px; height: 80vh; max-height: 700px; border-radius: 8px; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; color: white; padding: 30px; text-align: center; font-size: 20px; font-weight: bold; word-wrap: break-word; }
+  .story-content img, .story-content video { max-width: 100%; max-height: 100%; border-radius: 4px; }
+  .story-content .story-text { position: absolute; bottom: 60px; left: 20px; right: 20px; text-shadow: 1px 1px 3px rgba(0,0,0,0.7); font-size: 18px; }
+  .story-header { position: absolute; top: 25px; left: 20px; right: 20px; display: flex; align-items: center; gap: 8px; color: white; z-index: 10; }
+  .story-header .avatar { width: 32px; height: 32px; font-size: 14px; border-color: white; }
+  .story-close { position: absolute; top: 20px; right: 20px; color: white; font-size: 24px; cursor: pointer; z-index: 10; }
+  .story-nav { position: absolute; top: 0; bottom: 0; width: 30%; cursor: pointer; z-index: 5; }
+  .story-nav.left { left: 0; }
+  .story-nav.right { right: 0; }
+  .story-views { position: absolute; bottom: 15px; left: 20px; color: rgba(255,255,255,0.8); font-size: 11px; }
+
+  .chat-box { position: fixed; bottom: 0; right: 20px; width: 340px; background: #fff; border: 1px solid #a0a8b3; border-bottom: none; border-radius: 4px 4px 0 0; box-shadow: 0 -2px 8px rgba(0,0,0,0.15); display: none; z-index: 100; }
   .chat-box.open { display: block; }
-  .chat-head {
-    background: linear-gradient(#5b7bb5, #3b5998);
-    color: white; padding: 6px 10px; font-weight: bold; font-size: 12px;
-    border-radius: 4px 4px 0 0;
-    display: flex; justify-content: space-between; align-items: center;
-  }
+  .chat-head { background: linear-gradient(#5b7bb5, #3b5998); color: white; padding: 6px 10px; font-weight: bold; font-size: 12px; border-radius: 4px 4px 0 0; display: flex; justify-content: space-between; align-items: center; }
   .call-btns { display: flex; gap: 4px; align-items: center; }
-  .call-btn {
-    background: rgba(255,255,255,0.2);
-    border: 1px solid rgba(255,255,255,0.4);
-    color: white; padding: 2px 6px; font-size: 12px; cursor: pointer;
-    box-shadow: none; border-radius: 3px;
-  }
+  .call-btn { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); color: white; padding: 2px 6px; font-size: 12px; cursor: pointer; box-shadow: none; border-radius: 3px; }
   .call-btn:hover { background: rgba(255,255,255,0.4); }
   .chat-head .close { cursor: pointer; padding: 0 4px; margin-left: 6px; }
   .chat-msgs { height: 280px; overflow-y: auto; padding: 8px; background: #f5f7fa; font-size: 12px; }
@@ -115,33 +146,23 @@
   .chat-input input { border: none; border-radius: 0; flex: 1; }
   .chat-input button { border-radius: 0; border: none; border-left: 1px solid #c5cad3; }
 
-  .attach-btn {
-    background: transparent; border: none;
-    font-size: 18px; cursor: pointer; padding: 0 8px;
-    color: #666; box-shadow: none; border-radius: 0;
-  }
+  .attach-btn { background: transparent; border: none; font-size: 18px; cursor: pointer; padding: 0 8px; color: #666; box-shadow: none; border-radius: 0; }
   .attach-btn:hover { color: #3b5998; background: transparent; }
 
-  .attach-preview {
-    display: flex; flex-wrap: wrap; gap: 6px;
-    padding: 6px 8px; background: #f5f7fa;
-    border-top: 1px solid #e0e4ea;
-  }
-  .attach-item {
-    position: relative; padding: 4px 20px 4px 6px;
-    background: #fff; border: 1px solid #c5cad3;
-    border-radius: 3px; font-size: 10px; max-width: 180px;
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  }
+  .attach-preview { display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 8px; background: #f5f7fa; border-top: 1px solid #e0e4ea; }
+  .attach-item { position: relative; padding: 4px 20px 4px 6px; background: #fff; border: 1px solid #c5cad3; border-radius: 3px; font-size: 10px; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .attach-item .rm { position: absolute; top: 1px; right: 3px; cursor: pointer; color: #c0392b; font-weight: bold; }
 
   .msg-media { margin-top: 4px; }
   .msg-media img { max-width: 220px; border-radius: 3px; display: block; margin-top: 3px; cursor: pointer; }
   .msg-media video { max-width: 240px; border-radius: 3px; display: block; margin-top: 3px; }
   .msg-media audio { width: 240px; margin-top: 3px; }
-  .msg-media .video-wrap { position: relative; padding-bottom: 56.25%; height: 0; width: 240px; overflow: hidden; margin-top: 3px; border-radius: 3px; border: 1px solid #c5cad3; }
-  .msg-media .video-wrap iframe { position: absolute; top:0; left:0; width:100%; height:100%; border:0; }
-  .msg-media .file-link { color: #3b5998; text-decoration: none; display: inline-block; margin-top: 3px; }
+  .msg-media .sticker { font-size: 60px; line-height: 1; }
+
+  .sticker-panel { display: none; padding: 8px; background: #f5f7fa; border-top: 1px solid #e0e4ea; flex-wrap: wrap; gap: 4px; max-height: 200px; overflow-y: auto; }
+  .sticker-panel.open { display: flex; }
+  .sticker-btn { font-size: 24px; padding: 4px 6px; cursor: pointer; background: white; border: 1px solid #e0e4ea; border-radius: 4px; line-height: 1; transition: transform 0.1s; }
+  .sticker-btn:hover { transform: scale(1.2); background: #eef1f6; }
 
   .auth-screen { max-width: 320px; margin: 80px auto; }
   .tabs { display: flex; margin-bottom: 10px; }
@@ -152,11 +173,7 @@
 
   .online-dot { display: inline-block; width: 8px; height: 8px; background: #4caf50; border-radius: 50%; margin-right: 4px; box-shadow: 0 0 4px #4caf50; }
 
-  .forum-item, .group-item {
-    padding: 10px; border: 1px solid #d8dce3;
-    border-radius: 3px; margin-bottom: 8px;
-    background: #f8f9fb; cursor: pointer;
-  }
+  .forum-item, .group-item { padding: 10px; border: 1px solid #d8dce3; border-radius: 3px; margin-bottom: 8px; background: #f8f9fb; cursor: pointer; }
   .forum-item:hover, .group-item:hover { background: #eef1f6; border-color: #4a76a8; }
   .forum-title { font-weight: bold; color: #3b5998; font-size: 13px; }
   .forum-desc { color: #555; margin: 4px 0; font-size: 11px; }
@@ -197,79 +214,67 @@
   .search-item { padding: 6px; border-radius: 3px; cursor: pointer; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #f0f2f5; }
   .search-item:hover { background: #eef1f6; }
 
-  /* Партии */
-  .party-card {
-    padding: 14px; border: 1px solid #c5cad3; border-radius: 4px;
-    margin-bottom: 10px; background: #f8f9fb;
-    display: flex; gap: 12px; align-items: center;
-  }
-  .party-logo {
-    width: 60px; height: 60px; border-radius: 4px;
-    background: linear-gradient(#5b7bb5, #3b5998);
-    display: flex; align-items: center; justify-content: center;
-    color: white; font-weight: bold; font-size: 24px;
-    overflow: hidden; flex-shrink: 0;
-  }
+  .party-card { padding: 14px; border: 1px solid #c5cad3; border-radius: 4px; margin-bottom: 10px; background: #f8f9fb; display: flex; gap: 12px; align-items: center; }
+  .party-logo { width: 60px; height: 60px; border-radius: 4px; background: linear-gradient(#5b7bb5, #3b5998); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 24px; overflow: hidden; flex-shrink: 0; }
   .party-logo img { width: 100%; height: 100%; object-fit: cover; }
   .party-info { flex: 1; }
   .party-name { font-weight: bold; font-size: 14px; color: #3b5998; margin-bottom: 4px; }
   .party-desc { color: #555; font-size: 11px; margin-bottom: 6px; }
   .party-votes { font-size: 11px; color: #666; }
   .party-votes b { color: #c0392b; font-size: 14px; }
-  .party-voted {
-    background: #4caf50; color: white; padding: 3px 10px;
-    border-radius: 3px; font-size: 11px; font-weight: bold;
-  }
-  .vote-progress {
-    height: 8px; background: #e0e4ea; border-radius: 4px;
-    overflow: hidden; margin-top: 6px;
-  }
-  .vote-progress-fill {
-    height: 100%; background: linear-gradient(#6d8fc7, #4a76a8);
-    transition: width 0.4s;
-  }
+  .party-voted { background: #4caf50; color: white; padding: 3px 10px; border-radius: 3px; font-size: 11px; font-weight: bold; }
+  .vote-progress { height: 8px; background: #e0e4ea; border-radius: 4px; overflow: hidden; margin-top: 6px; }
+  .vote-progress-fill { height: 100%; background: linear-gradient(#6d8fc7, #4a76a8); transition: width 0.4s; }
 
-  /* Звонки */
-  .call-modal {
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,0.88);
-    display: none; align-items: center; justify-content: center;
-    z-index: 1000; flex-direction: column; color: white; gap: 15px;
-  }
+  .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+  .gallery-item { aspect-ratio: 1; border-radius: 4px; overflow: hidden; background: #f0f2f5; cursor: pointer; position: relative; border: 1px solid #e0e4ea; }
+  .gallery-item img, .gallery-item video { width: 100%; height: 100%; object-fit: cover; }
+  .gallery-item .delete-btn { position: absolute; top: 4px; right: 4px; background: rgba(192,57,43,0.9); color: white; border: none; border-radius: 50%; width: 22px; height: 22px; font-size: 12px; cursor: pointer; padding: 0; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s; }
+  .gallery-item:hover .delete-btn { opacity: 1; }
+
+  .profile-header { display: flex; gap: 15px; align-items: center; padding: 15px; background: linear-gradient(#f8f9fb, #eef1f6); border-radius: 4px; margin-bottom: 10px; border: 1px solid #c5cad3; }
+  .profile-info { flex: 1; }
+  .profile-username { font-size: 18px; font-weight: bold; color: #3b5998; margin-bottom: 4px; }
+  .profile-status { color: #555; font-size: 12px; margin-bottom: 6px; }
+  .profile-bio { color: #666; font-size: 11px; white-space: pre-wrap; }
+
+  .call-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.88); display: none; align-items: center; justify-content: center; z-index: 1000; flex-direction: column; color: white; gap: 15px; }
   .call-modal.open { display: flex; }
-  .call-modal video {
-    max-width: 90vw; max-height: 70vh;
-    border-radius: 6px; background: #000;
-  }
-  .call-modal .local-video {
-    position: absolute; bottom: 100px; right: 30px;
-    width: 160px; max-height: 120px;
-    border: 2px solid #fff; border-radius: 6px;
-  }
+  .call-modal video { max-width: 90vw; max-height: 70vh; border-radius: 6px; background: #000; }
+  .call-modal .local-video { position: absolute; bottom: 100px; right: 30px; width: 160px; max-height: 120px; border: 2px solid #fff; border-radius: 6px; }
   .call-modal .call-info { font-size: 16px; text-align: center; padding: 0 20px; }
   .call-modal .call-actions { display: flex; gap: 15px; }
-  .call-modal .call-actions button {
-    padding: 10px 20px; font-size: 14px;
-    border-radius: 50px; cursor: pointer;
-  }
+  .call-modal .call-actions button { padding: 10px 20px; font-size: 14px; border-radius: 50px; cursor: pointer; }
   .call-accept { background: #4caf50; color: white; border: none; }
   .call-reject { background: #c0392b; color: white; border: none; }
 
-  /* Просмотр медиа */
-  .media-viewer {
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,0.9);
-    display: none; align-items: center; justify-content: center;
-    z-index: 1100; cursor: zoom-out;
-  }
+  .toast-container { position: fixed; top: 15px; right: 15px; z-index: 3000; display: flex; flex-direction: column; gap: 8px; max-width: 340px; }
+  .toast { background: linear-gradient(#5b7bb5, #3b5998); color: white; border: 1px solid #2a4370; border-radius: 4px; padding: 10px 12px; box-shadow: 0 3px 12px rgba(0,0,0,0.35); cursor: pointer; font-size: 12px; animation: toastIn 0.3s ease-out; display: flex; gap: 8px; align-items: flex-start; }
+  .toast:hover { background: linear-gradient(#6b8bc5, #4b69a8); }
+  .toast.call-toast { background: linear-gradient(#4caf50, #388e3c); border-color: #2e7d32; }
+  .toast .toast-avatar { width: 32px; height: 32px; background: rgba(255,255,255,0.25); border-radius: 3px; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; }
+  .toast .toast-body { flex: 1; }
+  .toast .toast-title { font-weight: bold; margin-bottom: 2px; }
+  .toast .toast-text { font-size: 11px; opacity: 0.9; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .toast .toast-close { cursor: pointer; opacity: 0.7; padding: 0 4px; font-size: 14px; }
+  .toast .toast-close:hover { opacity: 1; }
+  @keyframes toastIn { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+  @keyframes toastOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(120%); opacity: 0; } }
+  .toast.closing { animation: toastOut 0.3s ease-in forwards; }
+
+  .unread-badge { background: #c0392b; color: white; font-size: 10px; font-weight: bold; padding: 1px 6px; border-radius: 8px; margin-left: 6px; display: inline-block; vertical-align: middle; }
+
+  .media-viewer { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: none; align-items: center; justify-content: center; z-index: 1100; cursor: zoom-out; }
   .media-viewer.open { display: flex; }
-  .media-viewer img { max-width: 95vw; max-height: 95vh; border-radius: 4px; }
+  .media-viewer img, .media-viewer video { max-width: 95vw; max-height: 95vh; border-radius: 4px; }
 
   @media (max-width: 700px) {
     .grid { grid-template-columns: 1fr; }
     .chat-box { width: calc(100% - 20px); right: 10px; }
     .nav button { font-size: 10px; padding: 3px 6px; }
-    .search-bar { max-width: none; }
+    .search-wrap { max-width: none; width: 100%; }
+    .profile-header { flex-direction: column; text-align: center; }
+    .story-content { width: 95%; height: 75vh; }
   }
 </style>
 </head>
@@ -300,7 +305,7 @@
 <!-- ОСНОВНОЕ -->
 <div id="main" style="display:none;">
   <div class="header">
-    <div class="logo">РетроСеть</div>
+    <div class="logo" onclick="showPage('feed')">РетроСеть</div>
     <div class="nav">
       <button id="navFeed" class="active" onclick="showPage('feed')">Стена</button>
       <button id="navNews" onclick="showPage('news')">Новости</button>
@@ -309,48 +314,100 @@
       <button id="navVote" onclick="showPage('vote')">Голосование</button>
       <button id="navAdmin" style="display:none;" onclick="showPage('admin')">Админка</button>
     </div>
-    <div class="search-bar">
-      <input id="searchInput" placeholder="Поиск..." onkeydown="if(event.key==='Enter')doSearch()">
-      <button onclick="doSearch()">🔍</button>
+    <div class="search-wrap">
+      <div class="search-bar">
+        <input id="searchInput" placeholder="Поиск..." autocomplete="off" oninput="onSearchInput()" onkeydown="if(event.key==='Enter')doSearch()">
+        <button onclick="doSearch()">🔍</button>
+      </div>
+      <div id="searchSuggest" class="search-suggest"></div>
     </div>
     <div>
-      <span id="meName" style="margin-right:8px;"></span>
+      <span id="meName" style="margin-right:8px; cursor:pointer;" onclick="openMyProfile()"></span>
       <button onclick="logout()">Выйти</button>
     </div>
   </div>
 
   <!-- СТЕНА -->
-  <div id="pageFeed" class="grid">
-    <div class="sidebar">
-      <div class="card">
-        <h3>Мой профиль</h3>
-        <div style="text-align:center; margin-bottom:8px;">
-          <div class="avatar" style="width:60px; height:60px; margin:0 auto; font-size:24px;" id="myAvatar"></div>
+  <div id="pageFeed">
+    <div class="stories-bar" id="storiesBar"></div>
+    <div class="grid">
+      <div class="sidebar">
+        <div class="card">
+          <h3>Мой профиль</h3>
+          <div style="text-align:center; margin-bottom:8px;">
+            <div class="avatar" style="width:60px; height:60px; margin:0 auto; font-size:24px; cursor:pointer;" id="myAvatar" onclick="openMyProfile()"></div>
+          </div>
+          <div style="font-weight:bold; text-align:center; margin-bottom:6px; cursor:pointer;" id="myName" onclick="openMyProfile()"></div>
+          <textarea id="myStatus" placeholder="Статус..." style="min-height:40px; font-size:11px;"></textarea>
+          <button style="width:100%; margin-top:4px;" onclick="saveStatus()">Сохранить</button>
+          <button style="width:100%; margin-top:4px;" onclick="openAddStory()">+ Добавить историю</button>
         </div>
-        <div style="font-weight:bold; text-align:center; margin-bottom:6px;" id="myName"></div>
-        <textarea id="myStatus" placeholder="Статус..." style="min-height:40px; font-size:11px;"></textarea>
-        <button style="width:100%; margin-top:4px;" onclick="saveStatus()">Сохранить</button>
+        <div class="card">
+          <h3>Люди</h3>
+          <div id="friendsList" style="max-height:400px; overflow-y:auto;"></div>
+        </div>
       </div>
-      <div class="card">
-        <h3>Люди</h3>
-        <div id="friendsList" style="max-height:400px; overflow-y:auto;"></div>
+      <div class="main-col">
+        <div class="card">
+          <h3>Что нового?</h3>
+          <textarea id="postContent" placeholder="Поделись чем-нибудь..."></textarea>
+          <div class="row" style="margin-top:6px;">
+            <input id="postImage" placeholder="URL картинки">
+          </div>
+          <div class="row">
+            <input id="postVideo" placeholder="URL видео (YouTube, VK, mp4)">
+            <input id="postGif" placeholder="URL GIF">
+          </div>
+          <div style="display:flex; gap:6px; align-items:center;">
+            <button onclick="togglePostStickerPanel()" style="font-size:18px; padding:2px 8px;">😀 Стикер</button>
+            <span id="postStickerPreview" style="font-size:32px; line-height:1;"></span>
+            <button class="btn-primary" onclick="createPost()" style="margin-left:auto;">Опубликовать</button>
+          </div>
+          <div id="postStickerPanel" class="sticker-panel"></div>
+        </div>
+        <div class="card">
+          <h3>Стена</h3>
+          <div id="posts"></div>
+        </div>
       </div>
     </div>
-    <div class="main-col">
-      <div class="card">
-        <h3>Что нового?</h3>
-        <textarea id="postContent" placeholder="Поделись чем-нибудь..."></textarea>
-        <div class="row" style="margin-top:6px;"><input id="postImage" placeholder="URL картинки"></div>
-        <div class="row">
-          <input id="postVideo" placeholder="URL видео (YouTube, VK, mp4)">
-          <input id="postGif" placeholder="URL GIF">
+  </div>
+
+  <!-- ПРОФИЛЬ -->
+  <div id="pageProfile" style="display:none;">
+    <div class="card">
+      <div class="profile-header">
+        <div class="avatar lg" id="profAvatar"></div>
+        <div class="profile-info">
+          <div class="profile-username" id="profUsername"></div>
+          <div class="profile-status" id="profStatus"></div>
+          <div class="profile-bio" id="profBio"></div>
         </div>
-        <button class="btn-primary" onclick="createPost()">Опубликовать</button>
+        <button id="profMessageBtn" class="btn-primary" onclick="messageCurrentProfile()">Написать</button>
       </div>
-      <div class="card">
-        <h3>Стена</h3>
-        <div id="posts"></div>
+      <div style="display:flex; gap:6px; margin-top:10px;">
+        <button onclick="showProfileTab('posts')" id="profTabPosts" class="btn-primary">Посты</button>
+        <button onclick="showProfileTab('gallery')" id="profTabGallery">Галерея</button>
       </div>
+    </div>
+    <div id="profilePostsView" class="card">
+      <h3>Посты</h3>
+      <div id="profilePosts"></div>
+    </div>
+    <div id="profileGalleryView" class="card" style="display:none;">
+      <h3>Галерея</h3>
+      <div id="galleryUploadBox" style="margin-bottom:10px; display:none;">
+        <input id="galleryUrl" placeholder="URL картинки или видео" style="margin-bottom:4px;">
+        <div style="display:flex; gap:6px;">
+          <select id="galleryType" style="flex:1;">
+            <option value="image">Картинка</option>
+            <option value="video">Видео</option>
+            <option value="gif">GIF</option>
+          </select>
+          <button class="btn-primary" onclick="addToGallery()">Добавить</button>
+        </div>
+      </div>
+      <div class="gallery-grid" id="galleryGrid"></div>
     </div>
   </div>
 
@@ -380,9 +437,7 @@
     </div>
     <div class="card">
       <h3>Голосование за партии</h3>
-      <div style="color:#666; font-size:11px; margin-bottom:10px;">
-        Партии фейковые, но голосование настоящее. Один пользователь — один голос.
-      </div>
+      <div style="color:#666; font-size:11px; margin-bottom:10px;">Партии фейковые, голосование настоящее. Один пользователь — один голос.</div>
       <div id="partiesBox"></div>
     </div>
   </div>
@@ -421,7 +476,12 @@
         <textarea id="gPostContent" placeholder="Что нового?"></textarea>
         <div class="row" style="margin-top:6px;"><input id="gPostImage" placeholder="URL картинки"></div>
         <div class="row"><input id="gPostVideo" placeholder="URL видео"><input id="gPostGif" placeholder="URL GIF"></div>
-        <button class="btn-primary" onclick="createGroupPost()">Опубликовать</button>
+        <div style="display:flex; gap:6px; align-items:center;">
+          <button onclick="toggleGroupStickerPanel()" style="font-size:18px; padding:2px 8px;">😀 Стикер</button>
+          <span id="groupStickerPreview" style="font-size:32px;"></span>
+          <button class="btn-primary" onclick="createGroupPost()" style="margin-left:auto;">Опубликовать</button>
+        </div>
+        <div id="groupStickerPanel" class="sticker-panel"></div>
       </div>
       <div class="card">
         <h3>Посты группы</h3>
@@ -491,6 +551,12 @@
       <h3>Управление контентом</h3>
       <div id="adminContent"></div>
     </div>
+    <div class="card">
+      <h3>Журнал действий (аудит)</h3>
+      <div style="max-height:400px; overflow-y:auto;">
+        <table class="admin-table" id="adminAuditTable"></table>
+      </div>
+    </div>
   </div>
 
   <!-- ПОИСК -->
@@ -514,14 +580,16 @@
   </div>
   <div class="chat-msgs" id="chatMsgs"></div>
   <div class="attach-preview" id="attachPreview" style="display:none;"></div>
+  <div class="sticker-panel" id="chatStickerPanel"></div>
   <div class="chat-input">
-    <button class="attach-btn" onclick="openAttach()" title="Прикрепить файл">📎</button>
+    <button class="attach-btn" onclick="openAttach()" title="Прикрепить">📎</button>
+    <button class="attach-btn" onclick="toggleChatStickerPanel()" title="Стикеры">😀</button>
     <input id="chatInput" placeholder="Сообщение..." onkeydown="if(event.key==='Enter')sendMsg()">
     <button onclick="sendMsg()">➤</button>
   </div>
 </div>
 
-<!-- МОДАЛКА ЗВОНКА -->
+<!-- ЗВОНОК -->
 <div id="callModal" class="call-modal">
   <div class="call-info" id="callInfo">Звонок...</div>
   <video id="remoteVideo" autoplay playsinline></video>
@@ -529,16 +597,48 @@
   <div class="call-actions" id="callActions"></div>
 </div>
 
-<!-- ПРОСМОТР КАРТИНОК -->
+<!-- ИСТОРИЯ - ПРОСМОТР -->
+<div id="storyViewer" class="story-viewer">
+  <div class="story-progress" id="storyProgress"></div>
+  <span class="story-close" onclick="closeStoryViewer()">✕</span>
+  <div class="story-nav left" onclick="prevStory()"></div>
+  <div class="story-nav right" onclick="nextStory()"></div>
+  <div class="story-content" id="storyContent"></div>
+  <div class="story-header" id="storyHeader"></div>
+  <div class="story-views" id="storyViews"></div>
+</div>
+
+<!-- ИСТОРИЯ - СОЗДАНИЕ -->
+<div id="addStoryModal" class="story-viewer">
+  <span class="story-close" onclick="closeAddStory()">✕</span>
+  <div style="background:white; padding:20px; border-radius:8px; max-width:400px; width:90%; color:#2a2a2a;">
+    <h3 style="color:#3b5998; margin-bottom:10px;">Добавить историю</h3>
+    <textarea id="storyText" placeholder="Текст истории..." style="min-height:80px; margin-bottom:6px;"></textarea>
+    <input id="storyImage" placeholder="URL картинки (необязательно)" style="margin-bottom:6px;">
+    <input id="storyVideo" placeholder="URL видео (необязательно)" style="margin-bottom:6px;">
+    <div style="margin-bottom:8px;">
+      <label style="font-size:11px; color:#666;">Фон (если без картинки):</label>
+      <div style="display:flex; gap:6px; margin-top:4px;" id="bgColors"></div>
+    </div>
+    <button class="btn-primary" style="width:100%; padding:8px;" onclick="publishStory()">Опубликовать</button>
+  </div>
+</div>
+
+<!-- ПРОСМОТР МЕДИА -->
 <div id="mediaViewer" class="media-viewer" onclick="closeMediaViewer()">
   <img id="mediaViewerImg" src="">
 </div>
+
+<!-- УВЕДОМЛЕНИЯ -->
+<div class="toast-container" id="toastContainer"></div>
 
 <!-- СКРЫТЫЕ INPUT -->
 <input type="file" id="fileInput" accept="image/*,video/*,audio/*,.gif" style="display:none;">
 
 <script>
-// === СОСТОЯНИЕ ===
+// ============================================================
+// СОСТОЯНИЕ
+// ============================================================
 let token = localStorage.getItem('token');
 let me = null;
 let socket = null;
@@ -548,8 +648,24 @@ let currentPage = 'feed';
 let currentForumId = null;
 let currentTopicId = null;
 let currentGroupId = null;
+let currentProfileId = null;
+let unreadCounts = {};
+let titleFlashInterval = null;
+let pendingAttach = [];
+let audioCtx = null;
 
-// === API ===
+const STICKERS = [
+  '😀','😂','🥰','😎','🤔','😴','🥳','😭','😡','🤯',
+  '👍','👎','👋','🙏','💪','🤝','✌️','🤘','👌','🫡',
+  '❤️','💔','💯','🔥','⭐','✨','🎉','🎁','🏆','🎯',
+  '🐱','🐶','🦊','🐼','🐧','🦄','🐉','🦋','🐸','🐵',
+  '🍕','🍔','🍩','🍭','☕','🍺','🍎','🍉','🌮','🍿',
+  '🌈','☀️','🌙','⚡','❄️','💧','🌊','🌋','🌸','🍀'
+];
+
+// ============================================================
+// API
+// ============================================================
 async function api(url, method = 'GET', body = null) {
   const opts = { method, headers: { 'Content-Type': 'application/json' } };
   if (token) opts.headers['Authorization'] = 'Bearer ' + token;
@@ -560,7 +676,25 @@ async function api(url, method = 'GET', body = null) {
   return data;
 }
 
-// === АВТОРИЗАЦИЯ ===
+// ============================================================
+// ESC — усиленный (с бэктиками, слэшами, знаками равенства)
+// ============================================================
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"'`=\/]/g, c => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+    '`': '&#96;',
+    '=': '&#61;',
+    '/': '&#47;'
+  }[c]));
+}
+
+// ============================================================
+// АВТОРИЗАЦИЯ
+// ============================================================
 function switchTab(t) {
   document.getElementById('tabLogin').classList.toggle('active', t === 'login');
   document.getElementById('tabReg').classList.toggle('active', t === 'reg');
@@ -597,7 +731,9 @@ function logout() {
   location.reload();
 }
 
-// === СТАРТ ===
+// ============================================================
+// СТАРТ
+// ============================================================
 async function startApp() {
   try {
     me = await api('/me');
@@ -610,7 +746,7 @@ async function startApp() {
   document.getElementById('auth').style.display = 'none';
   document.getElementById('main').style.display = 'block';
 
-  document.getElementById('meName').textContent = me.username + (me.role === 'admin' ? ' (админ)' : '');
+  document.getElementById('meName').textContent = me.username + (me.role === 'admin' ? ' 👑' : '');
   document.getElementById('myName').textContent = me.username;
   document.getElementById('myAvatar').textContent = me.username[0].toUpperCase();
   document.getElementById('myStatus').value = me.status || '';
@@ -622,11 +758,15 @@ async function startApp() {
   }
 
   initSocket();
+  initStickerPanels();
+  initBgColors();
   loadPosts();
   loadFriends();
   loadNews();
   loadGroups();
   loadForums();
+  loadStories();
+  requestNotificationPermission();
 }
 
 function showAuth() {
@@ -634,10 +774,12 @@ function showAuth() {
   document.getElementById('main').style.display = 'none';
 }
 
-// === НАВИГАЦИЯ ===
+// ============================================================
+// НАВИГАЦИЯ
+// ============================================================
 function showPage(page) {
   currentPage = page;
-  const pages = ['feed','news','groups','forums','vote','admin','search'];
+  const pages = ['feed','profile','news','groups','forums','vote','admin','search'];
   pages.forEach(p => {
     const nav = document.getElementById('nav' + p.charAt(0).toUpperCase() + p.slice(1));
     if (nav) nav.classList.toggle('active', p === page);
@@ -645,39 +787,42 @@ function showPage(page) {
     if (el) el.style.display = 'none';
   });
 
-  const map = {
-    feed: 'pageFeed', news: 'pageNews', groups: 'pageGroups',
-    forums: 'pageForums', vote: 'pageVote', admin: 'pageAdmin', search: 'pageSearch'
-  };
+  const map = { feed: 'pageFeed', profile: 'pageProfile', news: 'pageNews', groups: 'pageGroups', forums: 'pageForums', vote: 'pageVote', admin: 'pageAdmin', search: 'pageSearch' };
   const el = document.getElementById(map[page]);
-  if (el) el.style.display = (page === 'feed' ? 'grid' : 'block');
+  if (el) el.style.display = 'block';
 
   if (page === 'news') loadNews();
   if (page === 'vote') loadParties();
   if (page === 'groups') { document.getElementById('groupsList').style.display = 'block'; document.getElementById('groupView').style.display = 'none'; loadGroups(); }
   if (page === 'forums') { document.getElementById('forumsList').style.display = 'block'; document.getElementById('forumView').style.display = 'none'; document.getElementById('topicView').style.display = 'none'; loadForums(); }
   if (page === 'admin') loadAdmin();
+  if (page === 'feed') loadStories();
 }
 
-// === SOCKET ===
+// ============================================================
+// SOCKET
+// ============================================================
 function initSocket() {
   socket = io({ auth: { token } });
   socket.on('online', ids => { onlineIds = ids; renderFriends(); });
   socket.on('new_post', () => { if (currentPage === 'feed') loadPosts(); });
   socket.on('new_news', () => { if (currentPage === 'news') loadNews(); });
   socket.on('new_vote', () => { if (currentPage === 'vote') loadParties(); });
-  socket.on('new_message', msg => { if (currentChat && msg.from_id === currentChat.id) addChatMsg(msg, false); });
+  socket.on('new_story', () => { loadStories(); });
+  socket.on('new_message', handleIncomingMessage);
   socket.on('new_forum_post', data => { if (currentPage === 'forums' && currentTopicId == data.topic_id) loadTopic(currentTopicId); });
   socket.on('new_group_post', data => { if (currentPage === 'groups' && currentGroupId == data.group_id) loadGroupPosts(); });
-
   initCallSocket();
 }
 
-// === МЕДИА В ПОСТАХ ===
+// ============================================================
+// МЕДИА
+// ============================================================
 function renderMedia(p) {
   let html = '';
-  if (p.image) html += `<img class="media" src="${esc(p.image)}" onerror="this.style.display='none'">`;
-  if (p.gif) html += `<img class="media" src="${esc(p.gif)}" onerror="this.style.display='none'">`;
+  if (p.sticker) html += `<div class="sticker-big">${esc(p.sticker)}</div>`;
+  if (p.image) html += `<img class="media" src="${esc(p.image)}" data-media="${esc(p.image)}" onerror="this.style.display='none'">`;
+  if (p.gif) html += `<img class="media" src="${esc(p.gif)}" data-media="${esc(p.gif)}" onerror="this.style.display='none'">`;
   if (p.video) html += renderVideo(p.video);
   return html;
 }
@@ -688,31 +833,46 @@ function renderVideo(url) {
   if (yt) return `<div class="video-wrap"><iframe src="https://www.youtube.com/embed/${yt[1]}" allowfullscreen></iframe></div>`;
   const vk = url.match(/vk\.com\/video(-?\d+)_(\d+)/);
   if (vk) return `<div class="video-wrap"><iframe src="https://vk.com/video_ext.php?oid=${vk[1]}&id=${vk[2]}&hd=2" allowfullscreen></iframe></div>`;
-  if (/\.(mp4|webm|ogg)(\?.*)?$/i.test(url)) return `<video controls src="${esc(url)}"></video>`;
-  return `<div style="margin-top:6px;"><a href="${esc(url)}" target="_blank" style="color:#3b5998;">Видео: ${esc(url)}</a></div>`;
+  if (/\.(mp4|webm|ogg)(\?.*)?$/i.test(url) || /^data:video/.test(url)) return `<video controls src="${esc(url)}"></video>`;
+  return `<div style="margin-top:6px;"><a href="${esc(url)}" target="_blank" style="color:#3b5998;">Видео</a></div>`;
 }
 
-// === ПОСТЫ ===
+// ============================================================
+// ПОСТЫ
+// ============================================================
 async function loadPosts() {
   const posts = await api('/posts');
   const el = document.getElementById('posts');
   if (!posts.length) { el.innerHTML = '<div style="color:#888; text-align:center; padding:20px;">Пока пусто</div>'; return; }
   el.innerHTML = posts.map(p => `
-    <div class="post">
+    <div class="post" data-post-id="${p.id}">
       <div class="post-head">
-        <div class="avatar">${p.avatar ? `<img src="${esc(p.avatar)}">` : p.username[0].toUpperCase()}</div>
+        <div class="avatar" data-profile-uid="${p.user_id}">${p.avatar ? `<img src="${esc(p.avatar)}">` : esc(p.username[0].toUpperCase())}</div>
         <div>
-          <div class="post-author">${esc(p.username)}</div>
+          <div class="post-author" data-profile-uid="${p.user_id}">${esc(p.username)}</div>
           <div class="post-date">${fmtDate(p.created_at)}</div>
         </div>
       </div>
       <div class="post-content">${esc(p.content)}${renderMedia(p)}</div>
       <div class="post-actions">
-        <button onclick="toggleLike(${p.id})" class="${p.liked ? 'liked' : ''}">${p.liked ? '♥' : '♡'} ${p.likes}</button>
-        ${me.role === 'admin' || p.user_id === me.id ? `<button class="btn-danger btn-small" onclick="deletePost(${p.id})">Удалить</button>` : ''}
+        <button data-like-post="${p.id}" class="${p.liked ? 'liked' : ''}">${p.liked ? '♥' : '♡'} ${p.likes}</button>
+        ${me.role === 'admin' || p.user_id === me.id ? `<button class="btn-danger btn-small" data-delete-post="${p.id}">Удалить</button>` : ''}
       </div>
     </div>
   `).join('');
+
+  el.querySelectorAll('[data-profile-uid]').forEach(n => {
+    n.addEventListener('click', () => openProfile(Number(n.dataset.profileUid)));
+  });
+  el.querySelectorAll('[data-like-post]').forEach(n => {
+    n.addEventListener('click', () => toggleLike(Number(n.dataset.likePost)));
+  });
+  el.querySelectorAll('[data-delete-post]').forEach(n => {
+    n.addEventListener('click', () => deletePost(Number(n.dataset.deletePost)));
+  });
+  el.querySelectorAll('[data-media]').forEach(n => {
+    n.addEventListener('click', () => openMediaViewer(n.dataset.media));
+  });
 }
 
 async function createPost() {
@@ -720,16 +880,20 @@ async function createPost() {
   const image = document.getElementById('postImage').value.trim();
   const video = document.getElementById('postVideo').value.trim();
   const gif = document.getElementById('postGif').value.trim();
-  if (!content && !image && !video && !gif) return;
-  await api('/posts', 'POST', { content, image, video, gif });
+  const sticker = document.getElementById('postStickerPreview').textContent;
+  if (!content && !image && !video && !gif && !sticker) return;
+  await api('/posts', 'POST', { content, image, video, gif, sticker });
   ['postContent','postImage','postVideo','postGif'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('postStickerPreview').textContent = '';
   loadPosts();
 }
 
 async function toggleLike(id) { await api('/like/' + id, 'POST'); loadPosts(); }
 async function deletePost(id) { if (!confirm('Удалить?')) return; await api('/posts/' + id, 'DELETE'); loadPosts(); }
 
-// === ДРУЗЬЯ ===
+// ============================================================
+// ДРУЗЬЯ — через data-uid и addEventListener (XSS-безопасно)
+// ============================================================
 async function loadFriends() { window._friends = await api('/users'); renderFriends(); }
 
 function renderFriends() {
@@ -737,27 +901,476 @@ function renderFriends() {
   const el = document.getElementById('friendsList');
   el.innerHTML = users.map(u => {
     const isOnline = onlineIds.includes(u.id);
+    const unread = unreadCounts[u.id] || 0;
     return `
-      <div class="friend" onclick="openChat(${u.id}, '${esc(u.username)}')">
-        <div class="avatar sm">${u.avatar ? `<img src="${esc(u.avatar)}">` : u.username[0].toUpperCase()}</div>
-        <div>
-          <div>${isOnline ? '<span class="online-dot"></span>' : ''}${esc(u.username)}</div>
+      <div class="friend ${unread ? 'unread' : ''}" data-uid="${u.id}">
+        <div class="avatar sm">${u.avatar ? `<img src="${esc(u.avatar)}">` : esc(u.username[0].toUpperCase())}</div>
+        <div style="flex:1;">
+          <div>${isOnline ? '<span class="online-dot"></span>' : ''}${esc(u.username)}${unread ? `<span class="unread-badge">${unread}</span>` : ''}</div>
           <div style="color:#888; font-size:10px;">${isOnline ? 'в сети' : 'не в сети'}</div>
         </div>
       </div>
     `;
   }).join('') || '<div style="color:#888; font-size:11px;">Пока никого</div>';
+
+  el.querySelectorAll('.friend').forEach(node => {
+    node.addEventListener('click', () => {
+      const uid = Number(node.dataset.uid);
+      const u = users.find(x => x.id === uid);
+      if (u) openFriendChat(uid, u.username);
+    });
+  });
 }
+
+function openFriendChat(id, username) { clearUnread(id); openChat(id, username); }
 
 async function saveStatus() {
   const status = document.getElementById('myStatus').value;
-  await api('/me', 'PUT', { status, avatar: me.avatar || '' });
+  await api('/me', 'PUT', { status, avatar: me.avatar || '', bio: me.bio || '' });
   alert('Сохранено');
 }
 
-// === ЧАТ ===
+// ============================================================
+// ПРОФИЛЬ
+// ============================================================
+async function openProfile(userId) {
+  currentProfileId = userId;
+  showPage('profile');
+  const data = await api('/users/' + userId);
+  document.getElementById('profAvatar').innerHTML = data.user.avatar ? `<img src="${esc(data.user.avatar)}">` : esc(data.user.username[0].toUpperCase());
+  document.getElementById('profUsername').textContent = data.user.username;
+  document.getElementById('profStatus').textContent = data.user.status || '';
+  document.getElementById('profBio').textContent = data.user.bio || '';
+
+  const msgBtn = document.getElementById('profMessageBtn');
+  if (userId === me.id) {
+    msgBtn.style.display = 'none';
+    document.getElementById('galleryUploadBox').style.display = 'block';
+  } else {
+    msgBtn.style.display = 'inline-block';
+    msgBtn.onclick = () => openChat(userId, data.user.username);
+    document.getElementById('galleryUploadBox').style.display = 'none';
+  }
+
+  const postsEl = document.getElementById('profilePosts');
+  postsEl.innerHTML = data.posts.map(p => `
+    <div class="post">
+      <div class="post-date">${fmtDate(p.created_at)}</div>
+      <div class="post-content">${esc(p.content)}${renderMedia(p)}</div>
+    </div>
+  `).join('') || '<div style="color:#888;">Постов нет</div>';
+
+  const gallery = data.gallery || [];
+  const grid = document.getElementById('galleryGrid');
+  grid.innerHTML = gallery.map(g => `
+    <div class="gallery-item" data-gallery-url="${esc(g.url)}">
+      ${g.media_type === 'video' ? `<video src="${esc(g.url)}" muted></video>` : `<img src="${esc(g.url)}">`}
+      ${userId === me.id ? `<button class="delete-btn" data-gallery-del="${g.id}">✕</button>` : ''}
+    </div>
+  `).join('') || '<div style="color:#888; padding:10px;">Пусто</div>';
+
+  grid.querySelectorAll('[data-gallery-url]').forEach(n => {
+    n.addEventListener('click', (e) => {
+      if (e.target.dataset.galleryDel) return;
+      openMediaViewer(n.dataset.galleryUrl);
+    });
+  });
+  grid.querySelectorAll('[data-gallery-del]').forEach(n => {
+    n.addEventListener('click', (e) => {
+      e.stopPropagation();
+      removeFromGallery(Number(n.dataset.galleryDel));
+    });
+  });
+
+  showProfileTab('posts');
+}
+
+function openMyProfile() { openProfile(me.id); }
+
+function messageCurrentProfile() {
+  if (currentProfileId) openChat(currentProfileId, document.getElementById('profUsername').textContent);
+}
+
+function showProfileTab(tab) {
+  document.getElementById('profTabPosts').className = tab === 'posts' ? 'btn-primary' : '';
+  document.getElementById('profTabGallery').className = tab === 'gallery' ? 'btn-primary' : '';
+  document.getElementById('profilePostsView').style.display = tab === 'posts' ? 'block' : 'none';
+  document.getElementById('profileGalleryView').style.display = tab === 'gallery' ? 'block' : 'none';
+}
+
+async function addToGallery() {
+  const url = document.getElementById('galleryUrl').value.trim();
+  const media_type = document.getElementById('galleryType').value;
+  if (!url) return alert('Введите ссылку');
+  await api('/profile/gallery', 'POST', { url, media_type });
+  document.getElementById('galleryUrl').value = '';
+  openProfile(me.id);
+}
+
+async function removeFromGallery(id) {
+  if (!confirm('Удалить?')) return;
+  await api('/profile/gallery/' + id, 'DELETE');
+  openProfile(me.id);
+}
+
+// ============================================================
+// ИСТОРИИ
+// ============================================================
+let allStories = [];
+let currentStoryIndex = 0;
+let currentStoryGroup = [];
+let storyTimer = null;
+let storyStartTime = 0;
+let selectedBg = '#3b5998';
+
+function initBgColors() {
+  const colors = ['#3b5998','#c0392b','#27ae60','#8e44ad','#e67e22','#16a085','#2c3e50','#d35400'];
+  const el = document.getElementById('bgColors');
+  if (!el) return;
+  el.innerHTML = colors.map(c => `
+    <div data-bg="${c}" style="width:30px; height:30px; border-radius:50%; background:${c}; cursor:pointer; border:3px solid ${c === selectedBg ? '#000' : 'transparent'};"></div>
+  `).join('');
+  el.querySelectorAll('[data-bg]').forEach(n => {
+    n.addEventListener('click', () => selectBg(n.dataset.bg));
+  });
+}
+
+function selectBg(c) {
+  selectedBg = c;
+  document.querySelectorAll('#bgColors [data-bg]').forEach(d => {
+    d.style.border = d.dataset.bg === c ? '3px solid #000' : '3px solid transparent';
+  });
+}
+
+async function loadStories() {
+  const stories = await api('/stories');
+  allStories = stories;
+  const bar = document.getElementById('storiesBar');
+
+  const grouped = {};
+  stories.forEach(s => {
+    if (!grouped[s.user_id]) grouped[s.user_id] = { user_id: s.user_id, username: s.username, avatar: s.avatar, stories: [], allViewed: true };
+    grouped[s.user_id].stories.push(s);
+    if (!s.viewed) grouped[s.user_id].allViewed = false;
+  });
+
+  const users = Object.values(grouped);
+  bar.innerHTML = users.map(u => `
+    <div class="story-circle" data-story-uid="${u.user_id}">
+      <div class="story-ring ${u.allViewed ? 'viewed' : ''}">
+        <div class="story-ring-inner">
+          ${u.avatar ? `<img src="${esc(u.avatar)}">` : esc(u.username[0].toUpperCase())}
+        </div>
+      </div>
+      <div class="story-name">${esc(u.username)}</div>
+    </div>
+  `).join('') || '<div style="color:#888; padding:10px;">Историй пока нет</div>';
+
+  bar.querySelectorAll('[data-story-uid]').forEach(n => {
+    n.addEventListener('click', () => openStoryViewer(Number(n.dataset.storyUid)));
+  });
+}
+
+function openAddStory() {
+  document.getElementById('addStoryModal').classList.add('open');
+  initBgColors();
+}
+
+function closeAddStory() {
+  document.getElementById('addStoryModal').classList.remove('open');
+}
+
+async function publishStory() {
+  const content = document.getElementById('storyText').value.trim();
+  const image = document.getElementById('storyImage').value.trim();
+  const video = document.getElementById('storyVideo').value.trim();
+  if (!content && !image && !video) return alert('Заполните хоть что-то');
+  await api('/stories', 'POST', { content, image, video, background: selectedBg });
+  ['storyText','storyImage','storyVideo'].forEach(id => document.getElementById(id).value = '');
+  closeAddStory();
+  loadStories();
+}
+
+function openStoryViewer(userId) {
+  currentStoryGroup = allStories.filter(s => s.user_id === userId);
+  if (!currentStoryGroup.length) return;
+  currentStoryIndex = 0;
+  renderStory();
+  document.getElementById('storyViewer').classList.add('open');
+}
+
+function renderStory() {
+  if (currentStoryIndex >= currentStoryGroup.length) return closeStoryViewer();
+  const s = currentStoryGroup[currentStoryIndex];
+  const content = document.getElementById('storyContent');
+  content.style.background = s.background || '#3b5998';
+  content.innerHTML = '';
+
+  if (s.image) {
+    const img = document.createElement('img');
+    img.src = s.image;
+    img.onerror = () => img.style.display = 'none';
+    content.appendChild(img);
+  } else if (s.video) {
+    const v = document.createElement('video');
+    v.src = s.video;
+    v.autoplay = true;
+    v.muted = true;
+    content.appendChild(v);
+  }
+
+  if (s.content) {
+    const txt = document.createElement('div');
+    txt.className = 'story-text';
+    txt.textContent = s.content;
+    content.appendChild(txt);
+  }
+
+  const header = document.getElementById('storyHeader');
+  header.innerHTML = `
+    <div class="avatar">${s.avatar ? `<img src="${esc(s.avatar)}">` : esc(s.username[0].toUpperCase())}</div>
+    <div style="font-weight:bold;">${esc(s.username)}</div>
+    <div style="font-size:11px; opacity:0.8; margin-left:auto;">${fmtDate(s.created_at)}</div>
+  `;
+
+  document.getElementById('storyViews').textContent = `👁 ${s.views} просмотров`;
+
+  api('/stories/' + s.id + '/view', 'POST').catch(() => {});
+
+  const progress = document.getElementById('storyProgress');
+  progress.innerHTML = currentStoryGroup.map((_, i) => `
+    <div class="story-progress-bar">
+      <div class="story-progress-fill" id="storyFill${i}" style="width:${i < currentStoryIndex ? '100%' : '0%'}"></div>
+    </div>
+  `).join('');
+
+  if (storyTimer) clearInterval(storyTimer);
+  storyStartTime = Date.now();
+  const duration = 5000;
+  storyTimer = setInterval(() => {
+    const elapsed = Date.now() - storyStartTime;
+    const percent = Math.min(100, (elapsed / duration) * 100);
+    const fill = document.getElementById('storyFill' + currentStoryIndex);
+    if (fill) fill.style.width = percent + '%';
+    if (percent >= 100) {
+      clearInterval(storyTimer);
+      if (currentStoryIndex < currentStoryGroup.length - 1) {
+        currentStoryIndex++;
+        renderStory();
+      } else {
+        closeStoryViewer();
+      }
+    }
+  }, 50);
+}
+
+function nextStory() {
+  if (currentStoryIndex < currentStoryGroup.length - 1) {
+    currentStoryIndex++;
+    renderStory();
+  } else {
+    closeStoryViewer();
+  }
+}
+
+function prevStory() {
+  if (currentStoryIndex > 0) {
+    currentStoryIndex--;
+    renderStory();
+  }
+}
+
+function closeStoryViewer() {
+  document.getElementById('storyViewer').classList.remove('open');
+  if (storyTimer) clearInterval(storyTimer);
+  loadStories();
+}
+
+// ============================================================
+// СТИКЕРЫ
+// ============================================================
+function renderStickerPanel(el) {
+  el.innerHTML = STICKERS.map(s => `<button class="sticker-btn" data-sticker="${s}" data-panel="${el.id}">${s}</button>`).join('');
+  el.querySelectorAll('.sticker-btn').forEach(n => {
+    n.addEventListener('click', () => pickSticker(n.dataset.sticker, n.dataset.panel));
+  });
+}
+
+function initStickerPanels() {
+  renderStickerPanel(document.getElementById('postStickerPanel'));
+  renderStickerPanel(document.getElementById('groupStickerPanel'));
+  renderStickerPanel(document.getElementById('chatStickerPanel'));
+}
+
+function togglePostStickerPanel() { document.getElementById('postStickerPanel').classList.toggle('open'); }
+function toggleGroupStickerPanel() { document.getElementById('groupStickerPanel').classList.toggle('open'); }
+function toggleChatStickerPanel() { document.getElementById('chatStickerPanel').classList.toggle('open'); }
+
+let chatSticker = '';
+
+function pickSticker(sticker, panelId) {
+  if (panelId === 'postStickerPanel') {
+    document.getElementById('postStickerPreview').textContent = sticker;
+    document.getElementById('postStickerPanel').classList.remove('open');
+  } else if (panelId === 'groupStickerPanel') {
+    document.getElementById('groupStickerPreview').textContent = sticker;
+    document.getElementById('groupStickerPanel').classList.remove('open');
+  } else if (panelId === 'chatStickerPanel') {
+    chatSticker = sticker;
+    sendSticker();
+  }
+}
+
+async function sendSticker() {
+  if (!chatSticker || !currentChat) return;
+  const sticker = chatSticker;
+  chatSticker = '';
+  document.getElementById('chatStickerPanel').classList.remove('open');
+  const m = await api('/messages/' + currentChat.id, 'POST', { content: '', sticker });
+  addChatMsg({ ...m, from_username: me.username }, true);
+}
+
+// ============================================================
+// ПОИСК С ПОДСКАЗКАМИ — через data-атрибуты
+// ============================================================
+let suggestTimer = null;
+
+function onSearchInput() {
+  clearTimeout(suggestTimer);
+  const q = document.getElementById('searchInput').value.trim();
+  if (q.length < 2) {
+    document.getElementById('searchSuggest').classList.remove('open');
+    return;
+  }
+  suggestTimer = setTimeout(() => loadSuggest(q), 250);
+}
+
+async function loadSuggest(q) {
+  try {
+    const data = await api('/search/suggest?q=' + encodeURIComponent(q));
+    let html = '';
+    if (data.users.length) {
+      html += '<div class="suggest-section">Люди</div>';
+      html += data.users.map(u => `
+        <div class="suggest-item" data-suggest-user="${u.id}">
+          <div class="suggest-avatar">${u.avatar ? `<img src="${esc(u.avatar)}">` : esc(u.username[0].toUpperCase())}</div>
+          <span>${esc(u.username)}</span>
+        </div>
+      `).join('');
+    }
+    if (data.groups.length) {
+      html += '<div class="suggest-section">Группы</div>';
+      html += data.groups.map(g => `
+        <div class="suggest-item" data-suggest-group="${g.id}">
+          <div class="suggest-avatar">${g.avatar ? `<img src="${esc(g.avatar)}">` : esc(g.name[0].toUpperCase())}</div>
+          <span>${esc(g.name)}</span>
+        </div>
+      `).join('');
+    }
+    if (data.forums.length) {
+      html += '<div class="suggest-section">Форумы</div>';
+      html += data.forums.map(f => `
+        <div class="suggest-item" data-suggest-forum="${f.id}">
+          <span>${esc(f.title)}</span>
+        </div>
+      `).join('');
+    }
+    const el = document.getElementById('searchSuggest');
+    if (!html) { el.classList.remove('open'); return; }
+    el.innerHTML = html;
+    el.classList.add('open');
+
+    el.querySelectorAll('[data-suggest-user]').forEach(n => {
+      n.addEventListener('click', () => {
+        document.getElementById('searchSuggest').classList.remove('open');
+        openProfile(Number(n.dataset.suggestUser));
+      });
+    });
+    el.querySelectorAll('[data-suggest-group]').forEach(n => {
+      n.addEventListener('click', () => {
+        document.getElementById('searchSuggest').classList.remove('open');
+        openGroup(Number(n.dataset.suggestGroup));
+      });
+    });
+    el.querySelectorAll('[data-suggest-forum]').forEach(n => {
+      n.addEventListener('click', () => {
+        document.getElementById('searchSuggest').classList.remove('open');
+        openForum(Number(n.dataset.suggestForum));
+      });
+    });
+  } catch (e) {}
+}
+
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.search-wrap')) {
+    document.getElementById('searchSuggest').classList.remove('open');
+  }
+});
+
+async function doSearch() {
+  const q = document.getElementById('searchInput').value.trim();
+  if (!q) return;
+  document.getElementById('searchSuggest').classList.remove('open');
+  showPage('search');
+  document.getElementById('searchQuery').textContent = q;
+  const data = await api('/search?q=' + encodeURIComponent(q));
+  let html = '';
+
+  if (data.users.length) {
+    html += '<div class="search-section"><h4>Люди (' + data.users.length + ')</h4>';
+    html += data.users.map(u => `
+      <div class="search-item" data-search-uid="${u.id}">
+        <div class="avatar sm">${u.avatar ? `<img src="${esc(u.avatar)}">` : esc(u.username[0].toUpperCase())}</div>
+        <div><b>${esc(u.username)}</b></div>
+      </div>`).join('');
+    html += '</div>';
+  }
+  if (data.posts.length) {
+    html += '<div class="search-section"><h4>Посты (' + data.posts.length + ')</h4>';
+    html += data.posts.map(p => `
+      <div class="search-item" style="cursor:default;">
+        <div class="avatar sm">${esc(p.username[0].toUpperCase())}</div>
+        <div style="flex:1;"><b>${esc(p.username)}</b> · ${esc(p.content.slice(0, 100))}</div>
+      </div>`).join('');
+    html += '</div>';
+  }
+  if (data.groups.length) {
+    html += '<div class="search-section"><h4>Группы (' + data.groups.length + ')</h4>';
+    html += data.groups.map(g => `
+      <div class="search-item" data-search-gid="${g.id}">
+        <div class="avatar sm">${g.avatar ? `<img src="${esc(g.avatar)}">` : esc(g.name[0].toUpperCase())}</div>
+        <div><b>${esc(g.name)}</b> · ${g.members_count} участников</div>
+      </div>`).join('');
+    html += '</div>';
+  }
+  if (data.forums.length) {
+    html += '<div class="search-section"><h4>Форумы (' + data.forums.length + ')</h4>';
+    html += data.forums.map(f => `
+      <div class="search-item" data-search-fid="${f.id}">
+        <div style="flex:1;"><b>${esc(f.title)}</b> · ${f.topics_count} тем</div>
+      </div>`).join('');
+    html += '</div>';
+  }
+  if (!html) html = '<div style="color:#888; text-align:center; padding:20px;">Ничего не найдено</div>';
+  document.getElementById('searchResults').innerHTML = html;
+
+  document.querySelectorAll('[data-search-uid]').forEach(n => {
+    n.addEventListener('click', () => openProfile(Number(n.dataset.searchUid)));
+  });
+  document.querySelectorAll('[data-search-gid]').forEach(n => {
+    n.addEventListener('click', () => openGroup(Number(n.dataset.searchGid)));
+  });
+  document.querySelectorAll('[data-search-fid]').forEach(n => {
+    n.addEventListener('click', () => openForum(Number(n.dataset.searchFid)));
+  });
+}
+
+// ============================================================
+// ЧАТ
+// ============================================================
 async function openChat(userId, username) {
   currentChat = { id: userId, username };
+  clearUnread(userId);
   document.getElementById('chatBox').classList.add('open');
   document.getElementById('chatTitle').textContent = username;
   const msgs = await api('/messages/' + userId);
@@ -780,6 +1393,7 @@ function addChatMsg(m, mine) {
   div.className = 'msg' + (mine ? ' mine' : '');
   div.innerHTML = `
     <div><span class="from">${mine ? 'Я' : esc(m.from_username || currentChat.username)}:</span> ${esc(m.content || '')}</div>
+    ${m.sticker ? `<div class="msg-media"><div class="sticker">${esc(m.sticker)}</div></div>` : ''}
     ${renderMsgMedia(m.media)}
   `;
   el.appendChild(div);
@@ -791,7 +1405,7 @@ function renderMsgMedia(media) {
   let html = '<div class="msg-media">';
   for (const m of media) {
     if (m.type === 'image' || m.type === 'gif') {
-      html += `<img src="${esc(m.url)}" onclick="openMediaViewer('${esc(m.url)}')" onerror="this.style.display='none'">`;
+      html += `<img src="${esc(m.url)}" data-media="${esc(m.url)}" onerror="this.style.display='none'">`;
     } else if (m.type === 'audio') {
       html += `<audio controls src="${esc(m.url)}"></audio>`;
     } else if (m.type === 'video') {
@@ -799,11 +1413,8 @@ function renderMsgMedia(media) {
         html += `<video controls src="${esc(m.url)}"></video>`;
       } else {
         const yt = m.url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-        if (yt) {
-          html += `<div class="video-wrap"><iframe src="https://www.youtube.com/embed/${yt[1]}" allowfullscreen></iframe></div>`;
-        } else {
-          html += `<a class="file-link" href="${esc(m.url)}" target="_blank">Видео</a>`;
-        }
+        if (yt) html += `<div class="video-wrap"><iframe src="https://www.youtube.com/embed/${yt[1]}" allowfullscreen></iframe></div>`;
+        else html += `<a href="${esc(m.url)}" target="_blank" style="color:#3b5998;">Видео</a>`;
       }
     }
   }
@@ -811,27 +1422,21 @@ function renderMsgMedia(media) {
   return html;
 }
 
-// === ВЛОЖЕНИЯ ===
-let pendingAttach = [];
-
-function openAttach() {
-  document.getElementById('fileInput').click();
-}
+// ============================================================
+// ВЛОЖЕНИЯ
+// ============================================================
+function openAttach() { document.getElementById('fileInput').click(); }
 
 document.getElementById('fileInput').addEventListener('change', (e) => {
   const file = e.target.files[0];
   if (!file) return;
-
   let type = 'file';
   if (file.type.startsWith('image/gif') || file.name.toLowerCase().endsWith('.gif')) type = 'gif';
   else if (file.type.startsWith('image/')) type = 'image';
   else if (file.type.startsWith('video/')) type = 'video';
   else if (file.type.startsWith('audio/')) type = 'audio';
 
-  if (file.size > 20 * 1024 * 1024) {
-    alert('Файл больше 20 МБ');
-    return;
-  }
+  if (file.size > 25 * 1024 * 1024) return alert('Файл больше 25 МБ');
 
   const reader = new FileReader();
   reader.onload = () => {
@@ -844,77 +1449,212 @@ document.getElementById('fileInput').addEventListener('change', (e) => {
 
 function renderAttachPreview() {
   const el = document.getElementById('attachPreview');
-  if (!pendingAttach.length) {
-    el.style.display = 'none';
-    el.innerHTML = '';
-    return;
-  }
+  if (!pendingAttach.length) { el.style.display = 'none'; el.innerHTML = ''; return; }
   el.style.display = 'flex';
   el.innerHTML = pendingAttach.map((a, i) => {
     const icon = a.type === 'image' ? 'IMG' : a.type === 'video' ? 'VID' : a.type === 'audio' ? 'AUD' : a.type === 'gif' ? 'GIF' : 'FILE';
-    return `<div class="attach-item">[${icon}] ${esc(a.filename.slice(0, 20))}<span class="rm" onclick="removeAttach(${i})">×</span></div>`;
+    return `<div class="attach-item">[${icon}] ${esc(a.filename.slice(0, 20))}<span class="rm" data-rm-attach="${i}">×</span></div>`;
   }).join('');
+  el.querySelectorAll('[data-rm-attach]').forEach(n => {
+    n.addEventListener('click', () => removeAttach(Number(n.dataset.rmAttach)));
+  });
 }
 
-function removeAttach(i) {
-  pendingAttach.splice(i, 1);
-  renderAttachPreview();
-}
+function removeAttach(i) { pendingAttach.splice(i, 1); renderAttachPreview(); }
 
 async function sendMsg() {
   const input = document.getElementById('chatInput');
   const content = input.value.trim();
   if ((!content && !pendingAttach.length) || !currentChat) return;
-
   const media = pendingAttach.map(a => ({ type: a.type, url: a.url, filename: a.filename }));
   input.value = '';
   pendingAttach = [];
   renderAttachPreview();
-
   const m = await api('/messages/' + currentChat.id, 'POST', { content, media });
   addChatMsg({ ...m, from_username: me.username }, true);
 }
 
-function openMediaViewer(url) {
-  document.getElementById('mediaViewerImg').src = url;
-  document.getElementById('mediaViewer').classList.add('open');
+// ============================================================
+// УВЕДОМЛЕНИЯ
+// ============================================================
+function handleIncomingMessage(msg) {
+  const fromId = msg.from_id;
+  const fromName = msg.from_username || ('Пользователь ' + fromId);
+
+  if (currentChat && currentChat.id === fromId && !document.hidden) {
+    addChatMsg(msg, false);
+    playNotificationSound();
+    return;
+  }
+
+  unreadCounts[fromId] = (unreadCounts[fromId] || 0) + 1;
+  renderFriends();
+  updateTitleWithUnread();
+
+  showToast({
+    userId: fromId,
+    username: fromName,
+    text: summarizeMessage(msg),
+    onClick: () => { clearUnread(fromId); openChat(fromId, fromName); }
+  });
+
+  playNotificationSound();
+  showSystemNotification(fromName, summarizeMessage(msg), () => {
+    clearUnread(fromId);
+    openChat(fromId, fromName);
+    window.focus();
+  });
 }
 
-function closeMediaViewer() {
-  document.getElementById('mediaViewer').classList.remove('open');
+function summarizeMessage(msg) {
+  if (msg.sticker) return 'Стикер ' + msg.sticker;
+  if (msg.content && msg.content.trim()) return msg.content;
+  if (msg.media && msg.media.length) {
+    const map = { image: '[Картинка]', gif: '[GIF]', video: '[Видео]', audio: '[Аудио]', file: '[Файл]' };
+    return map[msg.media[0].type] || '[Вложение]';
+  }
+  return '[Сообщение]';
 }
 
-// === ЗВОНКИ ===
+function showToast({ userId, username, text, onClick, type }) {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = 'toast' + (type === 'call' ? ' call-toast' : '');
+  toast.innerHTML = `
+    <div class="toast-avatar">${esc(username[0].toUpperCase())}</div>
+    <div class="toast-body">
+      <div class="toast-title">${esc(username)}</div>
+      <div class="toast-text">${esc(text)}</div>
+    </div>
+    <span class="toast-close">×</span>
+  `;
+  const close = (e) => {
+    if (e) e.stopPropagation();
+    toast.classList.add('closing');
+    setTimeout(() => toast.remove(), 300);
+  };
+  toast.querySelector('.toast-close').addEventListener('click', close);
+  toast.addEventListener('click', () => { onClick && onClick(); close(); });
+  container.appendChild(toast);
+  setTimeout(() => { if (toast.parentElement) close(); }, type === 'call' ? 20000 : 6000);
+}
+
+function playNotificationSound() {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(1320, audioCtx.currentTime + 0.08);
+    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.25);
+  } catch (e) {}
+}
+
+function playCallSound() {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.4);
+  } catch (e) {}
+}
+
+function updateTitleWithUnread() {
+  const total = Object.values(unreadCounts).reduce((a, b) => a + b, 0);
+  if (total > 0) {
+    document.title = '(' + total + ') РетроСеть 2010';
+    if (!titleFlashInterval) {
+      let alt = false;
+      titleFlashInterval = setInterval(() => {
+        document.title = alt ? 'Новое сообщение!' : '(' + total + ') РетроСеть 2010';
+        alt = !alt;
+      }, 1500);
+    }
+  } else {
+    document.title = 'РетроСеть 2010';
+    if (titleFlashInterval) { clearInterval(titleFlashInterval); titleFlashInterval = null; }
+  }
+}
+
+function clearUnread(userId) {
+  if (unreadCounts[userId]) {
+    delete unreadCounts[userId];
+    renderFriends();
+    updateTitleWithUnread();
+  }
+}
+
+function requestNotificationPermission() {
+  if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
+}
+
+function showSystemNotification(title, body, onClick) {
+  if (!('Notification' in window)) return;
+  if (Notification.permission !== 'granted') return;
+  if (!document.hidden) return;
+  try {
+    const n = new Notification(title, { body, tag: 'msg-' + Date.now() });
+    n.onclick = () => { onClick && onClick(); n.close(); };
+  } catch (e) {}
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && titleFlashInterval) {
+    const total = Object.values(unreadCounts).reduce((a, b) => a + b, 0);
+    if (total > 0) {
+      clearInterval(titleFlashInterval);
+      titleFlashInterval = null;
+      document.title = '(' + total + ') РетроСеть 2010';
+    }
+  }
+});
+
+document.addEventListener('click', function unlockAudio() {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+  } catch (e) {}
+  document.removeEventListener('click', unlockAudio);
+}, { once: true });
+
+// ============================================================
+// ЗВОНКИ
+// ============================================================
 let pc = null;
 let localStream = null;
 let callPeer = null;
 let callType = null;
 let incomingCall = null;
+let callRingInterval = null;
 
 async function startCall(type) {
   if (!currentChat) return;
   callType = type;
   callPeer = currentChat.id;
-
   try {
-    localStream = await navigator.mediaDevices.getUserMedia({
-      audio: true,
-      video: type === 'video'
-    });
-  } catch (e) {
-    alert('Нет доступа к микрофону или камере: ' + e.message);
-    return;
-  }
+    localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: type === 'video' });
+  } catch (e) { return alert('Нет доступа к микрофону или камере: ' + e.message); }
 
   document.getElementById('callModal').classList.add('open');
   document.getElementById('callInfo').textContent = 'Звоним ' + currentChat.username + '...';
   document.getElementById('localVideo').srcObject = localStream;
   document.getElementById('localVideo').style.display = type === 'video' ? 'block' : 'none';
-
-  document.getElementById('callActions').innerHTML = `
-    <button class="call-reject" onclick="endCall()">Отменить</button>
-  `;
-
+  document.getElementById('callActions').innerHTML = `<button class="call-reject" id="callCancelBtn">Отменить</button>`;
+  document.getElementById('callCancelBtn').addEventListener('click', endCall);
   socket.emit('call:start', { to: currentChat.id, type });
 }
 
@@ -922,12 +1662,10 @@ async function acceptCall() {
   if (!incomingCall) return;
   callPeer = incomingCall.from;
   callType = incomingCall.type;
-
   document.getElementById('callModal').classList.add('open');
   document.getElementById('callInfo').textContent = 'Подключаемся...';
-
   socket.emit('call:accept', { to: callPeer });
-  await initWebRTC(false);
+  await setupPeerConnection();
 }
 
 function rejectCall() {
@@ -936,46 +1674,22 @@ function rejectCall() {
   closeCallUI();
 }
 
-async function initWebRTC(isCaller) {
+async function setupPeerConnection() {
   try {
-    localStream = await navigator.mediaDevices.getUserMedia({
-      audio: true,
-      video: callType === 'video'
-    });
-  } catch (e) {
-    alert('Нет доступа к микрофону или камере');
-    endCall();
-    return;
-  }
+    localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: callType === 'video' });
+  } catch (e) { alert('Нет доступа'); endCall(); return; }
 
   document.getElementById('localVideo').srcObject = localStream;
   document.getElementById('localVideo').style.display = callType === 'video' ? 'block' : 'none';
 
-  pc = new RTCPeerConnection({
-    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-  });
-
+  pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
   localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
-
-  pc.ontrack = (event) => {
-    document.getElementById('remoteVideo').srcObject = event.streams[0];
-  };
-
+  pc.ontrack = (event) => { document.getElementById('remoteVideo').srcObject = event.streams[0]; };
   pc.onicecandidate = (event) => {
-    if (event.candidate) {
-      socket.emit('webrtc:ice', { to: callPeer, candidate: event.candidate });
-    }
+    if (event.candidate) socket.emit('webrtc:ice', { to: callPeer, candidate: event.candidate });
   };
-
-  document.getElementById('callActions').innerHTML = `
-    <button class="call-reject" onclick="endCall()">Завершить</button>
-  `;
-
-  if (isCaller) {
-    const offer = await pc.createOffer();
-    await pc.setLocalDescription(offer);
-    socket.emit('webrtc:offer', { to: callPeer, offer });
-  }
+  document.getElementById('callActions').innerHTML = `<button class="call-reject" id="callEndBtn">Завершить</button>`;
+  document.getElementById('callEndBtn').addEventListener('click', endCall);
 }
 
 function endCall() {
@@ -985,13 +1699,11 @@ function endCall() {
 
 function closeCallUI() {
   if (pc) { pc.close(); pc = null; }
-  if (localStream) {
-    localStream.getTracks().forEach(t => t.stop());
-    localStream = null;
-  }
+  if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
   document.getElementById('callModal').classList.remove('open');
   document.getElementById('remoteVideo').srcObject = null;
   document.getElementById('localVideo').srcObject = null;
+  if (callRingInterval) { clearInterval(callRingInterval); callRingInterval = null; }
   incomingCall = null;
   callPeer = null;
 }
@@ -1002,29 +1714,39 @@ function initCallSocket() {
     document.getElementById('callInfo').textContent = data.fromName + ' звонит (' + (data.type === 'video' ? 'видео' : 'аудио') + ')...';
     document.getElementById('localVideo').style.display = 'none';
     document.getElementById('callActions').innerHTML = `
-      <button class="call-accept" onclick="acceptCall()">Принять</button>
-      <button class="call-reject" onclick="rejectCall()">Отклонить</button>
+      <button class="call-accept" id="callAcceptBtn">Принять</button>
+      <button class="call-reject" id="callRejectBtn">Отклонить</button>
     `;
+    document.getElementById('callAcceptBtn').addEventListener('click', acceptCall);
+    document.getElementById('callRejectBtn').addEventListener('click', rejectCall);
     document.getElementById('callModal').classList.add('open');
+
+    showToast({
+      userId: data.from,
+      username: data.fromName,
+      text: (data.type === 'video' ? 'Видеозвонок' : 'Аудиозвонок'),
+      type: 'call',
+      onClick: () => { document.getElementById('callModal').classList.add('open'); }
+    });
+    playCallSound();
+    if (callRingInterval) clearInterval(callRingInterval);
+    callRingInterval = setInterval(playCallSound, 3000);
+    showSystemNotification(data.fromName, 'Звонит вам!', () => {
+      document.getElementById('callModal').classList.add('open');
+      window.focus();
+    });
   });
 
   socket.on('call:accepted', async () => {
     document.getElementById('callInfo').textContent = 'Соединение...';
-    // Инициатор уже имеет localStream — создаём pc
     await setupPeerConnection();
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
     socket.emit('webrtc:offer', { to: callPeer, offer });
   });
 
-  socket.on('call:rejected', () => {
-    alert('Звонок отклонён');
-    closeCallUI();
-  });
-
-  socket.on('call:ended', () => {
-    closeCallUI();
-  });
+  socket.on('call:rejected', () => { alert('Звонок отклонён'); closeCallUI(); });
+  socket.on('call:ended', () => { closeCallUI(); });
 
   socket.on('webrtc:offer', async (data) => {
     if (!pc) await setupPeerConnection();
@@ -1041,37 +1763,13 @@ function initCallSocket() {
 
   socket.on('webrtc:ice', async (data) => {
     if (!pc) return;
-    try {
-      await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
-    } catch (e) { console.warn('ICE error', e); }
+    try { await pc.addIceCandidate(new RTCIceCandidate(data.candidate)); } catch (e) {}
   });
 }
 
-async function setupPeerConnection() {
-  pc = new RTCPeerConnection({
-    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-  });
-
-  if (localStream) {
-    localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
-  }
-
-  pc.ontrack = (event) => {
-    document.getElementById('remoteVideo').srcObject = event.streams[0];
-  };
-
-  pc.onicecandidate = (event) => {
-    if (event.candidate) {
-      socket.emit('webrtc:ice', { to: callPeer, candidate: event.candidate });
-    }
-  };
-
-  document.getElementById('callActions').innerHTML = `
-    <button class="call-reject" onclick="endCall()">Завершить</button>
-  `;
-}
-
-// === НОВОСТИ ===
+// ============================================================
+// НОВОСТИ
+// ============================================================
 async function loadNews() {
   const news = await api('/news');
   const el = document.getElementById('newsBox');
@@ -1081,16 +1779,19 @@ async function loadNews() {
       <div class="news-title">${esc(n.title)}</div>
       <div class="news-date">${fmtDate(n.created_at)}</div>
       <div class="news-content">${esc(n.content)}${n.image ? `<img src="${esc(n.image)}" onerror="this.style.display='none'">` : ''}</div>
-      ${me.role === 'admin' ? `<button class="btn-danger btn-small" onclick="deleteNews(${n.id})">Удалить</button>` : ''}
+      ${me.role === 'admin' ? `<button class="btn-danger btn-small" data-news-del="${n.id}">Удалить</button>` : ''}
     </div>
   `).join('');
+  el.querySelectorAll('[data-news-del]').forEach(n => {
+    n.addEventListener('click', () => deleteNews(Number(n.dataset.newsDel)));
+  });
 }
 
 async function createNews() {
   const title = document.getElementById('newsTitle').value.trim();
   const content = document.getElementById('newsContent').value.trim();
   const image = document.getElementById('newsImage').value.trim();
-  if (!title || !content) return alert('Заполните поля');
+  if (!title || !content) return alert('Заполните');
   await api('/news', 'POST', { title, content, image });
   ['newsTitle','newsContent','newsImage'].forEach(id => document.getElementById(id).value = '');
   loadNews();
@@ -1098,26 +1799,21 @@ async function createNews() {
 
 async function deleteNews(id) { if (!confirm('Удалить?')) return; await api('/news/' + id, 'DELETE'); loadNews(); }
 
-// === ГОЛОСОВАНИЕ ===
+// ============================================================
+// ГОЛОСОВАНИЕ
+// ============================================================
 async function loadParties() {
   const data = await api('/parties');
   const el = document.getElementById('partiesBox');
-
-  if (!data.parties.length) {
-    el.innerHTML = '<div style="color:#888; text-align:center; padding:20px;">Партий пока нет</div>';
-    return;
-  }
-
+  if (!data.parties.length) { el.innerHTML = '<div style="color:#888; text-align:center; padding:20px;">Партий нет</div>'; return; }
   const totalVotes = data.parties.reduce((s, p) => s + Number(p.votes), 0);
-
   el.innerHTML = data.parties.map(p => {
     const votes = Number(p.votes);
     const percent = totalVotes > 0 ? Math.round(votes / totalVotes * 100) : 0;
     const voted = data.myVote === p.id;
-
     return `
       <div class="party-card">
-        <div class="party-logo">${p.logo ? `<img src="${esc(p.logo)}">` : p.name[0].toUpperCase()}</div>
+        <div class="party-logo">${p.logo ? `<img src="${esc(p.logo)}">` : esc(p.name[0].toUpperCase())}</div>
         <div class="party-info">
           <div class="party-name">${esc(p.name)}</div>
           <div class="party-desc">${esc(p.description || '')}</div>
@@ -1125,25 +1821,23 @@ async function loadParties() {
           <div class="vote-progress"><div class="vote-progress-fill" style="width:${percent}%"></div></div>
         </div>
         <div style="display:flex; flex-direction:column; gap:4px;">
-          ${voted
-            ? `<span class="party-voted">Ваш голос</span>`
-            : data.myVote
-              ? `<span style="color:#888; font-size:11px;">Вы голосовали</span>`
-              : `<button class="btn-primary" onclick="voteFor(${p.id})">Голосовать</button>`
-          }
-          ${me.role === 'admin' ? `<button class="btn-danger btn-small" onclick="deleteParty(${p.id})">Удалить</button>` : ''}
+          ${voted ? `<span class="party-voted">Ваш голос</span>` : data.myVote ? `<span style="color:#888; font-size:11px;">Вы голосовали</span>` : `<button class="btn-primary" data-vote="${p.id}">Голосовать</button>`}
+          ${me.role === 'admin' ? `<button class="btn-danger btn-small" data-party-del="${p.id}">Удалить</button>` : ''}
         </div>
       </div>
     `;
   }).join('');
+  el.querySelectorAll('[data-vote]').forEach(n => {
+    n.addEventListener('click', () => voteFor(Number(n.dataset.vote)));
+  });
+  el.querySelectorAll('[data-party-del]').forEach(n => {
+    n.addEventListener('click', () => deleteParty(Number(n.dataset.partyDel)));
+  });
 }
 
 async function voteFor(id) {
-  if (!confirm('Отдать голос этой партии? Изменить потом нельзя.')) return;
-  try {
-    await api('/parties/vote/' + id, 'POST');
-    loadParties();
-  } catch (e) { alert(e.message); }
+  if (!confirm('Отдать голос? Изменить нельзя.')) return;
+  try { await api('/parties/vote/' + id, 'POST'); loadParties(); } catch (e) { alert(e.message); }
 }
 
 async function createParty() {
@@ -1156,21 +1850,19 @@ async function createParty() {
   loadParties();
 }
 
-async function deleteParty(id) {
-  if (!confirm('Удалить партию? Все голоса за неё тоже удалятся.')) return;
-  await api('/parties/' + id, 'DELETE');
-  loadParties();
-}
+async function deleteParty(id) { if (!confirm('Удалить?')) return; await api('/parties/' + id, 'DELETE'); loadParties(); }
 
-// === ГРУППЫ ===
+// ============================================================
+// ГРУППЫ
+// ============================================================
 async function loadGroups() {
   const groups = await api('/groups');
   const el = document.getElementById('groupsBox');
   if (!groups.length) { el.innerHTML = '<div style="color:#888; text-align:center; padding:20px;">Групп нет</div>'; return; }
   el.innerHTML = groups.map(g => `
-    <div class="group-item" onclick="openGroup(${g.id})">
+    <div class="group-item" data-gid="${g.id}">
       <div style="display:flex; gap:8px; align-items:center;">
-        <div class="avatar sm">${g.avatar ? `<img src="${esc(g.avatar)}">` : g.name[0].toUpperCase()}</div>
+        <div class="avatar sm">${g.avatar ? `<img src="${esc(g.avatar)}">` : esc(g.name[0].toUpperCase())}</div>
         <div style="flex:1;">
           <div class="forum-title">${esc(g.name)} ${g.is_member ? '✓' : ''}</div>
           <div class="forum-desc">${esc(g.description || '')}</div>
@@ -1179,6 +1871,9 @@ async function loadGroups() {
       </div>
     </div>
   `).join('');
+  el.querySelectorAll('[data-gid]').forEach(n => {
+    n.addEventListener('click', () => openGroup(Number(n.dataset.gid)));
+  });
 }
 
 async function createGroup() {
@@ -1203,7 +1898,7 @@ async function loadGroupView() {
   const g = await api('/groups/' + currentGroupId);
   document.getElementById('gCrumb').textContent = g.name;
   document.getElementById('gTitle').textContent = g.name;
-  document.getElementById('gAvatar').innerHTML = g.avatar ? `<img src="${esc(g.avatar)}">` : g.name[0].toUpperCase();
+  document.getElementById('gAvatar').innerHTML = g.avatar ? `<img src="${esc(g.avatar)}">` : esc(g.name[0].toUpperCase());
   document.getElementById('gMeta').textContent = 'Участников: ' + g.members_count + ' · Создал: ' + (g.author || '—');
   document.getElementById('gDesc').textContent = g.description || '';
   const joinBtn = document.getElementById('gJoinBtn');
@@ -1212,7 +1907,8 @@ async function loadGroupView() {
   document.getElementById('gPostForm').style.display = g.is_member ? 'block' : 'none';
 
   const members = await api('/groups/' + currentGroupId + '/members');
-  document.getElementById('gMembersBox').innerHTML = `
+  const box = document.getElementById('gMembersBox');
+  box.innerHTML = `
     <div style="font-size:11px; color:#666; margin-bottom:4px;">Участники:</div>
     <div style="display:flex; flex-wrap:wrap; gap:6px;">
       ${members.map(m => `<span style="background:#eef1f6; padding:2px 8px; border-radius:3px; font-size:11px;">${m.role === 'admin' ? '(админ) ' : ''}${esc(m.username)}</span>`).join('')}
@@ -1233,15 +1929,18 @@ async function loadGroupPosts() {
   el.innerHTML = posts.map(p => `
     <div class="post">
       <div class="post-head">
-        <div class="avatar">${p.avatar ? `<img src="${esc(p.avatar)}">` : p.username[0].toUpperCase()}</div>
+        <div class="avatar">${p.avatar ? `<img src="${esc(p.avatar)}">` : esc(p.username[0].toUpperCase())}</div>
         <div><div class="post-author">${esc(p.username)}</div><div class="post-date">${fmtDate(p.created_at)}</div></div>
       </div>
       <div class="post-content">${esc(p.content)}${renderMedia(p)}</div>
       <div class="post-actions">
-        <button onclick="toggleGroupLike(${p.id})" class="${p.liked ? 'liked' : ''}">${p.liked ? '♥' : '♡'} ${p.likes}</button>
+        <button data-glike="${p.id}" class="${p.liked ? 'liked' : ''}">${p.liked ? '♥' : '♡'} ${p.likes}</button>
       </div>
     </div>
   `).join('');
+  el.querySelectorAll('[data-glike]').forEach(n => {
+    n.addEventListener('click', () => toggleGroupLike(Number(n.dataset.glike)));
+  });
 }
 
 async function createGroupPost() {
@@ -1249,28 +1948,35 @@ async function createGroupPost() {
   const image = document.getElementById('gPostImage').value.trim();
   const video = document.getElementById('gPostVideo').value.trim();
   const gif = document.getElementById('gPostGif').value.trim();
-  if (!content && !image && !video && !gif) return;
+  const sticker = document.getElementById('groupStickerPreview').textContent;
+  if (!content && !image && !video && !gif && !sticker) return;
   try {
-    await api('/groups/' + currentGroupId + '/posts', 'POST', { content, image, video, gif });
+    await api('/groups/' + currentGroupId + '/posts', 'POST', { content, image, video, gif, sticker });
     ['gPostContent','gPostImage','gPostVideo','gPostGif'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('groupStickerPreview').textContent = '';
     loadGroupPosts();
   } catch (e) { alert(e.message); }
 }
 
 async function toggleGroupLike(id) { await api('/group-like/' + id, 'POST'); loadGroupPosts(); }
 
-// === ФОРУМЫ ===
+// ============================================================
+// ФОРУМЫ
+// ============================================================
 async function loadForums() {
   const forums = await api('/forums');
   const el = document.getElementById('forumsBox');
   if (!forums.length) { el.innerHTML = '<div style="color:#888; text-align:center; padding:20px;">Форумов нет</div>'; return; }
   el.innerHTML = forums.map(f => `
-    <div class="forum-item" onclick="openForum(${f.id})">
+    <div class="forum-item" data-fid="${f.id}">
       <div class="forum-title">${esc(f.title)}</div>
       <div class="forum-desc">${esc(f.description || '')}</div>
       <div class="forum-meta">Создал: ${esc(f.author || '—')} · Тем: ${f.topics_count} · Сообщений: ${f.posts_count}</div>
     </div>
   `).join('');
+  el.querySelectorAll('[data-fid]').forEach(n => {
+    n.addEventListener('click', () => openForum(Number(n.dataset.fid)));
+  });
 }
 
 async function createForum() {
@@ -1299,7 +2005,7 @@ async function loadForumView() {
   const el = document.getElementById('topicsBox');
   if (!data.topics.length) { el.innerHTML = '<div style="color:#888; text-align:center; padding:15px;">Тем нет</div>'; return; }
   el.innerHTML = data.topics.map(t => `
-    <div class="topic-item" onclick="openTopic(${t.id})">
+    <div class="topic-item" data-tid="${t.id}">
       <div>
         <div class="topic-title">${esc(t.title)}</div>
         <div class="topic-meta">Автор: ${esc(t.author || '—')} · ${fmtDate(t.created_at)}</div>
@@ -1307,6 +2013,9 @@ async function loadForumView() {
       <div class="topic-meta">${t.posts_count} сообщ.</div>
     </div>
   `).join('');
+  el.querySelectorAll('[data-tid]').forEach(n => {
+    n.addEventListener('click', () => openTopic(Number(n.dataset.tid)));
+  });
 }
 
 async function createTopic() {
@@ -1335,7 +2044,7 @@ async function loadTopic(id) {
   if (!data.posts.length) { el.innerHTML = '<div style="color:#888; text-align:center; padding:15px;">Сообщений нет</div>'; return; }
   el.innerHTML = data.posts.map(p => `
     <div class="forum-post">
-      <div class="avatar">${p.avatar ? `<img src="${esc(p.avatar)}">` : p.username[0].toUpperCase()}</div>
+      <div class="avatar">${p.avatar ? `<img src="${esc(p.avatar)}">` : esc(p.username[0].toUpperCase())}</div>
       <div class="body">
         <div><span class="post-author">${esc(p.username)}</span> <span class="post-date">${fmtDate(p.created_at)}</span></div>
         <div style="margin-top:4px;">${esc(p.content)}</div>
@@ -1352,59 +2061,9 @@ async function replyTopic() {
   loadTopic(currentTopicId);
 }
 
-// === ПОИСК ===
-async function doSearch() {
-  const q = document.getElementById('searchInput').value.trim();
-  if (!q) return;
-  showPage('search');
-  document.getElementById('searchQuery').textContent = q;
-  const data = await api('/search?q=' + encodeURIComponent(q));
-  let html = '';
-
-  if (data.users.length) {
-    html += '<div class="search-section"><h4>Люди (' + data.users.length + ')</h4>';
-    html += data.users.map(u => `
-      <div class="search-item" onclick="openChat(${u.id}, '${esc(u.username)}')">
-        <div class="avatar sm">${u.avatar ? `<img src="${esc(u.avatar)}">` : u.username[0].toUpperCase()}</div>
-        <div><b>${esc(u.username)}</b></div>
-      </div>`).join('');
-    html += '</div>';
-  }
-
-  if (data.posts.length) {
-    html += '<div class="search-section"><h4>Посты (' + data.posts.length + ')</h4>';
-    html += data.posts.map(p => `
-      <div class="search-item" style="cursor:default;">
-        <div class="avatar sm">${p.username[0].toUpperCase()}</div>
-        <div style="flex:1;"><b>${esc(p.username)}</b> · ${esc(p.content.slice(0, 100))}</div>
-      </div>`).join('');
-    html += '</div>';
-  }
-
-  if (data.groups.length) {
-    html += '<div class="search-section"><h4>Группы (' + data.groups.length + ')</h4>';
-    html += data.groups.map(g => `
-      <div class="search-item" onclick="openGroup(${g.id})">
-        <div class="avatar sm">${g.avatar ? `<img src="${esc(g.avatar)}">` : g.name[0].toUpperCase()}</div>
-        <div><b>${esc(g.name)}</b> · ${g.members_count} участников</div>
-      </div>`).join('');
-    html += '</div>';
-  }
-
-  if (data.forums.length) {
-    html += '<div class="search-section"><h4>Форумы (' + data.forums.length + ')</h4>';
-    html += data.forums.map(f => `
-      <div class="search-item" onclick="openForum(${f.id})">
-        <div style="flex:1;"><b>${esc(f.title)}</b> · ${f.topics_count} тем</div>
-      </div>`).join('');
-    html += '</div>';
-  }
-
-  if (!html) html = '<div style="color:#888; text-align:center; padding:20px;">Ничего не найдено</div>';
-  document.getElementById('searchResults').innerHTML = html;
-}
-
-// === АДМИНКА ===
+// ============================================================
+// АДМИНКА
+// ============================================================
 async function loadAdmin() {
   const stats = await api('/admin/stats');
   document.getElementById('adminStats').innerHTML = `
@@ -1418,66 +2077,93 @@ async function loadAdmin() {
   `;
 
   const users = await api('/admin/users');
-  document.getElementById('adminUsersTable').innerHTML = `
+  const table = document.getElementById('adminUsersTable');
+  table.innerHTML = `
     <tr><th>ID</th><th>Логин</th><th>Роль</th><th>Постов</th><th>Дата</th><th>Действия</th></tr>
     ${users.map(u => `
       <tr>
         <td>${u.id}</td>
         <td>${esc(u.username)} ${u.banned ? '<span class="banned">(бан)</span>' : ''}</td>
-        <td class="${u.role === 'admin' ? 'role-admin' : 'role-user'}">${u.role}</td>
+        <td class="${u.role === 'admin' ? 'role-admin' : 'role-user'}">${esc(u.role)}</td>
         <td>${u.posts_count}</td>
         <td>${fmtDate(u.created_at)}</td>
         <td>
           ${u.id !== me.id ? `
-            <button class="btn-small" onclick="adminBan(${u.id})">${u.banned ? 'Разбан' : 'Бан'}</button>
-            <button class="btn-danger btn-small" onclick="adminDeleteUser(${u.id})">Удалить</button>
+            <button class="btn-small" data-admin-ban="${u.id}">${u.banned ? 'Разбан' : 'Бан'}</button>
+            <button class="btn-danger btn-small" data-admin-deluser="${u.id}">Удалить</button>
           ` : '—'}
         </td>
+      </tr>
+    `).join('')}
+  `;
+  table.querySelectorAll('[data-admin-ban]').forEach(n => {
+    n.addEventListener('click', () => adminBan(Number(n.dataset.adminBan)));
+  });
+  table.querySelectorAll('[data-admin-deluser]').forEach(n => {
+    n.addEventListener('click', () => adminDeleteUser(Number(n.dataset.adminDeluser)));
+  });
+
+  const audit = await api('/admin/audit');
+  document.getElementById('adminAuditTable').innerHTML = `
+    <tr><th>Время</th><th>Юзер</th><th>Действие</th><th>Детали</th><th>IP</th></tr>
+    ${audit.map(a => `
+      <tr>
+        <td>${fmtDate(a.created_at)}</td>
+        <td>${esc(a.username || '—')}</td>
+        <td>${esc(a.action)}</td>
+        <td>${esc(a.details || '')}</td>
+        <td style="font-size:10px; color:#888;">${esc(a.ip || '')}</td>
       </tr>
     `).join('')}
   `;
 
   const groups = await api('/groups');
   const forums = await api('/forums');
-  document.getElementById('adminContent').innerHTML = `
+  const contentEl = document.getElementById('adminContent');
+  contentEl.innerHTML = `
     <div style="margin-bottom:8px;"><b>Группы:</b></div>
     ${groups.map(g => `
       <div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid #eee;">
         <span>${esc(g.name)} (${g.members_count} участников)</span>
-        <button class="btn-danger btn-small" onclick="adminDeleteGroup(${g.id})">Удалить</button>
+        <button class="btn-danger btn-small" data-admin-delgroup="${g.id}">Удалить</button>
       </div>
     `).join('') || '<div style="color:#888;">Групп нет</div>'}
     <div style="margin:10px 0 8px;"><b>Форумы:</b></div>
     ${forums.map(f => `
       <div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid #eee;">
         <span>${esc(f.title)} (${f.topics_count} тем)</span>
-        <button class="btn-danger btn-small" onclick="adminDeleteForum(${f.id})">Удалить</button>
+        <button class="btn-danger btn-small" data-admin-delforum="${f.id}">Удалить</button>
       </div>
     `).join('') || '<div style="color:#888;">Форумов нет</div>'}
   `;
+  contentEl.querySelectorAll('[data-admin-delgroup]').forEach(n => {
+    n.addEventListener('click', () => adminDeleteGroup(Number(n.dataset.adminDelgroup)));
+  });
+  contentEl.querySelectorAll('[data-admin-delforum]').forEach(n => {
+    n.addEventListener('click', () => adminDeleteForum(Number(n.dataset.adminDelforum)));
+  });
 }
 
 async function adminBan(id) { await api('/admin/ban/' + id, 'POST'); loadAdmin(); }
-async function adminDeleteUser(id) {
-  if (!confirm('Удалить пользователя? Все его данные тоже удалятся.')) return;
-  await api('/admin/users/' + id, 'DELETE'); loadAdmin();
-}
-async function adminDeleteGroup(id) {
-  if (!confirm('Удалить группу?')) return;
-  await api('/admin/groups/' + id, 'DELETE'); loadAdmin();
-}
-async function adminDeleteForum(id) {
-  if (!confirm('Удалить форум?')) return;
-  await api('/admin/forums/' + id, 'DELETE'); loadAdmin();
+async function adminDeleteUser(id) { if (!confirm('Удалить?')) return; await api('/admin/users/' + id, 'DELETE'); loadAdmin(); }
+async function adminDeleteGroup(id) { if (!confirm('Удалить?')) return; await api('/admin/groups/' + id, 'DELETE'); loadAdmin(); }
+async function adminDeleteForum(id) { if (!confirm('Удалить?')) return; await api('/admin/forums/' + id, 'DELETE'); loadAdmin(); }
+
+// ============================================================
+// МЕДИА
+// ============================================================
+function openMediaViewer(url) {
+  document.getElementById('mediaViewerImg').src = url;
+  document.getElementById('mediaViewer').classList.add('open');
 }
 
-// === УТИЛИТЫ ===
-function esc(s) {
-  return String(s ?? '').replace(/[&<>"']/g, c => ({
-    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-  }[c]));
+function closeMediaViewer() {
+  document.getElementById('mediaViewer').classList.remove('open');
 }
 
+// ============================================================
+// УТИЛИТЫ
+// ============================================================
 function fmtDate(d) {
   const date = new Date(d);
   const now = new Date();
@@ -1488,7 +2174,9 @@ function fmtDate(d) {
   return date.toLocaleDateString('ru-RU') + ' ' + date.toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'});
 }
 
-// === ЗАПУСК ===
+// ============================================================
+// ЗАПУСК
+// ============================================================
 if (token) startApp(); else showAuth();
 </script>
 </body>
