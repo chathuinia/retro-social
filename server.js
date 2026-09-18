@@ -1,4 +1,4 @@
-// server.js — соцсеть + форумы + группы + поиск с подсказками + истории + профиль + стикеры + звонки + уведомления
+// server.js — соцсеть + форумы + группы + поиск + истории + профиль + стикеры + звонки + защита от XSS/SVG
 const express = require('express');
 const http = require('http');
 const path = require('path');
@@ -14,11 +14,23 @@ const io = new Server(server, { cors: { origin: '*' } });
 app.use(express.json({ limit: '50mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Заголовки безопасности
+// === ЗАГОЛОВКИ БЕЗОПАСНОСТИ ===
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.setHeader('Referrer-Policy', 'no-referrer');
+  res.setHeader('Content-Security-Policy',
+    "default-src 'self'; " +
+    "img-src 'self' data: https: http: blob:; " +
+    "media-src 'self' data: https: http: blob:; " +
+    "script-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.socket.io; " +
+    "style-src 'self' 'unsafe-inline'; " +
+    "connect-src 'self' ws: wss:; " +
+    "frame-src https://www.youtube.com https://vk.com; " +
+    "object-src 'none'; " +
+    "base-uri 'self'; " +
+    "form-action 'self';"
+  );
   next();
 });
 
@@ -50,7 +62,35 @@ const pool = new Pool({
 
 pool.on('error', (err) => console.error('POOL ERROR:', err.message));
 
-// === ИНИЦИАЛИЗАЦИЯ ===
+// ============================================================
+// ЗАЩИТА ОТ ЗАПРЕЩЁННОГО КОНТЕНТА (SVG, XSS)
+// ============================================================
+function containsForbidden(str) {
+  if (!str) return false;
+  const s = String(str);
+  return /<svg|<script|<iframe|<object|<embed|javascript:|vbscript:|data:text\/html|data:image\/svg|onerror\s*=|onload\s*=|onclick\s*=/i.test(s);
+}
+
+function isValidUrl(url) {
+  if (!url) return false;
+  const s = String(url).trim().toLowerCase();
+  if (s.startsWith('data:')) {
+    return s.startsWith('data:image/png') ||
+           s.startsWith('data:image/jpeg') ||
+           s.startsWith('data:image/jpg') ||
+           s.startsWith('data:image/gif') ||
+           s.startsWith('data:image/webp') ||
+           s.startsWith('data:video/mp4') ||
+           s.startsWith('data:video/webm') ||
+           s.startsWith('data:audio/');
+  }
+  if (s.startsWith('javascript:') || s.startsWith('vbscript:') || s.startsWith('file:')) return false;
+  return true;
+}
+
+// ============================================================
+// ИНИЦИАЛИЗАЦИЯ БД
+// ============================================================
 async function initDB() {
   console.log('Инициализация таблиц...');
   await pool.query(`
@@ -223,6 +263,9 @@ async function initDB() {
       ip VARCHAR(50) DEFAULT '',
       created_at TIMESTAMP DEFAULT NOW()
     );
+
+    CREATE INDEX IF NOT EXISTS idx_audit_user_date ON audit_log(user_id, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_stories_expires ON stories(expires_at);
   `);
 
   const alterQueries = [
@@ -246,7 +289,9 @@ async function initDB() {
   console.log('Таблицы готовы');
 }
 
-// === AUTH ===
+// ============================================================
+// AUTH
+// ============================================================
 function auth(req, res, next) {
   const token = req.headers.authorization?.split(' ')[1];
   if (!token) return res.status(401).json({ error: 'Нет токена' });
@@ -278,7 +323,9 @@ async function audit(req, action, details = '') {
   } catch (e) {}
 }
 
-// === РЕГИСТРАЦИЯ / ВХОД ===
+// ============================================================
+// РЕГИСТРАЦИЯ / ВХОД
+// ============================================================
 app.post('/api/register', async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) return res.status(400).json({ error: 'Заполните поля' });
@@ -318,7 +365,9 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// === ME / ПРОФИЛЬ ===
+// ============================================================
+// ME / ПРОФИЛЬ
+// ============================================================
 app.get('/api/me', auth, async (req, res) => {
   try {
     const r = await pool.query('SELECT id, username, avatar, status, bio, role FROM users WHERE id=$1', [req.user.id]);
@@ -328,6 +377,10 @@ app.get('/api/me', auth, async (req, res) => {
 
 app.put('/api/me', auth, async (req, res) => {
   const { status, avatar, bio } = req.body;
+  if (containsForbidden(status) || containsForbidden(avatar) || containsForbidden(bio)) {
+    await audit(req, 'FORBIDDEN_CONTENT_ATTEMPT', 'profile');
+    return res.status(400).json({ error: 'Запрещённый контент' });
+  }
   try {
     await pool.query(
       'UPDATE users SET status=$1, avatar=$2, bio=$3 WHERE id=$4',
@@ -366,7 +419,9 @@ app.get('/api/users', auth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// === ГАЛЕРЕЯ ПРОФИЛЯ ===
+// ============================================================
+// ГАЛЕРЕЯ ПРОФИЛЯ
+// ============================================================
 app.get('/api/profile/gallery', auth, async (req, res) => {
   try {
     const r = await pool.query(
@@ -380,6 +435,10 @@ app.get('/api/profile/gallery', auth, async (req, res) => {
 app.post('/api/profile/gallery', auth, async (req, res) => {
   const { url, media_type, title } = req.body;
   if (!url) return res.status(400).json({ error: 'Нет ссылки' });
+  if (containsForbidden(url) || !isValidUrl(url)) {
+    await audit(req, 'FORBIDDEN_CONTENT_ATTEMPT', 'gallery');
+    return res.status(400).json({ error: 'Запрещённый контент' });
+  }
   try {
     const r = await pool.query(
       'INSERT INTO profile_gallery(user_id, url, media_type, title) VALUES($1,$2,$3,$4) RETURNING *',
@@ -399,7 +458,9 @@ app.delete('/api/profile/gallery/:id', auth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// === ИСТОРИИ ===
+// ============================================================
+// ИСТОРИИ
+// ============================================================
 app.get('/api/stories', auth, async (req, res) => {
   try {
     await pool.query('DELETE FROM stories WHERE expires_at < NOW()');
@@ -420,6 +481,14 @@ app.post('/api/stories', auth, async (req, res) => {
   const { content, image, video, background } = req.body;
   if (!content?.trim() && !image && !video) {
     return res.status(400).json({ error: 'Пустая история' });
+  }
+  if (containsForbidden(content) || containsForbidden(image) || containsForbidden(video)) {
+    await audit(req, 'FORBIDDEN_CONTENT_ATTEMPT', 'story');
+    return res.status(400).json({ error: 'Запрещённый контент' });
+  }
+  if ((image && !isValidUrl(image)) || (video && !isValidUrl(video))) {
+    await audit(req, 'FORBIDDEN_CONTENT_ATTEMPT', 'story_url');
+    return res.status(400).json({ error: 'Недопустимый URL' });
   }
   try {
     const r = await pool.query(
@@ -455,7 +524,9 @@ app.delete('/api/stories/:id', auth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// === ПОСТЫ ===
+// ============================================================
+// ПОСТЫ
+// ============================================================
 app.get('/api/posts', auth, async (req, res) => {
   try {
     const r = await pool.query(`
@@ -473,6 +544,14 @@ app.post('/api/posts', auth, async (req, res) => {
   const { content, image, video, gif, sticker } = req.body;
   if (!content?.trim() && !image && !video && !gif && !sticker) {
     return res.status(400).json({ error: 'Пустой пост' });
+  }
+  if (containsForbidden(content) || containsForbidden(image) || containsForbidden(video) || containsForbidden(gif)) {
+    await audit(req, 'FORBIDDEN_CONTENT_ATTEMPT', 'post');
+    return res.status(400).json({ error: 'Запрещённый контент' });
+  }
+  if ((image && !isValidUrl(image)) || (video && !isValidUrl(video)) || (gif && !isValidUrl(gif))) {
+    await audit(req, 'FORBIDDEN_CONTENT_ATTEMPT', 'post_url');
+    return res.status(400).json({ error: 'Недопустимый URL' });
   }
   try {
     const r = await pool.query(
@@ -511,7 +590,9 @@ app.post('/api/like/:id', auth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// === СООБЩЕНИЯ ===
+// ============================================================
+// СООБЩЕНИЯ
+// ============================================================
 app.get('/api/messages/:userId', auth, async (req, res) => {
   try {
     const r = await pool.query(`
@@ -530,6 +611,18 @@ app.post('/api/messages/:userId', auth, async (req, res) => {
   const { content, media, sticker } = req.body;
   if (!content?.trim() && (!media || !media.length) && !sticker) {
     return res.status(400).json({ error: 'Пусто' });
+  }
+  if (containsForbidden(content)) {
+    await audit(req, 'FORBIDDEN_CONTENT_ATTEMPT', 'message');
+    return res.status(400).json({ error: 'Запрещённый контент' });
+  }
+  if (media && media.length) {
+    for (const m of media) {
+      if (containsForbidden(m.url?.slice(0, 500) || '')) {
+        await audit(req, 'FORBIDDEN_CONTENT_ATTEMPT', 'message_media');
+        return res.status(400).json({ error: 'Запрещённое вложение' });
+      }
+    }
   }
   try {
     const r = await pool.query(
@@ -557,7 +650,9 @@ app.post('/api/messages/:userId', auth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// === ФОРУМЫ ===
+// ============================================================
+// ФОРУМЫ
+// ============================================================
 app.get('/api/forums', auth, async (req, res) => {
   try {
     const r = await pool.query(`
@@ -574,6 +669,10 @@ app.get('/api/forums', auth, async (req, res) => {
 app.post('/api/forums', auth, async (req, res) => {
   const { title, description } = req.body;
   if (!title?.trim()) return res.status(400).json({ error: 'Введите название' });
+  if (containsForbidden(title) || containsForbidden(description)) {
+    await audit(req, 'FORBIDDEN_CONTENT_ATTEMPT', 'forum');
+    return res.status(400).json({ error: 'Запрещённый контент' });
+  }
   try {
     const r = await pool.query('INSERT INTO forums(title, description, created_by) VALUES($1,$2,$3) RETURNING *',
       [title, description || '', req.user.id]);
@@ -598,6 +697,10 @@ app.get('/api/forums/:id', auth, async (req, res) => {
 app.post('/api/forums/:id/topics', auth, async (req, res) => {
   const { title } = req.body;
   if (!title?.trim()) return res.status(400).json({ error: 'Введите название' });
+  if (containsForbidden(title)) {
+    await audit(req, 'FORBIDDEN_CONTENT_ATTEMPT', 'topic');
+    return res.status(400).json({ error: 'Запрещённый контент' });
+  }
   try {
     const r = await pool.query('INSERT INTO forum_topics(forum_id, user_id, title) VALUES($1,$2,$3) RETURNING *',
       [req.params.id, req.user.id, title]);
@@ -626,6 +729,10 @@ app.get('/api/topics/:id', auth, async (req, res) => {
 app.post('/api/topics/:id/posts', auth, async (req, res) => {
   const { content } = req.body;
   if (!content?.trim()) return res.status(400).json({ error: 'Пусто' });
+  if (containsForbidden(content)) {
+    await audit(req, 'FORBIDDEN_CONTENT_ATTEMPT', 'forum_post');
+    return res.status(400).json({ error: 'Запрещённый контент' });
+  }
   try {
     const r = await pool.query('INSERT INTO forum_posts(topic_id, user_id, content) VALUES($1,$2,$3) RETURNING *',
       [req.params.id, req.user.id, content]);
@@ -635,7 +742,9 @@ app.post('/api/topics/:id/posts', auth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// === ГРУППЫ ===
+// ============================================================
+// ГРУППЫ
+// ============================================================
 app.get('/api/groups', auth, async (req, res) => {
   try {
     const r = await pool.query(`
@@ -652,6 +761,10 @@ app.get('/api/groups', auth, async (req, res) => {
 app.post('/api/groups', auth, async (req, res) => {
   const { name, description, avatar } = req.body;
   if (!name?.trim()) return res.status(400).json({ error: 'Введите название' });
+  if (containsForbidden(name) || containsForbidden(description) || containsForbidden(avatar)) {
+    await audit(req, 'FORBIDDEN_CONTENT_ATTEMPT', 'group');
+    return res.status(400).json({ error: 'Запрещённый контент' });
+  }
   try {
     const r = await pool.query('INSERT INTO groups(name, description, avatar, created_by) VALUES($1,$2,$3,$4) RETURNING *',
       [name, description || '', avatar || '', req.user.id]);
@@ -704,6 +817,14 @@ app.get('/api/groups/:id/posts', auth, async (req, res) => {
 app.post('/api/groups/:id/posts', auth, async (req, res) => {
   const { content, image, video, gif, sticker } = req.body;
   if (!content?.trim() && !image && !video && !gif && !sticker) return res.status(400).json({ error: 'Пусто' });
+  if (containsForbidden(content) || containsForbidden(image) || containsForbidden(video) || containsForbidden(gif)) {
+    await audit(req, 'FORBIDDEN_CONTENT_ATTEMPT', 'group_post');
+    return res.status(400).json({ error: 'Запрещённый контент' });
+  }
+  if ((image && !isValidUrl(image)) || (video && !isValidUrl(video)) || (gif && !isValidUrl(gif))) {
+    await audit(req, 'FORBIDDEN_CONTENT_ATTEMPT', 'group_post_url');
+    return res.status(400).json({ error: 'Недопустимый URL' });
+  }
   try {
     const member = await pool.query('SELECT 1 FROM group_members WHERE group_id=$1 AND user_id=$2', [req.params.id, req.user.id]);
     if (!member.rows[0]) return res.status(403).json({ error: 'Вы не в группе' });
@@ -739,7 +860,9 @@ app.get('/api/groups/:id/members', auth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// === НОВОСТИ ===
+// ============================================================
+// НОВОСТИ
+// ============================================================
 app.get('/api/news', auth, async (req, res) => {
   try {
     const r = await pool.query('SELECT * FROM news ORDER BY created_at DESC LIMIT 50');
@@ -750,6 +873,14 @@ app.get('/api/news', auth, async (req, res) => {
 app.post('/api/news', auth, adminOnly, async (req, res) => {
   const { title, content, image } = req.body;
   if (!title?.trim() || !content?.trim()) return res.status(400).json({ error: 'Заполните' });
+  if (containsForbidden(title) || containsForbidden(content) || containsForbidden(image)) {
+    await audit(req, 'FORBIDDEN_CONTENT_ATTEMPT', 'news');
+    return res.status(400).json({ error: 'Запрещённый контент' });
+  }
+  if (image && !isValidUrl(image)) {
+    await audit(req, 'FORBIDDEN_CONTENT_ATTEMPT', 'news_url');
+    return res.status(400).json({ error: 'Недопустимый URL' });
+  }
   try {
     const r = await pool.query('INSERT INTO news(title, content, image) VALUES($1,$2,$3) RETURNING *',
       [title, content, image || '']);
@@ -763,7 +894,9 @@ app.delete('/api/news/:id', auth, adminOnly, async (req, res) => {
   catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// === ПАРТИИ ===
+// ============================================================
+// ПАРТИИ
+// ============================================================
 app.get('/api/parties', auth, async (req, res) => {
   try {
     const parties = await pool.query(`SELECT p.*, (SELECT COUNT(*) FROM votes WHERE party_id=p.id) AS votes FROM parties p ORDER BY p.created_at ASC`);
@@ -775,6 +908,10 @@ app.get('/api/parties', auth, async (req, res) => {
 app.post('/api/parties', auth, adminOnly, async (req, res) => {
   const { name, description, logo } = req.body;
   if (!name?.trim()) return res.status(400).json({ error: 'Введите название' });
+  if (containsForbidden(name) || containsForbidden(description) || containsForbidden(logo)) {
+    await audit(req, 'FORBIDDEN_CONTENT_ATTEMPT', 'party');
+    return res.status(400).json({ error: 'Запрещённый контент' });
+  }
   try {
     const r = await pool.query('INSERT INTO parties(name, description, logo) VALUES($1,$2,$3) RETURNING *',
       [name, description || '', logo || '']);
@@ -798,7 +935,9 @@ app.post('/api/parties/vote/:id', auth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// === ПОИСК С ПОДСКАЗКАМИ ===
+// ============================================================
+// ПОИСК С ПОДСКАЗКАМИ
+// ============================================================
 app.get('/api/search/suggest', auth, async (req, res) => {
   const q = (req.query.q || '').trim();
   if (!q || q.length < 2) return res.json({ users: [], groups: [], forums: [], posts: [] });
@@ -825,7 +964,25 @@ app.get('/api/search', auth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// === АДМИНКА ===
+// ============================================================
+// БЕЗОПАСНОСТЬ — ЛОГ ПОПЫТОК
+// ============================================================
+app.post('/api/security/attempt', auth, async (req, res) => {
+  const { reason } = req.body;
+  try {
+    const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || '';
+    await pool.query(
+      'INSERT INTO audit_log(user_id, username, action, details, ip) VALUES($1,$2,$3,$4,$5)',
+      [req.user.id, req.user.username, 'FORBIDDEN_CONTENT_ATTEMPT',
+       (reason || 'unknown').slice(0, 500), ip]
+    );
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ============================================================
+// АДМИНКА
+// ============================================================
 app.get('/api/admin/stats', auth, adminOnly, async (req, res) => {
   try {
     const [u, p, g, f, t, m, n] = await Promise.all([
@@ -895,7 +1052,9 @@ app.get('/api/admin/audit', auth, adminOnly, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// === SOCKET ===
+// ============================================================
+// SOCKET.IO
+// ============================================================
 io.use((socket, next) => {
   try {
     socket.user = jwt.verify(socket.handshake.auth.token, JWT_SECRET);
@@ -926,7 +1085,9 @@ io.on('connection', (socket) => {
   socket.on('webrtc:ice', ({ to, candidate }) => io.to('user_' + to).emit('webrtc:ice', { from: socket.user.id, candidate }));
 });
 
-// === ЗАПУСК ===
+// ============================================================
+// ЗАПУСК
+// ============================================================
 const PORT = process.env.PORT || 3000;
 initDB()
   .then(() => server.listen(PORT, () => console.log(`Сервер на порту ${PORT}`)))
