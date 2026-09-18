@@ -1,4 +1,4 @@
-// server.js — соцсеть + форумы + группы + игры + Retromusic + префиксы + сброс пароля + 2 владельца
+// server.js — соцсеть + форумы + группы + игры + Retromusic + AI-Арт + 2 владельца
 const express = require('express');
 const http = require('http');
 const path = require('path');
@@ -34,7 +34,7 @@ app.use((req, res, next) => {
 const HARDCODED_DB_URL = 'postgresql://neondb_owner:npg_yOQcIwub8V6N@ep-solitary-rain-a5orxtnv-pooler.us-east-2.aws.neon.tech/neondb';
 const HARDCODED_JWT_SECRET = 'retro2010secret123';
 
-// ВЛАДЕЛЬЦЫ (нельзя забанить, удалить, снять с роли)
+// ВЛАДЕЛЬЦЫ
 const OWNER_USERNAMES = ['lol', 'qwyrta'];
 const OWNER_USERNAME = OWNER_USERNAMES[0];
 // ============================================================
@@ -225,6 +225,11 @@ async function initDB() {
       track_id INTEGER REFERENCES tracks(id) ON DELETE CASCADE, position INTEGER DEFAULT 0,
       UNIQUE(playlist_id, track_id)
     );
+    CREATE TABLE IF NOT EXISTS ai_creations (
+      id SERIAL PRIMARY KEY, user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      prompt TEXT NOT NULL, url TEXT NOT NULL, model VARCHAR(50) DEFAULT 'flux',
+      created_at TIMESTAMP DEFAULT NOW()
+    );
     CREATE INDEX IF NOT EXISTS idx_audit_user_date ON audit_log(user_id, created_at DESC);
     CREATE INDEX IF NOT EXISTS idx_stories_expires ON stories(expires_at);
   `);
@@ -241,7 +246,6 @@ async function initDB() {
   ];
   for (const q of alterQueries) { try { await pool.query(q); } catch (e) {} }
 
-  // ВЫДАЁМ РОЛЬ ADMIN ВСЕМ ВЛАДЕЛЬЦАМ
   try {
     for (const name of OWNER_USERNAMES) {
       await pool.query(`UPDATE users SET role='admin' WHERE username=$1`, [name]);
@@ -964,6 +968,38 @@ app.post('/api/playlists/:id/add', auth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ============================================================
+// AI-АРТ (Pollinations, без API-ключей)
+// ============================================================
+app.get('/api/ai/art', auth, (req, res) => {
+  const prompt = (req.query.prompt || '').trim();
+  if (!prompt) return res.status(400).json({ error: 'Введи текст' });
+  if (prompt.length > 500) return res.status(400).json({ error: 'Текст слишком длинный (макс. 500)' });
+  if (containsForbidden(prompt)) return res.status(400).json({ error: 'Запрещённый текст' });
+
+  const width = Math.min(2048, Math.max(256, Number(req.query.width) || 1024));
+  const height = Math.min(2048, Math.max(256, Number(req.query.height) || 1024));
+  const model = req.query.model || 'flux';
+  const seed = req.query.seed || Math.floor(Math.random() * 1000000);
+
+  const encoded = encodeURIComponent(prompt);
+  const imageUrl = `https://image.pollinations.ai/prompt/${encoded}?width=${width}&height=${height}&model=${model}&seed=${seed}&nologo=true`;
+
+  audit(req, 'AI_ART', 'prompt=' + prompt.slice(0, 100)).catch(() => {});
+
+  pool.query('INSERT INTO ai_creations(user_id, prompt, url, model) VALUES($1,$2,$3,$4)',
+    [req.user.id, prompt.slice(0, 500), imageUrl, model]).catch(() => {});
+
+  res.json({ url: imageUrl, prompt, width, height, model, seed });
+});
+
+app.get('/api/ai/history', auth, async (req, res) => {
+  try {
+    const r = await pool.query('SELECT * FROM ai_creations WHERE user_id=$1 ORDER BY created_at DESC LIMIT 50', [req.user.id]);
+    res.json(r.rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // ПОИСК
 app.get('/api/search/suggest', auth, async (req, res) => {
   const q = (req.query.q || '').trim();
@@ -1000,7 +1036,7 @@ app.post('/api/security/attempt', auth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// СБРОС ПАРОЛЯ АДМИНОМ
+// СБРОС ПАРОЛЯ
 app.post('/api/admin/reset-password/:id', auth, adminOnly, async (req, res) => {
   const { newPassword } = req.body;
   const targetId = Number(req.params.id);
