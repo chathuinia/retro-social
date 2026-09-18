@@ -31,7 +31,7 @@ app.use((req, res, next) => {
 // ============================================================
 // ВСТАВЬТЕ СВОЮ СТРОКУ ИЗ NEON НИЖЕ (без ?sslmode=require)
 // ============================================================
-const HARDCODED_DB_URL = 'postgresql://neondb_owner:npg_XXXXXX@ep-xxx-xxx.neon.tech/neondb';
+const HARDCODED_DB_URL = 'postgresql://neondb_owner:npg_yOQcIwub8V6N@ep-solitary-rain-a5orxtnv-pooler.us-east-2.aws.neon.tech/neondb';
 const HARDCODED_JWT_SECRET = 'retro2010secret123';
 
 // ВЛАДЕЛЬЦЫ (нельзя забанить, удалить, снять с роли)
