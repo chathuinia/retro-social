@@ -1,4 +1,4 @@
-// server.js — соцсеть + форумы + группы + игры + Retromusic + префиксы + сброс пароля
+// server.js — соцсеть + форумы + группы + игры + Retromusic + префиксы + сброс пароля + 2 владельца
 const express = require('express');
 const http = require('http');
 const path = require('path');
@@ -29,10 +29,14 @@ app.use((req, res, next) => {
 });
 
 // ============================================================
-const HARDCODED_DB_URL = 'postgresql://neondb_owner:npg_yOQcIwub8V6N@ep-solitary-rain-a5orxtnv-pooler.us-east-2.aws.neon.tech/neondb';
+// ВСТАВЬТЕ СВОЮ СТРОКУ ИЗ NEON НИЖЕ (без ?sslmode=require)
+// ============================================================
+const HARDCODED_DB_URL = 'postgresql://neondb_owner:npg_XXXXXX@ep-xxx-xxx.neon.tech/neondb';
 const HARDCODED_JWT_SECRET = 'retro2010secret123';
+
+// ВЛАДЕЛЬЦЫ (нельзя забанить, удалить, снять с роли)
 const OWNER_USERNAMES = ['lol', 'qwyrta'];
-const OWNER_USERNAME = OWNER_USERNAMES[0]; // первый — главный владелец (для обратной совместимости)
+const OWNER_USERNAME = OWNER_USERNAMES[0];
 // ============================================================
 
 const JWT_SECRET = process.env.JWT_SECRET || HARDCODED_JWT_SECRET || 'retro-2010-secret';
@@ -42,7 +46,7 @@ dbUrl = dbUrl.replace(/[?&]sslmode=[^&]*/g, '').replace(/[?&]channel_binding=[^&
 console.log('=== DB CONFIG ===');
 console.log('Источник DATABASE_URL:', process.env.DATABASE_URL ? 'ENV' : 'HARDCODED');
 console.log('Длина строки:', dbUrl.length);
-console.log('Владелец:', OWNER_USERNAME);
+console.log('Владельцы:', OWNER_USERNAMES.join(', '));
 
 const pool = new Pool({
   connectionString: dbUrl,
@@ -237,7 +241,13 @@ async function initDB() {
   ];
   for (const q of alterQueries) { try { await pool.query(q); } catch (e) {} }
 
-  try { await pool.query(`UPDATE users SET role='admin' WHERE username=$1`, [OWNER_USERNAME]); } catch (e) {}
+  // ВЫДАЁМ РОЛЬ ADMIN ВСЕМ ВЛАДЕЛЬЦАМ
+  try {
+    for (const name of OWNER_USERNAMES) {
+      await pool.query(`UPDATE users SET role='admin' WHERE username=$1`, [name]);
+    }
+    console.log('✅ Владельцы назначены:', OWNER_USERNAMES.join(', '));
+  } catch (e) { console.error('Ошибка назначения владельцев:', e.message); }
 
   console.log('Таблицы готовы');
 }
@@ -254,10 +264,11 @@ function auth(req, res, next) {
 
 async function adminOnly(req, res, next) {
   try {
-  for (const name of OWNER_USERNAMES) {
-    await pool.query(`UPDATE users SET role='admin' WHERE username=$1`, [name]);
-  }
-} catch (e) {}
+    const r = await pool.query('SELECT role FROM users WHERE id=$1', [req.user.id]);
+    if (!r.rows[0] || r.rows[0].role !== 'admin') return res.status(403).json({ error: 'Только для админа' });
+    next();
+  } catch (e) { res.status(500).json({ error: e.message }); }
+}
 
 async function audit(req, action, details = '') {
   try {
@@ -279,11 +290,12 @@ app.post('/api/register', async (req, res) => {
   try {
     const existing = await pool.query('SELECT id FROM users WHERE username=$1', [username]);
     if (existing.rows.length > 0) return res.status(400).json({ error: 'Логин занят' });
-    const role = username === OWNER_USERNAME ? 'admin' : 'user';
+    const role = OWNER_USERNAMES.includes(username) ? 'admin' : 'user';
     const hash = await bcrypt.hash(password, 10);
     const r = await pool.query('INSERT INTO users(username, password, role) VALUES($1,$2,$3) RETURNING id, username, role',
       [username, hash, role]);
     const token = jwt.sign({ id: r.rows[0].id, username, role }, JWT_SECRET);
+    console.log('Новый пользователь:', username, '(' + role + ')');
     res.json({ token, user: r.rows[0] });
   } catch (e) { res.status(500).json({ error: 'Ошибка: ' + e.message }); }
 });
@@ -301,7 +313,6 @@ app.post('/api/login', async (req, res) => {
   } catch (e) { res.status(500).json({ error: 'Ошибка: ' + e.message }); }
 });
 
-// СМЕНА ПАРОЛЯ (своя)
 app.put('/api/me/password', auth, async (req, res) => {
   const { oldPassword, newPassword } = req.body;
   if (!oldPassword || !newPassword) return res.status(400).json({ error: 'Заполните поля' });
@@ -318,7 +329,6 @@ app.put('/api/me/password', auth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// ME / ПРОФИЛЬ
 app.get('/api/me', auth, async (req, res) => {
   try {
     const r = await pool.query('SELECT id, username, avatar, status, bio, role FROM users WHERE id=$1', [req.user.id]);
@@ -990,37 +1000,26 @@ app.post('/api/security/attempt', auth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// ============================================================
 // СБРОС ПАРОЛЯ АДМИНОМ
-// ============================================================
 app.post('/api/admin/reset-password/:id', auth, adminOnly, async (req, res) => {
   const { newPassword } = req.body;
   const targetId = Number(req.params.id);
-
-  if (targetId === req.user.id) return res.status(400).json({ error: 'Себе сбросить нельзя — используйте смену пароля в профиле' });
+  if (targetId === req.user.id) return res.status(400).json({ error: 'Себе сбросить нельзя' });
   if (!newPassword || newPassword.length < 6) return res.status(400).json({ error: 'Пароль минимум 6 символов' });
   if (newPassword.length > 100) return res.status(400).json({ error: 'Пароль слишком длинный' });
-
   try {
     const target = await pool.query('SELECT id, username FROM users WHERE id=$1', [targetId]);
     if (!target.rows[0]) return res.status(404).json({ error: 'Пользователь не найден' });
-
     const hash = await bcrypt.hash(newPassword, 10);
     await pool.query('UPDATE users SET password=$1 WHERE id=$2', [hash, targetId]);
-
     await audit(req, 'PASSWORD_RESET', 'target=' + target.rows[0].username + ' (id=' + targetId + ')');
-
     try {
       const msgContent = 'Администратор сбросил ваш пароль.\n\nНовый пароль: ' + newPassword + '\n\nСрочно смените его в профиле → «Сменить пароль».';
       const msg = await pool.query('INSERT INTO messages(from_id, to_id, content) VALUES($1,$2,$3) RETURNING *', [req.user.id, targetId, msgContent]);
       io.to('user_' + targetId).emit('new_message', { ...msg.rows[0], from_username: req.user.username, from_prefix: getPrefix(req.user.username) });
     } catch (e) { console.error('Не удалось отправить сообщение:', e.message); }
-
     res.json({ ok: true, username: target.rows[0].username });
-  } catch (e) {
-    console.error('PASSWORD_RESET ERROR:', e.message);
-    res.status(500).json({ error: e.message });
-  }
+  } catch (e) { console.error('PASSWORD_RESET ERROR:', e.message); res.status(500).json({ error: e.message }); }
 });
 
 app.post('/api/admin/generate-password', auth, adminOnly, async (req, res) => {
@@ -1030,9 +1029,7 @@ app.post('/api/admin/generate-password', auth, adminOnly, async (req, res) => {
   res.json({ password });
 });
 
-// ============================================================
 // АДМИНКА
-// ============================================================
 app.get('/api/admin/stats', auth, adminOnly, async (req, res) => {
   try {
     const [u, p, g, f, t, m, n] = await Promise.all([
@@ -1053,18 +1050,25 @@ app.get('/api/admin/users', auth, adminOnly, async (req, res) => {
 app.post('/api/admin/ban/:id', auth, adminOnly, async (req, res) => {
   if (Number(req.params.id) === req.user.id) return res.status(400).json({ error: 'Себя нельзя' });
   try {
-    const r = await pool.query('SELECT banned FROM users WHERE id=$1', [req.params.id]);
-    if (!r.rows[0]) return res.status(404).json({ error: 'Нет' });
-    await pool.query('UPDATE users SET banned=$1 WHERE id=$2', [!r.rows[0].banned, req.params.id]);
-    await audit(req, 'ban', 'target=' + req.params.id);
-    res.json({ banned: !r.rows[0].banned });
+    const target = await pool.query('SELECT username, banned FROM users WHERE id=$1', [req.params.id]);
+    if (!target.rows[0]) return res.status(404).json({ error: 'Нет' });
+    if (OWNER_USERNAMES.includes(target.rows[0].username)) return res.status(400).json({ error: 'Владельца нельзя забанить' });
+    await pool.query('UPDATE users SET banned=$1 WHERE id=$2', [!target.rows[0].banned, req.params.id]);
+    await audit(req, 'ban', 'target=' + target.rows[0].username);
+    res.json({ banned: !target.rows[0].banned });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.delete('/api/admin/users/:id', auth, adminOnly, async (req, res) => {
   if (Number(req.params.id) === req.user.id) return res.status(400).json({ error: 'Себя нельзя' });
-  try { await pool.query('DELETE FROM users WHERE id=$1', [req.params.id]); await audit(req, 'delete_user', 'target=' + req.params.id); res.json({ ok: true }); }
-  catch (e) { res.status(500).json({ error: e.message }); }
+  try {
+    const target = await pool.query('SELECT username FROM users WHERE id=$1', [req.params.id]);
+    if (!target.rows[0]) return res.status(404).json({ error: 'Нет' });
+    if (OWNER_USERNAMES.includes(target.rows[0].username)) return res.status(400).json({ error: 'Владельца нельзя удалить' });
+    await pool.query('DELETE FROM users WHERE id=$1', [req.params.id]);
+    await audit(req, 'delete_user', 'target=' + target.rows[0].username);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.delete('/api/admin/groups/:id', auth, adminOnly, async (req, res) => {
