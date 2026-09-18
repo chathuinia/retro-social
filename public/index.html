@@ -208,6 +208,7 @@
   .banned { color: #c0392b; font-weight: bold; }
   .role-admin { color: #c0392b; font-weight: bold; }
   .role-user { color: #666; }
+  .audit-danger { background: #ffe0e0; }
 
   .search-section { margin-bottom: 15px; }
   .search-section h4 { font-size: 12px; color: #3b5998; margin-bottom: 6px; border-bottom: 1px solid #e0e4ea; padding-bottom: 4px; }
@@ -268,6 +269,48 @@
   .media-viewer.open { display: flex; }
   .media-viewer img, .media-viewer video { max-width: 95vw; max-height: 95vh; border-radius: 4px; }
 
+  /* Полноэкранная плашка-предупреждение */
+  .warn-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0, 0, 0, 0.92);
+    display: none;
+    align-items: center; justify-content: center;
+    z-index: 9999;
+    flex-direction: column;
+    color: white;
+    text-align: center;
+    padding: 20px;
+    animation: warnPulse 0.5s ease-out;
+  }
+  .warn-overlay.open { display: flex; }
+  @keyframes warnPulse {
+    0% { background: rgba(192, 57, 43, 0.95); }
+    100% { background: rgba(0, 0, 0, 0.92); }
+  }
+  .warn-icon { font-size: 120px; margin-bottom: 20px; animation: warnShake 0.6s ease-in-out; }
+  @keyframes warnShake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-15px) rotate(-5deg); }
+    40% { transform: translateX(15px) rotate(5deg); }
+    60% { transform: translateX(-10px) rotate(-3deg); }
+    80% { transform: translateX(10px) rotate(3deg); }
+  }
+  .warn-title {
+    font-size: 48px; font-weight: bold; color: #e74c3c;
+    text-shadow: 2px 2px 0 #000; margin-bottom: 15px; letter-spacing: 2px;
+  }
+  .warn-text { font-size: 22px; margin-bottom: 10px; max-width: 600px; line-height: 1.5; }
+  .warn-subtext { font-size: 14px; color: #bdc3c7; margin-top: 15px; max-width: 500px; }
+  .warn-timer {
+    font-size: 72px; font-weight: bold; color: #f39c12;
+    margin-top: 25px; text-shadow: 2px 2px 0 #000;
+    animation: warnCount 1s infinite;
+  }
+  @keyframes warnCount {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+  }
+
   @media (max-width: 700px) {
     .grid { grid-template-columns: 1fr; }
     .chat-box { width: calc(100% - 20px); right: 10px; }
@@ -275,6 +318,10 @@
     .search-wrap { max-width: none; width: 100%; }
     .profile-header { flex-direction: column; text-align: center; }
     .story-content { width: 95%; height: 75vh; }
+    .warn-icon { font-size: 80px; }
+    .warn-title { font-size: 32px; }
+    .warn-text { font-size: 16px; }
+    .warn-timer { font-size: 48px; }
   }
 </style>
 </head>
@@ -632,8 +679,20 @@
 <!-- УВЕДОМЛЕНИЯ -->
 <div class="toast-container" id="toastContainer"></div>
 
+<!-- ПЛАШКА ПРЕДУПРЕЖДЕНИЯ -->
+<div id="warnOverlay" class="warn-overlay">
+  <div class="warn-icon">🚫</div>
+  <div class="warn-title">АЙ-ЯЙ-ЯЙ! ТАК ДЕЛАТЬ НЕЛЬЗЯ!</div>
+  <div class="warn-text">Тебе грозит бан на год.</div>
+  <div class="warn-subtext">
+    Попытка зафиксирована. Логин, IP и время записаны в журнал безопасности.
+    Администратор увидит это.
+  </div>
+  <div class="warn-timer" id="warnTimer">5</div>
+</div>
+
 <!-- СКРЫТЫЕ INPUT -->
-<input type="file" id="fileInput" accept="image/*,video/*,audio/*,.gif" style="display:none;">
+<input type="file" id="fileInput" accept="image/png,image/jpeg,image/gif,image/webp,video/mp4,video/webm,audio/mpeg,audio/ogg,.gif,.png,.jpg,.jpeg,.webp,.mp4,.webm,.mp3,.ogg" style="display:none;">
 
 <script>
 // ============================================================
@@ -653,6 +712,7 @@ let unreadCounts = {};
 let titleFlashInterval = null;
 let pendingAttach = [];
 let audioCtx = null;
+let selectedBg = '#3b5998';
 
 const STICKERS = [
   '😀','😂','🥰','😎','🤔','😴','🥳','😭','😡','🤯',
@@ -677,7 +737,7 @@ async function api(url, method = 'GET', body = null) {
 }
 
 // ============================================================
-// ESC — усиленный (с бэктиками, слэшами, знаками равенства)
+// ESC — усиленный
 // ============================================================
 function esc(s) {
   return String(s ?? '').replace(/[&<>"'`=\/]/g, c => ({
@@ -690,6 +750,80 @@ function esc(s) {
     '=': '&#61;',
     '/': '&#47;'
   }[c]));
+}
+
+// ============================================================
+// ЗАЩИТА ОТ SVG / XSS
+// ============================================================
+const FORBIDDEN_PATTERNS = [
+  /<svg/i, /<script/i, /<iframe/i, /<object/i, /<embed/i,
+  /javascript:/i, /vbscript:/i,
+  /data:text\/html/i, /data:image\/svg/i,
+  /onerror\s*=/i, /onload\s*=/i, /onclick\s*=/i
+];
+const FORBIDDEN_MIME = ['image/svg+xml', 'image/svg', 'text/html', 'application/xhtml+xml', 'text/xml', 'application/xml'];
+const FORBIDDEN_EXT = ['.svg', '.svgz', '.xml', '.html', '.htm', '.js', '.mjs'];
+
+function containsForbidden(str) {
+  if (!str) return false;
+  const s = String(str);
+  return FORBIDDEN_PATTERNS.some(p => p.test(s));
+}
+
+function isForbiddenFile(file) {
+  if (!file) return false;
+  const type = (file.type || '').toLowerCase();
+  const name = (file.name || '').toLowerCase();
+  if (FORBIDDEN_MIME.includes(type)) return true;
+  for (const ext of FORBIDDEN_EXT) if (name.endsWith(ext)) return true;
+  return false;
+}
+
+function isValidUrl(url) {
+  if (!url) return false;
+  const s = String(url).trim().toLowerCase();
+  if (s.startsWith('data:')) {
+    return s.startsWith('data:image/png') || s.startsWith('data:image/jpeg') ||
+           s.startsWith('data:image/jpg') || s.startsWith('data:image/gif') ||
+           s.startsWith('data:image/webp') || s.startsWith('data:video/mp4') ||
+           s.startsWith('data:video/webm') || s.startsWith('data:audio/');
+  }
+  if (s.startsWith('javascript:') || s.startsWith('vbscript:') || s.startsWith('file:')) return false;
+  return true;
+}
+
+function checkContent(...fields) {
+  for (const f of fields) if (containsForbidden(f)) return true;
+  return false;
+}
+
+let warnTimerInterval = null;
+
+function showForbiddenWarning(reason) {
+  const overlay = document.getElementById('warnOverlay');
+  const timerEl = document.getElementById('warnTimer');
+  if (!overlay) return;
+  overlay.classList.add('open');
+  let count = 5;
+  timerEl.textContent = count;
+  if (warnTimerInterval) clearInterval(warnTimerInterval);
+  warnTimerInterval = setInterval(() => {
+    count--;
+    if (count <= 0) {
+      clearInterval(warnTimerInterval);
+      warnTimerInterval = null;
+      overlay.classList.remove('open');
+    } else {
+      timerEl.textContent = count;
+    }
+  }, 1000);
+  sendSecurityLog(reason).catch(() => {});
+}
+
+async function sendSecurityLog(reason) {
+  try {
+    await api('/security/attempt', 'POST', { reason: reason || 'forbidden_content' });
+  } catch (e) {}
 }
 
 // ============================================================
@@ -735,9 +869,8 @@ function logout() {
 // СТАРТ
 // ============================================================
 async function startApp() {
-  try {
-    me = await api('/me');
-  } catch {
+  try { me = await api('/me'); }
+  catch {
     localStorage.removeItem('token');
     token = null;
     showAuth();
@@ -745,7 +878,6 @@ async function startApp() {
   }
   document.getElementById('auth').style.display = 'none';
   document.getElementById('main').style.display = 'block';
-
   document.getElementById('meName').textContent = me.username + (me.role === 'admin' ? ' 👑' : '');
   document.getElementById('myName').textContent = me.username;
   document.getElementById('myAvatar').textContent = me.username[0].toUpperCase();
@@ -786,11 +918,9 @@ function showPage(page) {
     const el = document.getElementById('page' + p.charAt(0).toUpperCase() + p.slice(1));
     if (el) el.style.display = 'none';
   });
-
   const map = { feed: 'pageFeed', profile: 'pageProfile', news: 'pageNews', groups: 'pageGroups', forums: 'pageForums', vote: 'pageVote', admin: 'pageAdmin', search: 'pageSearch' };
   const el = document.getElementById(map[page]);
   if (el) el.style.display = 'block';
-
   if (page === 'news') loadNews();
   if (page === 'vote') loadParties();
   if (page === 'groups') { document.getElementById('groupsList').style.display = 'block'; document.getElementById('groupView').style.display = 'none'; loadGroups(); }
@@ -821,9 +951,9 @@ function initSocket() {
 function renderMedia(p) {
   let html = '';
   if (p.sticker) html += `<div class="sticker-big">${esc(p.sticker)}</div>`;
-  if (p.image) html += `<img class="media" src="${esc(p.image)}" data-media="${esc(p.image)}" onerror="this.style.display='none'">`;
-  if (p.gif) html += `<img class="media" src="${esc(p.gif)}" data-media="${esc(p.gif)}" onerror="this.style.display='none'">`;
-  if (p.video) html += renderVideo(p.video);
+  if (p.image && isValidUrl(p.image)) html += `<img class="media" src="${esc(p.image)}" data-media="${esc(p.image)}" onerror="this.style.display='none'">`;
+  if (p.gif && isValidUrl(p.gif)) html += `<img class="media" src="${esc(p.gif)}" data-media="${esc(p.gif)}" onerror="this.style.display='none'">`;
+  if (p.video && isValidUrl(p.video)) html += renderVideo(p.video);
   return html;
 }
 
@@ -834,7 +964,7 @@ function renderVideo(url) {
   const vk = url.match(/vk\.com\/video(-?\d+)_(\d+)/);
   if (vk) return `<div class="video-wrap"><iframe src="https://vk.com/video_ext.php?oid=${vk[1]}&id=${vk[2]}&hd=2" allowfullscreen></iframe></div>`;
   if (/\.(mp4|webm|ogg)(\?.*)?$/i.test(url) || /^data:video/.test(url)) return `<video controls src="${esc(url)}"></video>`;
-  return `<div style="margin-top:6px;"><a href="${esc(url)}" target="_blank" style="color:#3b5998;">Видео</a></div>`;
+  return `<div style="margin-top:6px;"><a href="${esc(url)}" target="_blank" rel="noopener noreferrer" style="color:#3b5998;">Видео</a></div>`;
 }
 
 // ============================================================
@@ -845,7 +975,7 @@ async function loadPosts() {
   const el = document.getElementById('posts');
   if (!posts.length) { el.innerHTML = '<div style="color:#888; text-align:center; padding:20px;">Пока пусто</div>'; return; }
   el.innerHTML = posts.map(p => `
-    <div class="post" data-post-id="${p.id}">
+    <div class="post">
       <div class="post-head">
         <div class="avatar" data-profile-uid="${p.user_id}">${p.avatar ? `<img src="${esc(p.avatar)}">` : esc(p.username[0].toUpperCase())}</div>
         <div>
@@ -861,18 +991,10 @@ async function loadPosts() {
     </div>
   `).join('');
 
-  el.querySelectorAll('[data-profile-uid]').forEach(n => {
-    n.addEventListener('click', () => openProfile(Number(n.dataset.profileUid)));
-  });
-  el.querySelectorAll('[data-like-post]').forEach(n => {
-    n.addEventListener('click', () => toggleLike(Number(n.dataset.likePost)));
-  });
-  el.querySelectorAll('[data-delete-post]').forEach(n => {
-    n.addEventListener('click', () => deletePost(Number(n.dataset.deletePost)));
-  });
-  el.querySelectorAll('[data-media]').forEach(n => {
-    n.addEventListener('click', () => openMediaViewer(n.dataset.media));
-  });
+  el.querySelectorAll('[data-profile-uid]').forEach(n => n.addEventListener('click', () => openProfile(Number(n.dataset.profileUid))));
+  el.querySelectorAll('[data-like-post]').forEach(n => n.addEventListener('click', () => toggleLike(Number(n.dataset.likePost))));
+  el.querySelectorAll('[data-delete-post]').forEach(n => n.addEventListener('click', () => deletePost(Number(n.dataset.deletePost))));
+  el.querySelectorAll('[data-media]').forEach(n => n.addEventListener('click', () => openMediaViewer(n.dataset.media)));
 }
 
 async function createPost() {
@@ -882,6 +1004,8 @@ async function createPost() {
   const gif = document.getElementById('postGif').value.trim();
   const sticker = document.getElementById('postStickerPreview').textContent;
   if (!content && !image && !video && !gif && !sticker) return;
+  if (checkContent(content, image, video, gif)) { showForbiddenWarning('В посте найден запрещённый контент'); return; }
+  if ((image && !isValidUrl(image)) || (video && !isValidUrl(video)) || (gif && !isValidUrl(gif))) { showForbiddenWarning('Недопустимый URL'); return; }
   await api('/posts', 'POST', { content, image, video, gif, sticker });
   ['postContent','postImage','postVideo','postGif'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('postStickerPreview').textContent = '';
@@ -892,7 +1016,7 @@ async function toggleLike(id) { await api('/like/' + id, 'POST'); loadPosts(); }
 async function deletePost(id) { if (!confirm('Удалить?')) return; await api('/posts/' + id, 'DELETE'); loadPosts(); }
 
 // ============================================================
-// ДРУЗЬЯ — через data-uid и addEventListener (XSS-безопасно)
+// ДРУЗЬЯ
 // ============================================================
 async function loadFriends() { window._friends = await api('/users'); renderFriends(); }
 
@@ -926,6 +1050,7 @@ function openFriendChat(id, username) { clearUnread(id); openChat(id, username);
 
 async function saveStatus() {
   const status = document.getElementById('myStatus').value;
+  if (containsForbidden(status)) { showForbiddenWarning('В статусе запрещённый контент'); return; }
   await api('/me', 'PUT', { status, avatar: me.avatar || '', bio: me.bio || '' });
   alert('Сохранено');
 }
@@ -952,16 +1077,15 @@ async function openProfile(userId) {
     document.getElementById('galleryUploadBox').style.display = 'none';
   }
 
-  const postsEl = document.getElementById('profilePosts');
-  postsEl.innerHTML = data.posts.map(p => `
+  document.getElementById('profilePosts').innerHTML = data.posts.map(p => `
     <div class="post">
       <div class="post-date">${fmtDate(p.created_at)}</div>
       <div class="post-content">${esc(p.content)}${renderMedia(p)}</div>
     </div>
   `).join('') || '<div style="color:#888;">Постов нет</div>';
 
-  const gallery = data.gallery || [];
   const grid = document.getElementById('galleryGrid');
+  const gallery = data.gallery || [];
   grid.innerHTML = gallery.map(g => `
     <div class="gallery-item" data-gallery-url="${esc(g.url)}">
       ${g.media_type === 'video' ? `<video src="${esc(g.url)}" muted></video>` : `<img src="${esc(g.url)}">`}
@@ -970,26 +1094,17 @@ async function openProfile(userId) {
   `).join('') || '<div style="color:#888; padding:10px;">Пусто</div>';
 
   grid.querySelectorAll('[data-gallery-url]').forEach(n => {
-    n.addEventListener('click', (e) => {
-      if (e.target.dataset.galleryDel) return;
-      openMediaViewer(n.dataset.galleryUrl);
-    });
+    n.addEventListener('click', (e) => { if (e.target.dataset.galleryDel) return; openMediaViewer(n.dataset.galleryUrl); });
   });
   grid.querySelectorAll('[data-gallery-del]').forEach(n => {
-    n.addEventListener('click', (e) => {
-      e.stopPropagation();
-      removeFromGallery(Number(n.dataset.galleryDel));
-    });
+    n.addEventListener('click', (e) => { e.stopPropagation(); removeFromGallery(Number(n.dataset.galleryDel)); });
   });
 
   showProfileTab('posts');
 }
 
 function openMyProfile() { openProfile(me.id); }
-
-function messageCurrentProfile() {
-  if (currentProfileId) openChat(currentProfileId, document.getElementById('profUsername').textContent);
-}
+function messageCurrentProfile() { if (currentProfileId) openChat(currentProfileId, document.getElementById('profUsername').textContent); }
 
 function showProfileTab(tab) {
   document.getElementById('profTabPosts').className = tab === 'posts' ? 'btn-primary' : '';
@@ -1002,6 +1117,7 @@ async function addToGallery() {
   const url = document.getElementById('galleryUrl').value.trim();
   const media_type = document.getElementById('galleryType').value;
   if (!url) return alert('Введите ссылку');
+  if (containsForbidden(url) || !isValidUrl(url)) { showForbiddenWarning('Недопустимый URL галереи'); return; }
   await api('/profile/gallery', 'POST', { url, media_type });
   document.getElementById('galleryUrl').value = '';
   openProfile(me.id);
@@ -1021,18 +1137,13 @@ let currentStoryIndex = 0;
 let currentStoryGroup = [];
 let storyTimer = null;
 let storyStartTime = 0;
-let selectedBg = '#3b5998';
 
 function initBgColors() {
   const colors = ['#3b5998','#c0392b','#27ae60','#8e44ad','#e67e22','#16a085','#2c3e50','#d35400'];
   const el = document.getElementById('bgColors');
   if (!el) return;
-  el.innerHTML = colors.map(c => `
-    <div data-bg="${c}" style="width:30px; height:30px; border-radius:50%; background:${c}; cursor:pointer; border:3px solid ${c === selectedBg ? '#000' : 'transparent'};"></div>
-  `).join('');
-  el.querySelectorAll('[data-bg]').forEach(n => {
-    n.addEventListener('click', () => selectBg(n.dataset.bg));
-  });
+  el.innerHTML = colors.map(c => `<div data-bg="${c}" style="width:30px; height:30px; border-radius:50%; background:${c}; cursor:pointer; border:3px solid ${c === selectedBg ? '#000' : 'transparent'};"></div>`).join('');
+  el.querySelectorAll('[data-bg]').forEach(n => n.addEventListener('click', () => selectBg(n.dataset.bg)));
 }
 
 function selectBg(c) {
@@ -1046,14 +1157,12 @@ async function loadStories() {
   const stories = await api('/stories');
   allStories = stories;
   const bar = document.getElementById('storiesBar');
-
   const grouped = {};
   stories.forEach(s => {
     if (!grouped[s.user_id]) grouped[s.user_id] = { user_id: s.user_id, username: s.username, avatar: s.avatar, stories: [], allViewed: true };
     grouped[s.user_id].stories.push(s);
     if (!s.viewed) grouped[s.user_id].allViewed = false;
   });
-
   const users = Object.values(grouped);
   bar.innerHTML = users.map(u => `
     <div class="story-circle" data-story-uid="${u.user_id}">
@@ -1065,26 +1174,19 @@ async function loadStories() {
       <div class="story-name">${esc(u.username)}</div>
     </div>
   `).join('') || '<div style="color:#888; padding:10px;">Историй пока нет</div>';
-
-  bar.querySelectorAll('[data-story-uid]').forEach(n => {
-    n.addEventListener('click', () => openStoryViewer(Number(n.dataset.storyUid)));
-  });
+  bar.querySelectorAll('[data-story-uid]').forEach(n => n.addEventListener('click', () => openStoryViewer(Number(n.dataset.storyUid))));
 }
 
-function openAddStory() {
-  document.getElementById('addStoryModal').classList.add('open');
-  initBgColors();
-}
-
-function closeAddStory() {
-  document.getElementById('addStoryModal').classList.remove('open');
-}
+function openAddStory() { document.getElementById('addStoryModal').classList.add('open'); initBgColors(); }
+function closeAddStory() { document.getElementById('addStoryModal').classList.remove('open'); }
 
 async function publishStory() {
   const content = document.getElementById('storyText').value.trim();
   const image = document.getElementById('storyImage').value.trim();
   const video = document.getElementById('storyVideo').value.trim();
   if (!content && !image && !video) return alert('Заполните хоть что-то');
+  if (checkContent(content, image, video)) { showForbiddenWarning('В истории запрещённый контент'); return; }
+  if ((image && !isValidUrl(image)) || (video && !isValidUrl(video))) { showForbiddenWarning('Недопустимый URL'); return; }
   await api('/stories', 'POST', { content, image, video, background: selectedBg });
   ['storyText','storyImage','storyVideo'].forEach(id => document.getElementById(id).value = '');
   closeAddStory();
@@ -1105,45 +1207,35 @@ function renderStory() {
   const content = document.getElementById('storyContent');
   content.style.background = s.background || '#3b5998';
   content.innerHTML = '';
-
-  if (s.image) {
+  if (s.image && isValidUrl(s.image)) {
     const img = document.createElement('img');
     img.src = s.image;
     img.onerror = () => img.style.display = 'none';
     content.appendChild(img);
-  } else if (s.video) {
+  } else if (s.video && isValidUrl(s.video)) {
     const v = document.createElement('video');
     v.src = s.video;
-    v.autoplay = true;
-    v.muted = true;
+    v.autoplay = true; v.muted = true;
     content.appendChild(v);
   }
-
   if (s.content) {
     const txt = document.createElement('div');
     txt.className = 'story-text';
     txt.textContent = s.content;
     content.appendChild(txt);
   }
-
   const header = document.getElementById('storyHeader');
   header.innerHTML = `
     <div class="avatar">${s.avatar ? `<img src="${esc(s.avatar)}">` : esc(s.username[0].toUpperCase())}</div>
     <div style="font-weight:bold;">${esc(s.username)}</div>
     <div style="font-size:11px; opacity:0.8; margin-left:auto;">${fmtDate(s.created_at)}</div>
   `;
-
   document.getElementById('storyViews').textContent = `👁 ${s.views} просмотров`;
-
   api('/stories/' + s.id + '/view', 'POST').catch(() => {});
-
   const progress = document.getElementById('storyProgress');
   progress.innerHTML = currentStoryGroup.map((_, i) => `
-    <div class="story-progress-bar">
-      <div class="story-progress-fill" id="storyFill${i}" style="width:${i < currentStoryIndex ? '100%' : '0%'}"></div>
-    </div>
+    <div class="story-progress-bar"><div class="story-progress-fill" id="storyFill${i}" style="width:${i < currentStoryIndex ? '100%' : '0%'}"></div></div>
   `).join('');
-
   if (storyTimer) clearInterval(storyTimer);
   storyStartTime = Date.now();
   const duration = 5000;
@@ -1154,32 +1246,14 @@ function renderStory() {
     if (fill) fill.style.width = percent + '%';
     if (percent >= 100) {
       clearInterval(storyTimer);
-      if (currentStoryIndex < currentStoryGroup.length - 1) {
-        currentStoryIndex++;
-        renderStory();
-      } else {
-        closeStoryViewer();
-      }
+      if (currentStoryIndex < currentStoryGroup.length - 1) { currentStoryIndex++; renderStory(); }
+      else closeStoryViewer();
     }
   }, 50);
 }
 
-function nextStory() {
-  if (currentStoryIndex < currentStoryGroup.length - 1) {
-    currentStoryIndex++;
-    renderStory();
-  } else {
-    closeStoryViewer();
-  }
-}
-
-function prevStory() {
-  if (currentStoryIndex > 0) {
-    currentStoryIndex--;
-    renderStory();
-  }
-}
-
+function nextStory() { if (currentStoryIndex < currentStoryGroup.length - 1) { currentStoryIndex++; renderStory(); } else closeStoryViewer(); }
+function prevStory() { if (currentStoryIndex > 0) { currentStoryIndex--; renderStory(); } }
 function closeStoryViewer() {
   document.getElementById('storyViewer').classList.remove('open');
   if (storyTimer) clearInterval(storyTimer);
@@ -1191,9 +1265,7 @@ function closeStoryViewer() {
 // ============================================================
 function renderStickerPanel(el) {
   el.innerHTML = STICKERS.map(s => `<button class="sticker-btn" data-sticker="${s}" data-panel="${el.id}">${s}</button>`).join('');
-  el.querySelectorAll('.sticker-btn').forEach(n => {
-    n.addEventListener('click', () => pickSticker(n.dataset.sticker, n.dataset.panel));
-  });
+  el.querySelectorAll('.sticker-btn').forEach(n => n.addEventListener('click', () => pickSticker(n.dataset.sticker, n.dataset.panel)));
 }
 
 function initStickerPanels() {
@@ -1231,17 +1303,14 @@ async function sendSticker() {
 }
 
 // ============================================================
-// ПОИСК С ПОДСКАЗКАМИ — через data-атрибуты
+// ПОИСК
 // ============================================================
 let suggestTimer = null;
 
 function onSearchInput() {
   clearTimeout(suggestTimer);
   const q = document.getElementById('searchInput').value.trim();
-  if (q.length < 2) {
-    document.getElementById('searchSuggest').classList.remove('open');
-    return;
-  }
+  if (q.length < 2) { document.getElementById('searchSuggest').classList.remove('open'); return; }
   suggestTimer = setTimeout(() => loadSuggest(q), 250);
 }
 
@@ -1251,60 +1320,28 @@ async function loadSuggest(q) {
     let html = '';
     if (data.users.length) {
       html += '<div class="suggest-section">Люди</div>';
-      html += data.users.map(u => `
-        <div class="suggest-item" data-suggest-user="${u.id}">
-          <div class="suggest-avatar">${u.avatar ? `<img src="${esc(u.avatar)}">` : esc(u.username[0].toUpperCase())}</div>
-          <span>${esc(u.username)}</span>
-        </div>
-      `).join('');
+      html += data.users.map(u => `<div class="suggest-item" data-suggest-user="${u.id}"><div class="suggest-avatar">${u.avatar ? `<img src="${esc(u.avatar)}">` : esc(u.username[0].toUpperCase())}</div><span>${esc(u.username)}</span></div>`).join('');
     }
     if (data.groups.length) {
       html += '<div class="suggest-section">Группы</div>';
-      html += data.groups.map(g => `
-        <div class="suggest-item" data-suggest-group="${g.id}">
-          <div class="suggest-avatar">${g.avatar ? `<img src="${esc(g.avatar)}">` : esc(g.name[0].toUpperCase())}</div>
-          <span>${esc(g.name)}</span>
-        </div>
-      `).join('');
+      html += data.groups.map(g => `<div class="suggest-item" data-suggest-group="${g.id}"><div class="suggest-avatar">${g.avatar ? `<img src="${esc(g.avatar)}">` : esc(g.name[0].toUpperCase())}</div><span>${esc(g.name)}</span></div>`).join('');
     }
     if (data.forums.length) {
       html += '<div class="suggest-section">Форумы</div>';
-      html += data.forums.map(f => `
-        <div class="suggest-item" data-suggest-forum="${f.id}">
-          <span>${esc(f.title)}</span>
-        </div>
-      `).join('');
+      html += data.forums.map(f => `<div class="suggest-item" data-suggest-forum="${f.id}"><span>${esc(f.title)}</span></div>`).join('');
     }
     const el = document.getElementById('searchSuggest');
     if (!html) { el.classList.remove('open'); return; }
     el.innerHTML = html;
     el.classList.add('open');
-
-    el.querySelectorAll('[data-suggest-user]').forEach(n => {
-      n.addEventListener('click', () => {
-        document.getElementById('searchSuggest').classList.remove('open');
-        openProfile(Number(n.dataset.suggestUser));
-      });
-    });
-    el.querySelectorAll('[data-suggest-group]').forEach(n => {
-      n.addEventListener('click', () => {
-        document.getElementById('searchSuggest').classList.remove('open');
-        openGroup(Number(n.dataset.suggestGroup));
-      });
-    });
-    el.querySelectorAll('[data-suggest-forum]').forEach(n => {
-      n.addEventListener('click', () => {
-        document.getElementById('searchSuggest').classList.remove('open');
-        openForum(Number(n.dataset.suggestForum));
-      });
-    });
+    el.querySelectorAll('[data-suggest-user]').forEach(n => n.addEventListener('click', () => { el.classList.remove('open'); openProfile(Number(n.dataset.suggestUser)); }));
+    el.querySelectorAll('[data-suggest-group]').forEach(n => n.addEventListener('click', () => { el.classList.remove('open'); openGroup(Number(n.dataset.suggestGroup)); }));
+    el.querySelectorAll('[data-suggest-forum]').forEach(n => n.addEventListener('click', () => { el.classList.remove('open'); openForum(Number(n.dataset.suggestForum)); }));
   } catch (e) {}
 }
 
 document.addEventListener('click', (e) => {
-  if (!e.target.closest('.search-wrap')) {
-    document.getElementById('searchSuggest').classList.remove('open');
-  }
+  if (!e.target.closest('.search-wrap')) document.getElementById('searchSuggest').classList.remove('open');
 });
 
 async function doSearch() {
@@ -1315,54 +1352,31 @@ async function doSearch() {
   document.getElementById('searchQuery').textContent = q;
   const data = await api('/search?q=' + encodeURIComponent(q));
   let html = '';
-
   if (data.users.length) {
     html += '<div class="search-section"><h4>Люди (' + data.users.length + ')</h4>';
-    html += data.users.map(u => `
-      <div class="search-item" data-search-uid="${u.id}">
-        <div class="avatar sm">${u.avatar ? `<img src="${esc(u.avatar)}">` : esc(u.username[0].toUpperCase())}</div>
-        <div><b>${esc(u.username)}</b></div>
-      </div>`).join('');
+    html += data.users.map(u => `<div class="search-item" data-search-uid="${u.id}"><div class="avatar sm">${u.avatar ? `<img src="${esc(u.avatar)}">` : esc(u.username[0].toUpperCase())}</div><div><b>${esc(u.username)}</b></div></div>`).join('');
     html += '</div>';
   }
   if (data.posts.length) {
     html += '<div class="search-section"><h4>Посты (' + data.posts.length + ')</h4>';
-    html += data.posts.map(p => `
-      <div class="search-item" style="cursor:default;">
-        <div class="avatar sm">${esc(p.username[0].toUpperCase())}</div>
-        <div style="flex:1;"><b>${esc(p.username)}</b> · ${esc(p.content.slice(0, 100))}</div>
-      </div>`).join('');
+    html += data.posts.map(p => `<div class="search-item" style="cursor:default;"><div class="avatar sm">${esc(p.username[0].toUpperCase())}</div><div style="flex:1;"><b>${esc(p.username)}</b> · ${esc(p.content.slice(0, 100))}</div></div>`).join('');
     html += '</div>';
   }
   if (data.groups.length) {
     html += '<div class="search-section"><h4>Группы (' + data.groups.length + ')</h4>';
-    html += data.groups.map(g => `
-      <div class="search-item" data-search-gid="${g.id}">
-        <div class="avatar sm">${g.avatar ? `<img src="${esc(g.avatar)}">` : esc(g.name[0].toUpperCase())}</div>
-        <div><b>${esc(g.name)}</b> · ${g.members_count} участников</div>
-      </div>`).join('');
+    html += data.groups.map(g => `<div class="search-item" data-search-gid="${g.id}"><div class="avatar sm">${g.avatar ? `<img src="${esc(g.avatar)}">` : esc(g.name[0].toUpperCase())}</div><div><b>${esc(g.name)}</b> · ${g.members_count} участников</div></div>`).join('');
     html += '</div>';
   }
   if (data.forums.length) {
     html += '<div class="search-section"><h4>Форумы (' + data.forums.length + ')</h4>';
-    html += data.forums.map(f => `
-      <div class="search-item" data-search-fid="${f.id}">
-        <div style="flex:1;"><b>${esc(f.title)}</b> · ${f.topics_count} тем</div>
-      </div>`).join('');
+    html += data.forums.map(f => `<div class="search-item" data-search-fid="${f.id}"><div style="flex:1;"><b>${esc(f.title)}</b> · ${f.topics_count} тем</div></div>`).join('');
     html += '</div>';
   }
   if (!html) html = '<div style="color:#888; text-align:center; padding:20px;">Ничего не найдено</div>';
   document.getElementById('searchResults').innerHTML = html;
-
-  document.querySelectorAll('[data-search-uid]').forEach(n => {
-    n.addEventListener('click', () => openProfile(Number(n.dataset.searchUid)));
-  });
-  document.querySelectorAll('[data-search-gid]').forEach(n => {
-    n.addEventListener('click', () => openGroup(Number(n.dataset.searchGid)));
-  });
-  document.querySelectorAll('[data-search-fid]').forEach(n => {
-    n.addEventListener('click', () => openForum(Number(n.dataset.searchFid)));
-  });
+  document.querySelectorAll('[data-search-uid]').forEach(n => n.addEventListener('click', () => openProfile(Number(n.dataset.searchUid))));
+  document.querySelectorAll('[data-search-gid]').forEach(n => n.addEventListener('click', () => openGroup(Number(n.dataset.searchGid))));
+  document.querySelectorAll('[data-search-fid]').forEach(n => n.addEventListener('click', () => openForum(Number(n.dataset.searchFid))));
 }
 
 // ============================================================
@@ -1404,17 +1418,17 @@ function renderMsgMedia(media) {
   if (!media || !media.length) return '';
   let html = '<div class="msg-media">';
   for (const m of media) {
-    if (m.type === 'image' || m.type === 'gif') {
+    if ((m.type === 'image' || m.type === 'gif') && isValidUrl(m.url)) {
       html += `<img src="${esc(m.url)}" data-media="${esc(m.url)}" onerror="this.style.display='none'">`;
-    } else if (m.type === 'audio') {
+    } else if (m.type === 'audio' && isValidUrl(m.url)) {
       html += `<audio controls src="${esc(m.url)}"></audio>`;
-    } else if (m.type === 'video') {
+    } else if (m.type === 'video' && isValidUrl(m.url)) {
       if (/^data:video/.test(m.url) || /\.(mp4|webm|ogg)(\?.*)?$/i.test(m.url)) {
         html += `<video controls src="${esc(m.url)}"></video>`;
       } else {
         const yt = m.url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
         if (yt) html += `<div class="video-wrap"><iframe src="https://www.youtube.com/embed/${yt[1]}" allowfullscreen></iframe></div>`;
-        else html += `<a href="${esc(m.url)}" target="_blank" style="color:#3b5998;">Видео</a>`;
+        else html += `<a href="${esc(m.url)}" target="_blank" rel="noopener noreferrer" style="color:#3b5998;">Видео</a>`;
       }
     }
   }
@@ -1430,16 +1444,28 @@ function openAttach() { document.getElementById('fileInput').click(); }
 document.getElementById('fileInput').addEventListener('change', (e) => {
   const file = e.target.files[0];
   if (!file) return;
+  if (isForbiddenFile(file)) {
+    showForbiddenWarning('Попытка загрузить запрещённый файл: ' + file.name);
+    e.target.value = '';
+    return;
+  }
   let type = 'file';
   if (file.type.startsWith('image/gif') || file.name.toLowerCase().endsWith('.gif')) type = 'gif';
   else if (file.type.startsWith('image/')) type = 'image';
   else if (file.type.startsWith('video/')) type = 'video';
   else if (file.type.startsWith('audio/')) type = 'audio';
+  else { showForbiddenWarning('Недопустимый формат файла'); e.target.value = ''; return; }
 
   if (file.size > 25 * 1024 * 1024) return alert('Файл больше 25 МБ');
 
   const reader = new FileReader();
   reader.onload = () => {
+    if (typeof reader.result === 'string') {
+      if (reader.result.startsWith('data:image/svg') || containsForbidden(reader.result.slice(0, 500))) {
+        showForbiddenWarning('В файле найден запрещённый контент');
+        return;
+      }
+    }
     pendingAttach.push({ type, url: reader.result, filename: file.name });
     renderAttachPreview();
   };
@@ -1455,9 +1481,7 @@ function renderAttachPreview() {
     const icon = a.type === 'image' ? 'IMG' : a.type === 'video' ? 'VID' : a.type === 'audio' ? 'AUD' : a.type === 'gif' ? 'GIF' : 'FILE';
     return `<div class="attach-item">[${icon}] ${esc(a.filename.slice(0, 20))}<span class="rm" data-rm-attach="${i}">×</span></div>`;
   }).join('');
-  el.querySelectorAll('[data-rm-attach]').forEach(n => {
-    n.addEventListener('click', () => removeAttach(Number(n.dataset.rmAttach)));
-  });
+  el.querySelectorAll('[data-rm-attach]').forEach(n => n.addEventListener('click', () => removeAttach(Number(n.dataset.rmAttach))));
 }
 
 function removeAttach(i) { pendingAttach.splice(i, 1); renderAttachPreview(); }
@@ -1466,6 +1490,10 @@ async function sendMsg() {
   const input = document.getElementById('chatInput');
   const content = input.value.trim();
   if ((!content && !pendingAttach.length) || !currentChat) return;
+  if (containsForbidden(content)) { showForbiddenWarning('В сообщении запрещённый контент'); return; }
+  for (const a of pendingAttach) {
+    if (containsForbidden(a.url?.slice(0, 500) || '')) { showForbiddenWarning('Во вложении запрещённый контент'); return; }
+  }
   const media = pendingAttach.map(a => ({ type: a.type, url: a.url, filename: a.filename }));
   input.value = '';
   pendingAttach = [];
@@ -1480,30 +1508,17 @@ async function sendMsg() {
 function handleIncomingMessage(msg) {
   const fromId = msg.from_id;
   const fromName = msg.from_username || ('Пользователь ' + fromId);
-
   if (currentChat && currentChat.id === fromId && !document.hidden) {
     addChatMsg(msg, false);
     playNotificationSound();
     return;
   }
-
   unreadCounts[fromId] = (unreadCounts[fromId] || 0) + 1;
   renderFriends();
   updateTitleWithUnread();
-
-  showToast({
-    userId: fromId,
-    username: fromName,
-    text: summarizeMessage(msg),
-    onClick: () => { clearUnread(fromId); openChat(fromId, fromName); }
-  });
-
+  showToast({ userId: fromId, username: fromName, text: summarizeMessage(msg), onClick: () => { clearUnread(fromId); openChat(fromId, fromName); } });
   playNotificationSound();
-  showSystemNotification(fromName, summarizeMessage(msg), () => {
-    clearUnread(fromId);
-    openChat(fromId, fromName);
-    window.focus();
-  });
+  showSystemNotification(fromName, summarizeMessage(msg), () => { clearUnread(fromId); openChat(fromId, fromName); window.focus(); });
 }
 
 function summarizeMessage(msg) {
@@ -1528,11 +1543,7 @@ function showToast({ userId, username, text, onClick, type }) {
     </div>
     <span class="toast-close">×</span>
   `;
-  const close = (e) => {
-    if (e) e.stopPropagation();
-    toast.classList.add('closing');
-    setTimeout(() => toast.remove(), 300);
-  };
+  const close = (e) => { if (e) e.stopPropagation(); toast.classList.add('closing'); setTimeout(() => toast.remove(), 300); };
   toast.querySelector('.toast-close').addEventListener('click', close);
   toast.addEventListener('click', () => { onClick && onClick(); close(); });
   container.appendChild(toast);
@@ -1550,10 +1561,8 @@ function playNotificationSound() {
     osc.frequency.exponentialRampToValueAtTime(1320, audioCtx.currentTime + 0.08);
     gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    osc.start();
-    osc.stop(audioCtx.currentTime + 0.25);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(); osc.stop(audioCtx.currentTime + 0.25);
   } catch (e) {}
 }
 
@@ -1566,10 +1575,8 @@ function playCallSound() {
     osc.frequency.setValueAtTime(600, audioCtx.currentTime);
     gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    osc.start();
-    osc.stop(audioCtx.currentTime + 0.4);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(); osc.stop(audioCtx.currentTime + 0.4);
   } catch (e) {}
 }
 
@@ -1591,11 +1598,7 @@ function updateTitleWithUnread() {
 }
 
 function clearUnread(userId) {
-  if (unreadCounts[userId]) {
-    delete unreadCounts[userId];
-    renderFriends();
-    updateTitleWithUnread();
-  }
+  if (unreadCounts[userId]) { delete unreadCounts[userId]; renderFriends(); updateTitleWithUnread(); }
 }
 
 function requestNotificationPermission() {
@@ -1615,11 +1618,7 @@ function showSystemNotification(title, body, onClick) {
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden && titleFlashInterval) {
     const total = Object.values(unreadCounts).reduce((a, b) => a + b, 0);
-    if (total > 0) {
-      clearInterval(titleFlashInterval);
-      titleFlashInterval = null;
-      document.title = '(' + total + ') РетроСеть 2010';
-    }
+    if (total > 0) { clearInterval(titleFlashInterval); titleFlashInterval = null; document.title = '(' + total + ') РетроСеть 2010'; }
   }
 });
 
@@ -1648,7 +1647,6 @@ async function startCall(type) {
   try {
     localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: type === 'video' });
   } catch (e) { return alert('Нет доступа к микрофону или камере: ' + e.message); }
-
   document.getElementById('callModal').classList.add('open');
   document.getElementById('callInfo').textContent = 'Звоним ' + currentChat.username + '...';
   document.getElementById('localVideo').srcObject = localStream;
@@ -1678,16 +1676,12 @@ async function setupPeerConnection() {
   try {
     localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: callType === 'video' });
   } catch (e) { alert('Нет доступа'); endCall(); return; }
-
   document.getElementById('localVideo').srcObject = localStream;
   document.getElementById('localVideo').style.display = callType === 'video' ? 'block' : 'none';
-
   pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
   localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
   pc.ontrack = (event) => { document.getElementById('remoteVideo').srcObject = event.streams[0]; };
-  pc.onicecandidate = (event) => {
-    if (event.candidate) socket.emit('webrtc:ice', { to: callPeer, candidate: event.candidate });
-  };
+  pc.onicecandidate = (event) => { if (event.candidate) socket.emit('webrtc:ice', { to: callPeer, candidate: event.candidate }); };
   document.getElementById('callActions').innerHTML = `<button class="call-reject" id="callEndBtn">Завершить</button>`;
   document.getElementById('callEndBtn').addEventListener('click', endCall);
 }
@@ -1720,21 +1714,11 @@ function initCallSocket() {
     document.getElementById('callAcceptBtn').addEventListener('click', acceptCall);
     document.getElementById('callRejectBtn').addEventListener('click', rejectCall);
     document.getElementById('callModal').classList.add('open');
-
-    showToast({
-      userId: data.from,
-      username: data.fromName,
-      text: (data.type === 'video' ? 'Видеозвонок' : 'Аудиозвонок'),
-      type: 'call',
-      onClick: () => { document.getElementById('callModal').classList.add('open'); }
-    });
+    showToast({ userId: data.from, username: data.fromName, text: (data.type === 'video' ? 'Видеозвонок' : 'Аудиозвонок'), type: 'call', onClick: () => { document.getElementById('callModal').classList.add('open'); } });
     playCallSound();
     if (callRingInterval) clearInterval(callRingInterval);
     callRingInterval = setInterval(playCallSound, 3000);
-    showSystemNotification(data.fromName, 'Звонит вам!', () => {
-      document.getElementById('callModal').classList.add('open');
-      window.focus();
-    });
+    showSystemNotification(data.fromName, 'Звонит вам!', () => { document.getElementById('callModal').classList.add('open'); window.focus(); });
   });
 
   socket.on('call:accepted', async () => {
@@ -1778,13 +1762,11 @@ async function loadNews() {
     <div class="news-item">
       <div class="news-title">${esc(n.title)}</div>
       <div class="news-date">${fmtDate(n.created_at)}</div>
-      <div class="news-content">${esc(n.content)}${n.image ? `<img src="${esc(n.image)}" onerror="this.style.display='none'">` : ''}</div>
+      <div class="news-content">${esc(n.content)}${n.image && isValidUrl(n.image) ? `<img src="${esc(n.image)}" onerror="this.style.display='none'">` : ''}</div>
       ${me.role === 'admin' ? `<button class="btn-danger btn-small" data-news-del="${n.id}">Удалить</button>` : ''}
     </div>
   `).join('');
-  el.querySelectorAll('[data-news-del]').forEach(n => {
-    n.addEventListener('click', () => deleteNews(Number(n.dataset.newsDel)));
-  });
+  el.querySelectorAll('[data-news-del]').forEach(n => n.addEventListener('click', () => deleteNews(Number(n.dataset.newsDel))));
 }
 
 async function createNews() {
@@ -1792,6 +1774,8 @@ async function createNews() {
   const content = document.getElementById('newsContent').value.trim();
   const image = document.getElementById('newsImage').value.trim();
   if (!title || !content) return alert('Заполните');
+  if (checkContent(title, content, image)) { showForbiddenWarning('В новости запрещённый контент'); return; }
+  if (image && !isValidUrl(image)) { showForbiddenWarning('Недопустимый URL'); return; }
   await api('/news', 'POST', { title, content, image });
   ['newsTitle','newsContent','newsImage'].forEach(id => document.getElementById(id).value = '');
   loadNews();
@@ -1813,7 +1797,7 @@ async function loadParties() {
     const voted = data.myVote === p.id;
     return `
       <div class="party-card">
-        <div class="party-logo">${p.logo ? `<img src="${esc(p.logo)}">` : esc(p.name[0].toUpperCase())}</div>
+        <div class="party-logo">${p.logo && isValidUrl(p.logo) ? `<img src="${esc(p.logo)}">` : esc(p.name[0].toUpperCase())}</div>
         <div class="party-info">
           <div class="party-name">${esc(p.name)}</div>
           <div class="party-desc">${esc(p.description || '')}</div>
@@ -1827,24 +1811,18 @@ async function loadParties() {
       </div>
     `;
   }).join('');
-  el.querySelectorAll('[data-vote]').forEach(n => {
-    n.addEventListener('click', () => voteFor(Number(n.dataset.vote)));
-  });
-  el.querySelectorAll('[data-party-del]').forEach(n => {
-    n.addEventListener('click', () => deleteParty(Number(n.dataset.partyDel)));
-  });
+  el.querySelectorAll('[data-vote]').forEach(n => n.addEventListener('click', () => voteFor(Number(n.dataset.vote))));
+  el.querySelectorAll('[data-party-del]').forEach(n => n.addEventListener('click', () => deleteParty(Number(n.dataset.partyDel))));
 }
 
-async function voteFor(id) {
-  if (!confirm('Отдать голос? Изменить нельзя.')) return;
-  try { await api('/parties/vote/' + id, 'POST'); loadParties(); } catch (e) { alert(e.message); }
-}
+async function voteFor(id) { if (!confirm('Отдать голос? Изменить нельзя.')) return; try { await api('/parties/vote/' + id, 'POST'); loadParties(); } catch (e) { alert(e.message); } }
 
 async function createParty() {
   const name = document.getElementById('partyName').value.trim();
   const description = document.getElementById('partyDesc').value.trim();
   const logo = document.getElementById('partyLogo').value.trim();
   if (!name) return alert('Введите название');
+  if (checkContent(name, description, logo)) { showForbiddenWarning('В партии запрещённый контент'); return; }
   await api('/parties', 'POST', { name, description, logo });
   ['partyName','partyDesc','partyLogo'].forEach(id => document.getElementById(id).value = '');
   loadParties();
@@ -1862,7 +1840,7 @@ async function loadGroups() {
   el.innerHTML = groups.map(g => `
     <div class="group-item" data-gid="${g.id}">
       <div style="display:flex; gap:8px; align-items:center;">
-        <div class="avatar sm">${g.avatar ? `<img src="${esc(g.avatar)}">` : esc(g.name[0].toUpperCase())}</div>
+        <div class="avatar sm">${g.avatar && isValidUrl(g.avatar) ? `<img src="${esc(g.avatar)}">` : esc(g.name[0].toUpperCase())}</div>
         <div style="flex:1;">
           <div class="forum-title">${esc(g.name)} ${g.is_member ? '✓' : ''}</div>
           <div class="forum-desc">${esc(g.description || '')}</div>
@@ -1871,9 +1849,7 @@ async function loadGroups() {
       </div>
     </div>
   `).join('');
-  el.querySelectorAll('[data-gid]').forEach(n => {
-    n.addEventListener('click', () => openGroup(Number(n.dataset.gid)));
-  });
+  el.querySelectorAll('[data-gid]').forEach(n => n.addEventListener('click', () => openGroup(Number(n.dataset.gid))));
 }
 
 async function createGroup() {
@@ -1881,6 +1857,7 @@ async function createGroup() {
   const description = document.getElementById('groupDesc').value.trim();
   const avatar = document.getElementById('groupAvatar').value.trim();
   if (!name) return alert('Введите название');
+  if (checkContent(name, description, avatar)) { showForbiddenWarning('В группе запрещённый контент'); return; }
   await api('/groups', 'POST', { name, description, avatar });
   ['groupName','groupDesc','groupAvatar'].forEach(id => document.getElementById(id).value = '');
   loadGroups();
@@ -1898,17 +1875,15 @@ async function loadGroupView() {
   const g = await api('/groups/' + currentGroupId);
   document.getElementById('gCrumb').textContent = g.name;
   document.getElementById('gTitle').textContent = g.name;
-  document.getElementById('gAvatar').innerHTML = g.avatar ? `<img src="${esc(g.avatar)}">` : esc(g.name[0].toUpperCase());
+  document.getElementById('gAvatar').innerHTML = g.avatar && isValidUrl(g.avatar) ? `<img src="${esc(g.avatar)}">` : esc(g.name[0].toUpperCase());
   document.getElementById('gMeta').textContent = 'Участников: ' + g.members_count + ' · Создал: ' + (g.author || '—');
   document.getElementById('gDesc').textContent = g.description || '';
   const joinBtn = document.getElementById('gJoinBtn');
   joinBtn.textContent = g.is_member ? 'Выйти' : 'Вступить';
   joinBtn.className = g.is_member ? 'btn-danger' : 'btn-primary';
   document.getElementById('gPostForm').style.display = g.is_member ? 'block' : 'none';
-
   const members = await api('/groups/' + currentGroupId + '/members');
-  const box = document.getElementById('gMembersBox');
-  box.innerHTML = `
+  document.getElementById('gMembersBox').innerHTML = `
     <div style="font-size:11px; color:#666; margin-bottom:4px;">Участники:</div>
     <div style="display:flex; flex-wrap:wrap; gap:6px;">
       ${members.map(m => `<span style="background:#eef1f6; padding:2px 8px; border-radius:3px; font-size:11px;">${m.role === 'admin' ? '(админ) ' : ''}${esc(m.username)}</span>`).join('')}
@@ -1916,11 +1891,7 @@ async function loadGroupView() {
   `;
 }
 
-async function toggleJoinGroup() {
-  await api('/groups/' + currentGroupId + '/join', 'POST');
-  await loadGroupView();
-  await loadGroupPosts();
-}
+async function toggleJoinGroup() { await api('/groups/' + currentGroupId + '/join', 'POST'); await loadGroupView(); await loadGroupPosts(); }
 
 async function loadGroupPosts() {
   const posts = await api('/groups/' + currentGroupId + '/posts');
@@ -1938,9 +1909,7 @@ async function loadGroupPosts() {
       </div>
     </div>
   `).join('');
-  el.querySelectorAll('[data-glike]').forEach(n => {
-    n.addEventListener('click', () => toggleGroupLike(Number(n.dataset.glike)));
-  });
+  el.querySelectorAll('[data-glike]').forEach(n => n.addEventListener('click', () => toggleGroupLike(Number(n.dataset.glike))));
 }
 
 async function createGroupPost() {
@@ -1950,6 +1919,8 @@ async function createGroupPost() {
   const gif = document.getElementById('gPostGif').value.trim();
   const sticker = document.getElementById('groupStickerPreview').textContent;
   if (!content && !image && !video && !gif && !sticker) return;
+  if (checkContent(content, image, video, gif)) { showForbiddenWarning('В посте группы запрещённый контент'); return; }
+  if ((image && !isValidUrl(image)) || (video && !isValidUrl(video)) || (gif && !isValidUrl(gif))) { showForbiddenWarning('Недопустимый URL'); return; }
   try {
     await api('/groups/' + currentGroupId + '/posts', 'POST', { content, image, video, gif, sticker });
     ['gPostContent','gPostImage','gPostVideo','gPostGif'].forEach(id => document.getElementById(id).value = '');
@@ -1974,15 +1945,14 @@ async function loadForums() {
       <div class="forum-meta">Создал: ${esc(f.author || '—')} · Тем: ${f.topics_count} · Сообщений: ${f.posts_count}</div>
     </div>
   `).join('');
-  el.querySelectorAll('[data-fid]').forEach(n => {
-    n.addEventListener('click', () => openForum(Number(n.dataset.fid)));
-  });
+  el.querySelectorAll('[data-fid]').forEach(n => n.addEventListener('click', () => openForum(Number(n.dataset.fid))));
 }
 
 async function createForum() {
   const title = document.getElementById('forumTitle').value.trim();
   const description = document.getElementById('forumDesc').value.trim();
   if (!title) return alert('Введите название');
+  if (checkContent(title, description)) { showForbiddenWarning('На форуме запрещённый контент'); return; }
   await api('/forums', 'POST', { title, description });
   document.getElementById('forumTitle').value = '';
   document.getElementById('forumDesc').value = '';
@@ -2013,14 +1983,13 @@ async function loadForumView() {
       <div class="topic-meta">${t.posts_count} сообщ.</div>
     </div>
   `).join('');
-  el.querySelectorAll('[data-tid]').forEach(n => {
-    n.addEventListener('click', () => openTopic(Number(n.dataset.tid)));
-  });
+  el.querySelectorAll('[data-tid]').forEach(n => n.addEventListener('click', () => openTopic(Number(n.dataset.tid))));
 }
 
 async function createTopic() {
   const title = document.getElementById('topicTitle').value.trim();
   if (!title) return alert('Введите название');
+  if (containsForbidden(title)) { showForbiddenWarning('В теме запрещённый контент'); return; }
   await api('/forums/' + currentForumId + '/topics', 'POST', { title });
   document.getElementById('topicTitle').value = '';
   loadForumView();
@@ -2056,6 +2025,7 @@ async function loadTopic(id) {
 async function replyTopic() {
   const content = document.getElementById('topicReply').value.trim();
   if (!content) return;
+  if (containsForbidden(content)) { showForbiddenWarning('В ответе запрещённый контент'); return; }
   await api('/topics/' + currentTopicId + '/posts', 'POST', { content });
   document.getElementById('topicReply').value = '';
   loadTopic(currentTopicId);
@@ -2075,7 +2045,6 @@ async function loadAdmin() {
     <div class="stat-box"><div class="stat-num">${stats.messages}</div><div class="stat-label">Сообщений</div></div>
     <div class="stat-box"><div class="stat-num">${stats.news}</div><div class="stat-label">Новостей</div></div>
   `;
-
   const users = await api('/admin/users');
   const table = document.getElementById('adminUsersTable');
   table.innerHTML = `
@@ -2096,25 +2065,23 @@ async function loadAdmin() {
       </tr>
     `).join('')}
   `;
-  table.querySelectorAll('[data-admin-ban]').forEach(n => {
-    n.addEventListener('click', () => adminBan(Number(n.dataset.adminBan)));
-  });
-  table.querySelectorAll('[data-admin-deluser]').forEach(n => {
-    n.addEventListener('click', () => adminDeleteUser(Number(n.dataset.adminDeluser)));
-  });
+  table.querySelectorAll('[data-admin-ban]').forEach(n => n.addEventListener('click', () => adminBan(Number(n.dataset.adminBan))));
+  table.querySelectorAll('[data-admin-deluser]').forEach(n => n.addEventListener('click', () => adminDeleteUser(Number(n.dataset.adminDeluser))));
 
   const audit = await api('/admin/audit');
   document.getElementById('adminAuditTable').innerHTML = `
     <tr><th>Время</th><th>Юзер</th><th>Действие</th><th>Детали</th><th>IP</th></tr>
-    ${audit.map(a => `
-      <tr>
+    ${audit.map(a => {
+      const danger = a.action === 'FORBIDDEN_CONTENT_ATTEMPT';
+      return `
+      <tr class="${danger ? 'audit-danger' : ''}">
         <td>${fmtDate(a.created_at)}</td>
         <td>${esc(a.username || '—')}</td>
-        <td>${esc(a.action)}</td>
+        <td>${danger ? '⚠ ' : ''}${esc(a.action)}</td>
         <td>${esc(a.details || '')}</td>
         <td style="font-size:10px; color:#888;">${esc(a.ip || '')}</td>
       </tr>
-    `).join('')}
+    `}).join('')}
   `;
 
   const groups = await api('/groups');
@@ -2136,12 +2103,8 @@ async function loadAdmin() {
       </div>
     `).join('') || '<div style="color:#888;">Форумов нет</div>'}
   `;
-  contentEl.querySelectorAll('[data-admin-delgroup]').forEach(n => {
-    n.addEventListener('click', () => adminDeleteGroup(Number(n.dataset.adminDelgroup)));
-  });
-  contentEl.querySelectorAll('[data-admin-delforum]').forEach(n => {
-    n.addEventListener('click', () => adminDeleteForum(Number(n.dataset.adminDelforum)));
-  });
+  contentEl.querySelectorAll('[data-admin-delgroup]').forEach(n => n.addEventListener('click', () => adminDeleteGroup(Number(n.dataset.adminDelgroup))));
+  contentEl.querySelectorAll('[data-admin-delforum]').forEach(n => n.addEventListener('click', () => adminDeleteForum(Number(n.dataset.adminDelforum))));
 }
 
 async function adminBan(id) { await api('/admin/ban/' + id, 'POST'); loadAdmin(); }
@@ -2153,13 +2116,12 @@ async function adminDeleteForum(id) { if (!confirm('Удалить?')) return; a
 // МЕДИА
 // ============================================================
 function openMediaViewer(url) {
+  if (!isValidUrl(url)) return;
   document.getElementById('mediaViewerImg').src = url;
   document.getElementById('mediaViewer').classList.add('open');
 }
 
-function closeMediaViewer() {
-  document.getElementById('mediaViewer').classList.remove('open');
-}
+function closeMediaViewer() { document.getElementById('mediaViewer').classList.remove('open'); }
 
 // ============================================================
 // УТИЛИТЫ
