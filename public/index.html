@@ -7,174 +7,38 @@
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#1583d7">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="РетроСеть">
 <script src="/socket.io/socket.io.js"></script>
 <script src="https://unpkg.com/@ruffle-rs/ruffle"></script>
 <style>
-/* ============================================================
-   FRUTIGER AERO — ТЕМЫ
-   ============================================================ */
-
 :root {
-  --bg-top: #87CEEB;
-  --bg-mid: #E0F6FF;
-  --bg-bot: #98FB98;
-  --header-top: #73c8f8;
-  --header-mid: #1583d7;
-  --header-bot: #0361a3;
-  --header-hi: #299eef;
-  --border: #024b7f;
-  --btn-top: #73c8f8;
-  --btn-mid: #1583d7;
-  --btn-low: #0361a3;
-  --btn-bot: #299eef;
+  --bg-top: #87CEEB; --bg-mid: #E0F6FF; --bg-bot: #98FB98;
+  --header-top: #73c8f8; --header-mid: #1583d7; --header-bot: #0361a3; --header-hi: #299eef;
+  --border: #024b7f; --btn-top: #73c8f8; --btn-mid: #1583d7; --btn-low: #0361a3; --btn-bot: #299eef;
   --text-shadow: 0 -1px 1px rgba(0,0,0,0.5);
-  --panel: rgba(255, 255, 255, 0.45);
-  --panel-border: rgba(255, 255, 255, 0.9);
-  --accent: #0361a3;
-  --accent-light: #299eef;
-  --shadow: 0 4px 6px rgba(0,0,0,0.2);
+  --panel: rgba(255,255,255,0.45); --panel-border: rgba(255,255,255,0.9);
+  --accent: #0361a3; --accent-light: #299eef;
 }
-
-[data-theme="nature"] {
-  --bg-top: #87CEEB;
-  --bg-mid: #E0FFE8;
-  --bg-bot: #7CCD7C;
-  --header-top: #a8e88a;
-  --header-mid: #4ca64c;
-  --header-bot: #2e7d32;
-  --header-hi: #6bcf6b;
-  --border: #1b5e20;
-  --btn-top: #a8e88a;
-  --btn-mid: #4ca64c;
-  --btn-low: #2e7d32;
-  --btn-bot: #6bcf6b;
-  --accent: #2e7d32;
-  --accent-light: #6bcf6b;
-}
-
-[data-theme="ocean"] {
-  --bg-top: #4FC3F7;
-  --bg-mid: #B3E5FC;
-  --bg-bot: #0288D1;
-  --header-top: #4dd0e1;
-  --header-mid: #00838f;
-  --header-bot: #004d5c;
-  --header-hi: #26c6da;
-  --border: #003c4c;
-  --btn-top: #4dd0e1;
-  --btn-mid: #00838f;
-  --btn-low: #004d5c;
-  --btn-bot: #26c6da;
-  --accent: #006064;
-  --accent-light: #26c6da;
-}
-
-[data-theme="sunset"] {
-  --bg-top: #FFB74D;
-  --bg-mid: #FFE0B2;
-  --bg-bot: #FF7043;
-  --header-top: #ffab91;
-  --header-mid: #e64a19;
-  --header-bot: #bf360c;
-  --header-hi: #ff7043;
-  --border: #8f2300;
-  --btn-top: #ffab91;
-  --btn-mid: #e64a19;
-  --btn-low: #bf360c;
-  --btn-bot: #ff7043;
-  --accent: #bf360c;
-  --accent-light: #ff7043;
-}
-
-[data-theme="dark"] {
-  --bg-top: #1a2634;
-  --bg-mid: #2c3e50;
-  --bg-bot: #0d1b2a;
-  --header-top: #4a6fa5;
-  --header-mid: #2c4a7c;
-  --header-bot: #1a2a4a;
-  --header-hi: #5a7fb5;
-  --border: #0d1520;
-  --btn-top: #4a6fa5;
-  --btn-mid: #2c4a7c;
-  --btn-low: #1a2a4a;
-  --btn-bot: #5a7fb5;
-  --panel: rgba(60, 80, 110, 0.55);
-  --panel-border: rgba(120, 160, 200, 0.6);
-  --accent: #7fb0e0;
-  --accent-light: #a8d0f0;
-}
-
+[data-theme="nature"] { --bg-top:#87CEEB; --bg-mid:#E0FFE8; --bg-bot:#7CCD7C; --header-top:#a8e88a; --header-mid:#4ca64c; --header-bot:#2e7d32; --header-hi:#6bcf6b; --border:#1b5e20; --btn-top:#a8e88a; --btn-mid:#4ca64c; --btn-low:#2e7d32; --btn-bot:#6bcf6b; --accent:#2e7d32; --accent-light:#6bcf6b; }
+[data-theme="ocean"] { --bg-top:#4FC3F7; --bg-mid:#B3E5FC; --bg-bot:#0288D1; --header-top:#4dd0e1; --header-mid:#00838f; --header-bot:#004d5c; --header-hi:#26c6da; --border:#003c4c; --btn-top:#4dd0e1; --btn-mid:#00838f; --btn-low:#004d5c; --btn-bot:#26c6da; --accent:#006064; --accent-light:#26c6da; }
+[data-theme="sunset"] { --bg-top:#FFB74D; --bg-mid:#FFE0B2; --bg-bot:#FF7043; --header-top:#ffab91; --header-mid:#e64a19; --header-bot:#bf360c; --header-hi:#ff7043; --border:#8f2300; --btn-top:#ffab91; --btn-mid:#e64a19; --btn-low:#bf360c; --btn-bot:#ff7043; --accent:#bf360c; --accent-light:#ff7043; }
+[data-theme="dark"] { --bg-top:#1a2634; --bg-mid:#2c3e50; --bg-bot:#0d1b2a; --header-top:#4a6fa5; --header-mid:#2c4a7c; --header-bot:#1a2a4a; --header-hi:#5a7fb5; --border:#0d1520; --btn-top:#4a6fa5; --btn-mid:#2c4a7c; --btn-low:#1a2a4a; --btn-bot:#5a7fb5; --panel:rgba(60,80,110,0.55); --panel-border:rgba(120,160,200,0.6); --accent:#7fb0e0; --accent-light:#a8d0f0; }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-
-body {
-  font-family: 'Segoe UI', Tahoma, Verdana, Arial, sans-serif;
-  font-size: 12px;
-  background: linear-gradient(to bottom, var(--bg-top) 0%, var(--bg-mid) 60%, var(--bg-bot) 100%);
-  background-attachment: fixed;
-  color: #1a1a1a;
-  min-height: 100vh;
-  transition: background 0.5s;
-}
-
+body { font-family: 'Segoe UI', Tahoma, Verdana, Arial, sans-serif; font-size: 12px; background: linear-gradient(to bottom, var(--bg-top) 0%, var(--bg-mid) 60%, var(--bg-bot) 100%); background-attachment: fixed; color: #1a1a1a; min-height: 100vh; transition: background 0.5s; padding-bottom: 80px; }
 [data-theme="dark"] body { color: #e0e8f0; }
-
 #app { max-width: 1000px; margin: 0 auto; padding: 10px; }
 
-/* ШАПКА */
-.header {
-  background: linear-gradient(to bottom,
-    var(--header-top) 0%, var(--header-mid) 50%,
-    var(--header-bot) 50%, var(--header-hi) 100%);
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 8px 16px;
-  color: white;
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 10px; flex-wrap: wrap; gap: 6px;
-  box-shadow:
-    inset 0 1px 1px rgba(255,255,255,0.8),
-    inset 0 15px 15px rgba(255,255,255,0.3),
-    0 4px 6px rgba(0,0,0,0.2);
-  text-shadow: var(--text-shadow);
-  transition: background 0.5s;
-}
-.header .logo { font-weight: bold; font-size: 18px; cursor: pointer; text-shadow: 0 -1px 1px rgba(0,0,0,0.5), 0 1px 0 rgba(255,255,255,0.3); }
-
+.header { background: linear-gradient(to bottom, var(--header-top) 0%, var(--header-mid) 50%, var(--header-bot) 50%, var(--header-hi) 100%); border: 1px solid var(--border); border-radius: 20px; padding: 8px 16px; color: white; display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; flex-wrap: wrap; gap: 6px; box-shadow: inset 0 1px 1px rgba(255,255,255,0.8), inset 0 15px 15px rgba(255,255,255,0.3), 0 4px 6px rgba(0,0,0,0.2); text-shadow: var(--text-shadow); }
+.header .logo { font-weight: bold; font-size: 18px; cursor: pointer; }
 .nav { display: flex; gap: 4px; flex-wrap: wrap; }
-.nav button {
-  background: linear-gradient(to bottom,
-    rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.15) 50%,
-    rgba(0,0,0,0.05) 50%, rgba(255,255,255,0.25) 100%);
-  border: 1px solid rgba(255,255,255,0.5);
-  border-radius: 15px;
-  color: white; padding: 4px 12px; font-size: 11px; cursor: pointer;
-  text-shadow: var(--text-shadow);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);
-  transition: all 0.15s;
-}
-.nav button:hover { background: linear-gradient(to bottom, rgba(255,255,255,0.5), rgba(255,255,255,0.3), rgba(0,0,0,0.05), rgba(255,255,255,0.35)); }
-.nav button.active {
-  background: linear-gradient(to bottom, rgba(255,255,255,0.7), rgba(255,255,255,0.5), rgba(255,255,255,0.4), rgba(255,255,255,0.6));
-  border-color: white; font-weight: bold;
-  color: var(--border); text-shadow: 0 1px 0 rgba(255,255,255,0.5);
-}
+.nav button { background: linear-gradient(to bottom, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.15) 50%, rgba(0,0,0,0.05) 50%, rgba(255,255,255,0.25) 100%); border: 1px solid rgba(255,255,255,0.5); border-radius: 15px; color: white; padding: 4px 12px; font-size: 11px; cursor: pointer; text-shadow: var(--text-shadow); box-shadow: inset 0 1px 0 rgba(255,255,255,0.6); transition: all 0.15s; }
+.nav button:hover { filter: brightness(1.2); }
+.nav button.active { background: linear-gradient(to bottom, rgba(255,255,255,0.7), rgba(255,255,255,0.5), rgba(255,255,255,0.4), rgba(255,255,255,0.6)); border-color: white; font-weight: bold; color: var(--border); text-shadow: 0 1px 0 rgba(255,255,255,0.5); }
 
-/* ПОИСК */
 .search-wrap { position: relative; flex: 1; min-width: 180px; max-width: 300px; }
 .search-bar { display: flex; gap: 4px; }
 .search-bar input { padding: 4px 12px; font-size: 12px; border: 1px solid var(--border); border-radius: 15px; background: linear-gradient(to bottom, #fff, #e8f4ff); box-shadow: inset 0 2px 4px rgba(0,0,0,0.1); }
 .search-bar button { background: linear-gradient(to bottom, #f5f6f8, #d8dce3); border: 1px solid #a0a8b3; border-radius: 15px; padding: 4px 10px; cursor: pointer; box-shadow: inset 0 1px 0 #fff, 0 2px 3px rgba(0,0,0,0.15); }
-.search-suggest {
-  position: absolute; top: 100%; left: 0; right: 0;
-  background: linear-gradient(to bottom, #ffffff, #e8f4ff);
-  border: 2px solid rgba(255,255,255,0.9); border-radius: 12px;
-  margin-top: 4px; max-height: 400px; overflow-y: auto;
-  z-index: 200; display: none;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.8);
-}
+.search-suggest { position: absolute; top: 100%; left: 0; right: 0; background: linear-gradient(to bottom, #ffffff, #e8f4ff); border: 2px solid rgba(255,255,255,0.9); border-radius: 12px; margin-top: 4px; max-height: 400px; overflow-y: auto; z-index: 200; display: none; box-shadow: 0 8px 24px rgba(0,0,0,0.25); }
 .search-suggest.open { display: block; }
 .suggest-section { padding: 6px 10px; background: linear-gradient(to bottom, #d8ecff, #b8dcff); font-size: 10px; color: var(--accent); font-weight: bold; }
 .suggest-item { padding: 8px 10px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 12px; border-bottom: 1px solid rgba(255,255,255,0.5); }
@@ -182,85 +46,55 @@ body {
 .suggest-avatar { width: 26px; height: 26px; border-radius: 50%; background: linear-gradient(to bottom, #b8dcff, #73c8f8); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; color: white; overflow: hidden; flex-shrink: 0; box-shadow: inset 0 1px 0 rgba(255,255,255,0.8), 0 1px 3px rgba(0,0,0,0.2); }
 .suggest-avatar img { width: 100%; height: 100%; object-fit: cover; }
 
-/* КНОПКИ */
-button, .btn {
-  font-family: inherit; font-size: 12px;
-  background: linear-gradient(to bottom,
-    var(--btn-top) 0%, var(--btn-mid) 50%,
-    var(--btn-low) 50%, var(--btn-bot) 100%);
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 6px 16px; cursor: pointer; color: white; font-weight: 600;
-  text-shadow: var(--text-shadow);
-  box-shadow:
-    inset 0 1px 1px rgba(255,255,255,0.8),
-    inset 0 15px 15px rgba(255,255,255,0.3),
-    var(--shadow);
-  transition: all 0.15s;
-}
+button, .btn { font-family: inherit; font-size: 12px; background: linear-gradient(to bottom, var(--btn-top) 0%, var(--btn-mid) 50%, var(--btn-low) 50%, var(--btn-bot) 100%); border: 1px solid var(--border); border-radius: 20px; padding: 6px 16px; cursor: pointer; color: white; font-weight: 600; text-shadow: var(--text-shadow); box-shadow: inset 0 1px 1px rgba(255,255,255,0.8), inset 0 15px 15px rgba(255,255,255,0.3), 0 4px 6px rgba(0,0,0,0.2); transition: all 0.15s; }
 button:hover { filter: brightness(1.1); }
 button:active { box-shadow: inset 0 2px 4px rgba(0,0,0,0.4); }
 .btn-primary { background: linear-gradient(to bottom, var(--btn-top), var(--btn-mid) 50%, var(--btn-low) 50%, var(--btn-bot)); }
 .btn-danger { background: linear-gradient(to bottom, #ff8a80, #e53935 50%, #b71c1c 50%, #ff5252); border-color: #7f0000; }
 .btn-small { font-size: 10px; padding: 3px 10px; border-radius: 12px; }
 
-/* КАРТОЧКИ */
-.card {
-  background: var(--panel);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--panel-border);
-  border-top-color: #ffffff;
-  border-radius: 12px;
-  padding: 14px;
-  margin-bottom: 10px;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 8px 24px rgba(0,0,0,0.15);
-  transition: background 0.5s;
-}
-.card h3 {
-  font-size: 13px; color: var(--accent);
-  border-bottom: 1px solid rgba(255,255,255,0.8);
-  padding-bottom: 8px; margin-bottom: 12px;
-  text-shadow: 0 1px 0 rgba(255,255,255,0.8);
-}
+.card { background: var(--panel); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid var(--panel-border); border-top-color: #ffffff; border-radius: 12px; padding: 14px; margin-bottom: 10px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 8px 24px rgba(0,0,0,0.15); }
+.card h3 { font-size: 13px; color: var(--accent); border-bottom: 1px solid rgba(255,255,255,0.8); padding-bottom: 8px; margin-bottom: 12px; text-shadow: 0 1px 0 rgba(255,255,255,0.8); }
 
-/* ПОЛЯ ВВОДА */
-input, textarea, select {
-  font-family: inherit; font-size: 12px;
-  border: 1px solid #a0c8e8; border-radius: 10px;
-  padding: 6px 12px; width: 100%;
-  background: linear-gradient(to bottom, #f0f8ff, #ffffff);
-  box-shadow: inset 0 2px 5px rgba(0,0,0,0.1);
-  transition: all 0.15s;
-}
+input, textarea, select { font-family: inherit; font-size: 12px; border: 1px solid #a0c8e8; border-radius: 10px; padding: 6px 12px; width: 100%; background: linear-gradient(to bottom, #f0f8ff, #ffffff); box-shadow: inset 0 2px 5px rgba(0,0,0,0.1); transition: all 0.15s; }
 input:focus, textarea:focus { outline: none; border-color: var(--accent-light); box-shadow: inset 0 2px 5px rgba(0,0,0,0.1), 0 0 8px rgba(41,158,239,0.5); }
 textarea { resize: vertical; min-height: 50px; }
 .row { display: flex; gap: 8px; margin-bottom: 8px; }
 .row > * { flex: 1; }
 
-/* ПОСТЫ */
+/* ПРЕФИКС "ЛЮБИТЕЛЬ РЕТРО" - ПЕРЕЛИВАЮЩИЙСЯ */
+.prefix-retro {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 10px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: bold;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+  background: linear-gradient(90deg, #ff0080, #ff8c00, #ffd700, #00ff88, #00bfff, #8a2be2, #ff0080);
+  background-size: 300% 100%;
+  animation: retroShine 3s linear infinite;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.5), 0 2px 6px rgba(0,0,0,0.3);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+@keyframes retroShine {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 300% 50%; }
+}
+
 .post { border-bottom: 1px solid rgba(255,255,255,0.6); padding: 12px 0; }
 .post:last-child { border-bottom: none; }
 .post-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
-.avatar {
-  width: 42px; height: 42px;
-  background: linear-gradient(to bottom, #b8dcff, #73c8f8 50%, #1583d7);
-  border: 2px solid rgba(255,255,255,0.9);
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-weight: bold; color: white; font-size: 16px;
-  overflow: hidden; flex-shrink: 0;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.8), 0 2px 5px rgba(0,0,0,0.25);
-  text-shadow: var(--text-shadow);
-}
+.avatar { width: 42px; height: 42px; background: linear-gradient(to bottom, #b8dcff, #73c8f8 50%, #1583d7); border: 2px solid rgba(255,255,255,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; font-size: 16px; overflow: hidden; flex-shrink: 0; box-shadow: inset 0 1px 0 rgba(255,255,255,0.8), 0 2px 5px rgba(0,0,0,0.25); text-shadow: var(--text-shadow); }
 .avatar img { width: 100%; height: 100%; object-fit: cover; }
 .avatar.sm { width: 32px; height: 32px; font-size: 13px; }
 .avatar.lg { width: 84px; height: 84px; font-size: 34px; }
 .post-author { font-weight: bold; color: var(--accent); cursor: pointer; }
 .post-date { color: #5a8ab0; font-size: 11px; }
-[data-theme="dark"] .post-date { color: #90a8c0; }
 .post-content { margin: 8px 0; line-height: 1.5; word-wrap: break-word; white-space: pre-wrap; }
-.post-content img.media { max-width: 100%; border: 2px solid rgba(255,255,255,0.9); border-radius: 10px; margin-top: 8px; display: block; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+.post-content img.media { max-width: 100%; border: 2px solid rgba(255,255,255,0.9); border-radius: 10px; margin-top: 8px; display: block; cursor: pointer; }
 .post-content .video-wrap { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; margin-top: 8px; border: 2px solid rgba(255,255,255,0.9); border-radius: 10px; }
 .post-content .video-wrap iframe { position: absolute; top:0; left:0; width:100%; height:100%; border:0; }
 .post-content video { max-width: 100%; border-radius: 10px; margin-top: 8px; }
@@ -269,86 +103,49 @@ textarea { resize: vertical; min-height: 50px; }
 .post-actions button { font-size: 11px; padding: 4px 12px; }
 .liked { color: #e53935; font-weight: bold; }
 
-/* СЕТКА */
 .grid { display: grid; grid-template-columns: 220px 1fr; gap: 10px; }
 .friend { display: flex; align-items: center; gap: 8px; padding: 6px; border-radius: 10px; cursor: pointer; transition: all 0.15s; }
 .friend:hover { background: rgba(255,255,255,0.5); }
 .friend.unread { background: rgba(255,255,200,0.6); }
 
-/* ИСТОРИИ */
-.stories-bar {
-  background: var(--panel); backdrop-filter: blur(10px);
-  border: 1px solid var(--panel-border); border-radius: 12px;
-  padding: 12px; margin-bottom: 10px;
-  display: flex; gap: 12px; overflow-x: auto;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 6px 18px rgba(0,0,0,0.12);
-}
+.stories-bar { background: var(--panel); backdrop-filter: blur(10px); border: 1px solid var(--panel-border); border-radius: 12px; padding: 12px; margin-bottom: 10px; display: flex; gap: 12px; overflow-x: auto; }
 .story-circle { display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; min-width: 76px; }
-.story-ring {
-  width: 66px; height: 66px; border-radius: 50%;
-  background: conic-gradient(from 0deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888, #f09433);
-  padding: 3px; display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 3px 8px rgba(0,0,0,0.25);
-}
+.story-ring { width: 66px; height: 66px; border-radius: 50%; background: conic-gradient(from 0deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888, #f09433); padding: 3px; display: flex; align-items: center; justify-content: center; box-shadow: 0 3px 8px rgba(0,0,0,0.25); }
 .story-ring.viewed { background: #b8c8d8; }
 .story-ring-inner { width: 100%; height: 100%; border-radius: 50%; background: linear-gradient(to bottom, #b8dcff, #73c8f8); border: 3px solid #fff; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; font-size: 22px; overflow: hidden; text-shadow: var(--text-shadow); }
 .story-ring-inner img { width: 100%; height: 100%; object-fit: cover; }
 .story-name { font-size: 10px; color: var(--accent); max-width: 76px; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
 
-/* ПРОСМОТР ИСТОРИЙ */
 .story-viewer { position: fixed; inset: 0; background: rgba(0,0,0,0.9); backdrop-filter: blur(20px); display: none; align-items: center; justify-content: center; z-index: 2000; flex-direction: column; }
 .story-viewer.open { display: flex; }
 .story-progress { position: absolute; top: 10px; left: 10px; right: 10px; height: 4px; background: rgba(255,255,255,0.3); border-radius: 4px; display: flex; gap: 3px; }
 .story-progress-bar { flex: 1; height: 100%; background: rgba(255,255,255,0.3); border-radius: 4px; overflow: hidden; }
-.story-progress-fill { height: 100%; background: linear-gradient(to bottom, #a8e0ff, #299eef); width: 0%; transition: width 0.1s linear; box-shadow: 0 0 8px rgba(41,158,239,0.8); }
-.story-content { background: #3b5998; width: 90%; max-width: 420px; height: 80vh; max-height: 720px; border-radius: 16px; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; color: white; padding: 30px; text-align: center; font-size: 20px; font-weight: bold; word-wrap: break-word; border: 3px solid rgba(255,255,255,0.8); box-shadow: 0 10px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.5); }
+.story-progress-fill { height: 100%; background: linear-gradient(to bottom, #a8e0ff, #299eef); width: 0%; transition: width 0.1s linear; }
+.story-content { background: #3b5998; width: 90%; max-width: 420px; height: 80vh; max-height: 720px; border-radius: 16px; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; color: white; padding: 30px; text-align: center; font-size: 20px; font-weight: bold; word-wrap: break-word; border: 3px solid rgba(255,255,255,0.8); }
 .story-content img, .story-content video { max-width: 100%; max-height: 100%; border-radius: 8px; }
 .story-content .story-text { position: absolute; bottom: 60px; left: 20px; right: 20px; text-shadow: 2px 2px 6px rgba(0,0,0,0.9); font-size: 18px; }
 .story-header { position: absolute; top: 25px; left: 20px; right: 20px; display: flex; align-items: center; gap: 10px; color: white; z-index: 10; text-shadow: 1px 1px 3px rgba(0,0,0,0.8); }
 .story-header .avatar { width: 36px; height: 36px; font-size: 15px; border-color: white; }
-.story-close { position: absolute; top: 20px; right: 20px; color: white; font-size: 28px; cursor: pointer; z-index: 10; text-shadow: 1px 1px 3px rgba(0,0,0,0.8); }
+.story-close { position: absolute; top: 20px; right: 20px; color: white; font-size: 28px; cursor: pointer; z-index: 10; }
 .story-nav { position: absolute; top: 0; bottom: 0; width: 30%; cursor: pointer; z-index: 5; }
-.story-nav.left { left: 0; }
-.story-nav.right { right: 0; }
-.story-views { position: absolute; bottom: 15px; left: 20px; color: rgba(255,255,255,0.9); font-size: 11px; text-shadow: 1px 1px 3px rgba(0,0,0,0.8); }
+.story-nav.left { left: 0; } .story-nav.right { right: 0; }
+.story-views { position: absolute; bottom: 15px; left: 20px; color: rgba(255,255,255,0.9); font-size: 11px; }
 
-/* ЧАТ */
-.chat-box {
-  position: fixed; bottom: 0; right: 20px; width: 360px;
-  background: var(--panel); backdrop-filter: blur(14px);
-  border: 2px solid rgba(255,255,255,0.9); border-bottom: none;
-  border-radius: 16px 16px 0 0;
-  box-shadow: 0 -4px 20px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.9);
-  display: none; z-index: 100; overflow: hidden;
-}
+.chat-box { position: fixed; bottom: 80px; right: 20px; width: 360px; background: var(--panel); backdrop-filter: blur(14px); border: 2px solid rgba(255,255,255,0.9); border-bottom: none; border-radius: 16px 16px 0 0; box-shadow: 0 -4px 20px rgba(0,0,0,0.25); display: none; z-index: 800; overflow: hidden; }
 .chat-box.open { display: block; }
-.chat-head {
-  background: linear-gradient(to bottom, var(--header-top), var(--header-mid) 50%, var(--header-bot) 50%, var(--header-hi));
-  color: white; padding: 8px 14px; font-weight: bold; font-size: 13px;
-  display: flex; justify-content: space-between; align-items: center;
-  text-shadow: var(--text-shadow);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);
-}
+.chat-head { background: linear-gradient(to bottom, var(--header-top), var(--header-mid) 50%, var(--header-bot) 50%, var(--header-hi)); color: white; padding: 8px 14px; font-weight: bold; font-size: 13px; display: flex; justify-content: space-between; align-items: center; text-shadow: var(--text-shadow); }
 .call-btns { display: flex; gap: 4px; align-items: center; }
-.call-btn {
-  background: linear-gradient(to bottom, rgba(255,255,255,0.4), rgba(255,255,255,0.15));
-  border: 1px solid rgba(255,255,255,0.6);
-  color: white; padding: 3px 10px; font-size: 11px; cursor: pointer;
-  border-radius: 12px; text-shadow: var(--text-shadow);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);
-}
-.chat-head .close { cursor: pointer; padding: 0 6px; margin-left: 6px; font-size: 16px; }
+.call-btn { background: linear-gradient(to bottom, rgba(255,255,255,0.4), rgba(255,255,255,0.15)); border: 1px solid rgba(255,255,255,0.6); color: white; padding: 3px 10px; font-size: 11px; cursor: pointer; border-radius: 12px; text-shadow: var(--text-shadow); }
+.chat-head .close { cursor: pointer; padding: 0 6px; font-size: 16px; }
 .chat-msgs { height: 300px; overflow-y: auto; padding: 10px; background: rgba(255,255,255,0.3); font-size: 12px; }
 [data-theme="dark"] .chat-msgs { background: rgba(0,0,0,0.3); }
 .msg { margin-bottom: 10px; }
 .msg .from { font-weight: bold; color: var(--accent); }
 .msg.mine .from { color: #e53935; }
 .chat-input { display: flex; border-top: 1px solid rgba(255,255,255,0.8); align-items: center; background: rgba(255,255,255,0.4); }
-[data-theme="dark"] .chat-input { background: rgba(0,0,0,0.3); }
 .chat-input input { border: none; border-radius: 0; flex: 1; background: transparent; box-shadow: none; }
 .chat-input button { border-radius: 0; border: none; border-left: 1px solid rgba(255,255,255,0.6); }
-.attach-btn { background: transparent; border: none; font-size: 18px; cursor: pointer; padding: 0 10px; color: var(--accent); box-shadow: none; border-radius: 0; }
-.attach-btn:hover { color: var(--accent-light); background: transparent; }
+.attach-btn { background: transparent; border: none; font-size: 18px; cursor: pointer; padding: 0 10px; color: var(--accent); }
 .attach-preview { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px; background: rgba(255,255,255,0.5); border-top: 1px solid rgba(255,255,255,0.6); }
 .attach-item { position: relative; padding: 4px 22px 4px 8px; background: rgba(255,255,255,0.8); border: 1px solid rgba(255,255,255,0.9); border-radius: 10px; font-size: 10px; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .attach-item .rm { position: absolute; top: 1px; right: 5px; cursor: pointer; color: #e53935; font-weight: bold; }
@@ -358,13 +155,11 @@ textarea { resize: vertical; min-height: 50px; }
 .msg-media audio { width: 240px; margin-top: 4px; }
 .msg-media .sticker { font-size: 60px; line-height: 1; }
 
-/* СТИКЕРЫ */
 .sticker-panel { display: none; padding: 10px; background: rgba(255,255,255,0.5); border-top: 1px solid rgba(255,255,255,0.6); flex-wrap: wrap; gap: 6px; max-height: 200px; overflow-y: auto; }
 .sticker-panel.open { display: flex; }
-.sticker-btn { font-size: 26px; padding: 6px 8px; cursor: pointer; background: linear-gradient(to bottom, #ffffff, #e8f4ff); border: 1px solid rgba(255,255,255,0.9); border-radius: 10px; line-height: 1; box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 2px 5px rgba(0,0,0,0.1); transition: transform 0.1s; }
+.sticker-btn { font-size: 26px; padding: 6px 8px; cursor: pointer; background: linear-gradient(to bottom, #ffffff, #e8f4ff); border: 1px solid rgba(255,255,255,0.9); border-radius: 10px; line-height: 1; }
 .sticker-btn:hover { transform: scale(1.15); }
 
-/* АВТОРИЗАЦИЯ */
 .auth-screen { max-width: 340px; margin: 60px auto; }
 .tabs { display: flex; margin-bottom: 12px; }
 .tabs button { flex: 1; border-radius: 0; background: linear-gradient(to bottom, rgba(255,255,255,0.4), rgba(255,255,255,0.1)); border: 1px solid rgba(255,255,255,0.7); color: var(--accent); text-shadow: none; font-weight: normal; }
@@ -372,44 +167,33 @@ textarea { resize: vertical; min-height: 50px; }
 .tabs button:last-child { border-radius: 0 16px 16px 0; }
 .tabs button.active { background: linear-gradient(to bottom, var(--btn-top), var(--btn-mid) 50%, var(--btn-low) 50%, var(--btn-bot)); color: white; font-weight: bold; text-shadow: var(--text-shadow); border-color: var(--border); }
 
-/* ОНЛАЙН */
-.online-dot { display: inline-block; width: 10px; height: 10px; background: radial-gradient(circle at 30% 30%, #a8ff78, #4caf50, #2e7d32); border-radius: 50%; margin-right: 6px; box-shadow: 0 0 6px rgba(76,175,80,0.8), inset 0 1px 0 rgba(255,255,255,0.8); }
+.online-dot { display: inline-block; width: 10px; height: 10px; background: radial-gradient(circle at 30% 30%, #a8ff78, #4caf50, #2e7d32); border-radius: 50%; margin-right: 6px; box-shadow: 0 0 6px rgba(76,175,80,0.8); }
 
-/* ФОРУМЫ И ГРУППЫ */
-.forum-item, .group-item { padding: 12px; border: 1px solid rgba(255,255,255,0.8); border-top-color: #ffffff; border-radius: 12px; margin-bottom: 10px; background: rgba(255,255,255,0.4); backdrop-filter: blur(8px); cursor: pointer; box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 3px 8px rgba(0,0,0,0.1); transition: all 0.15s; }
-.forum-item:hover, .group-item:hover { background: rgba(255,255,255,0.6); transform: translateY(-1px); box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 6px 14px rgba(0,0,0,0.15); }
+.forum-item, .group-item { padding: 12px; border: 1px solid rgba(255,255,255,0.8); border-radius: 12px; margin-bottom: 10px; background: rgba(255,255,255,0.4); backdrop-filter: blur(8px); cursor: pointer; box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 3px 8px rgba(0,0,0,0.1); transition: all 0.15s; }
+.forum-item:hover, .group-item:hover { background: rgba(255,255,255,0.6); transform: translateY(-1px); }
 .forum-title { font-weight: bold; color: var(--accent); font-size: 14px; }
 .forum-desc { color: #2a5a7a; margin: 4px 0; font-size: 11px; }
-[data-theme="dark"] .forum-desc { color: #90a8c0; }
 .forum-meta { color: #5a8ab0; font-size: 10px; }
-[data-theme="dark"] .forum-meta { color: #7890a8; }
-
 .topic-item { padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.6); display: flex; justify-content: space-between; cursor: pointer; border-radius: 8px; }
 .topic-item:hover { background: rgba(255,255,255,0.4); }
 .topic-title { font-weight: bold; color: var(--accent); }
 .topic-meta { color: #5a8ab0; font-size: 10px; }
-
 .forum-post { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.6); display: flex; gap: 12px; }
 .forum-post:last-child { border-bottom: none; }
 .forum-post .body { flex: 1; }
-
 .breadcrumb { color: #5a8ab0; font-size: 11px; margin-bottom: 10px; }
 .breadcrumb a { color: var(--accent); cursor: pointer; text-decoration: none; font-weight: 600; }
-.breadcrumb a:hover { text-decoration: underline; }
 
-/* НОВОСТИ */
-.news-item { padding: 14px; border: 1px solid rgba(255,255,255,0.8); border-left: 4px solid var(--accent-light); border-radius: 12px; margin-bottom: 10px; background: rgba(255,255,255,0.4); backdrop-filter: blur(8px); box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 3px 8px rgba(0,0,0,0.1); }
+.news-item { padding: 14px; border: 1px solid rgba(255,255,255,0.8); border-left: 4px solid var(--accent-light); border-radius: 12px; margin-bottom: 10px; background: rgba(255,255,255,0.4); backdrop-filter: blur(8px); }
 .news-title { font-weight: bold; color: var(--accent); font-size: 15px; margin-bottom: 4px; }
 .news-date { color: #5a8ab0; font-size: 10px; margin-bottom: 8px; }
 .news-content { line-height: 1.6; margin-bottom: 8px; white-space: pre-wrap; }
-.news-content img { max-width: 100%; border: 2px solid rgba(255,255,255,0.9); border-radius: 10px; margin-top: 8px; }
+.news-content img { max-width: 100%; border-radius: 10px; margin-top: 8px; }
 
-/* АДМИНКА */
 .admin-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 12px; }
-.stat-box { background: linear-gradient(to bottom, rgba(255,255,255,0.7), rgba(255,255,255,0.3)); border: 1px solid rgba(255,255,255,0.9); border-radius: 12px; padding: 12px; text-align: center; box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 3px 8px rgba(0,0,0,0.1); }
-.stat-num { font-size: 24px; font-weight: bold; color: var(--accent); text-shadow: 0 1px 0 rgba(255,255,255,0.8); }
+.stat-box { background: linear-gradient(to bottom, rgba(255,255,255,0.7), rgba(255,255,255,0.3)); border: 1px solid rgba(255,255,255,0.9); border-radius: 12px; padding: 12px; text-align: center; }
+.stat-num { font-size: 24px; font-weight: bold; color: var(--accent); }
 .stat-label { font-size: 11px; color: #2a5a7a; margin-top: 4px; }
-
 .admin-table { width: 100%; border-collapse: collapse; font-size: 11px; }
 .admin-table th, .admin-table td { padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.6); text-align: left; }
 .admin-table th { background: rgba(255,255,255,0.5); color: var(--accent); font-size: 11px; }
@@ -418,113 +202,117 @@ textarea { resize: vertical; min-height: 50px; }
 .role-user { color: #2a5a7a; }
 .audit-danger { background: rgba(255,200,200,0.4); }
 
-/* ПОИСК */
 .search-section { margin-bottom: 18px; }
 .search-section h4 { font-size: 13px; color: var(--accent); margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.8); padding-bottom: 6px; }
 .search-item { padding: 8px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid rgba(255,255,255,0.5); }
 .search-item:hover { background: rgba(255,255,255,0.5); }
 
-/* ПАРТИИ */
-.party-card { padding: 16px; border: 1px solid rgba(255,255,255,0.8); border-radius: 12px; margin-bottom: 10px; background: rgba(255,255,255,0.4); backdrop-filter: blur(8px); display: flex; gap: 14px; align-items: center; box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 3px 8px rgba(0,0,0,0.1); }
-.party-logo { width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(to bottom, #b8dcff, #73c8f8, #1583d7); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 26px; overflow: hidden; flex-shrink: 0; box-shadow: inset 0 2px 4px rgba(255,255,255,0.8), 0 3px 8px rgba(0,0,0,0.2); text-shadow: var(--text-shadow); }
+.party-card { padding: 16px; border: 1px solid rgba(255,255,255,0.8); border-radius: 12px; margin-bottom: 10px; background: rgba(255,255,255,0.4); display: flex; gap: 14px; align-items: center; }
+.party-logo { width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(to bottom, #b8dcff, #73c8f8, #1583d7); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 26px; overflow: hidden; flex-shrink: 0; text-shadow: var(--text-shadow); }
 .party-logo img { width: 100%; height: 100%; object-fit: cover; }
 .party-info { flex: 1; }
 .party-name { font-weight: bold; font-size: 15px; color: var(--accent); margin-bottom: 4px; }
 .party-desc { color: #2a5a7a; font-size: 11px; margin-bottom: 6px; }
 .party-votes { font-size: 11px; color: #5a8ab0; }
 .party-votes b { color: #e53935; font-size: 15px; }
-.party-voted { background: linear-gradient(to bottom, #a8e88a, #4caf50); color: white; padding: 4px 12px; border-radius: 12px; font-size: 11px; font-weight: bold; text-shadow: var(--text-shadow); box-shadow: inset 0 1px 0 rgba(255,255,255,0.6), 0 2px 5px rgba(0,0,0,0.2); }
-.vote-progress { height: 10px; background: rgba(0,0,0,0.15); border-radius: 5px; overflow: hidden; margin-top: 8px; box-shadow: inset 0 1px 2px rgba(0,0,0,0.2); }
-.vote-progress-fill { height: 100%; background: linear-gradient(to bottom, #a8e0ff, #299eef); transition: width 0.4s; box-shadow: inset 0 1px 0 rgba(255,255,255,0.5); }
+.party-voted { background: linear-gradient(to bottom, #a8e88a, #4caf50); color: white; padding: 4px 12px; border-radius: 12px; font-size: 11px; font-weight: bold; }
+.vote-progress { height: 10px; background: rgba(0,0,0,0.15); border-radius: 5px; overflow: hidden; margin-top: 8px; }
+.vote-progress-fill { height: 100%; background: linear-gradient(to bottom, #a8e0ff, #299eef); transition: width 0.4s; }
 
-/* ГАЛЕРЕЯ */
 .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
-.gallery-item { aspect-ratio: 1; border-radius: 10px; overflow: hidden; background: rgba(255,255,255,0.4); cursor: pointer; position: relative; border: 2px solid rgba(255,255,255,0.8); box-shadow: 0 3px 8px rgba(0,0,0,0.15); }
+.gallery-item { aspect-ratio: 1; border-radius: 10px; overflow: hidden; background: rgba(255,255,255,0.4); cursor: pointer; position: relative; border: 2px solid rgba(255,255,255,0.8); }
 .gallery-item img, .gallery-item video { width: 100%; height: 100%; object-fit: cover; }
-.gallery-item .delete-btn { position: absolute; top: 6px; right: 6px; background: linear-gradient(to bottom, #ff8a80, #e53935); color: white; border: 2px solid white; border-radius: 50%; width: 26px; height: 26px; font-size: 13px; cursor: pointer; padding: 0; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s; box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
+.gallery-item .delete-btn { position: absolute; top: 6px; right: 6px; background: linear-gradient(to bottom, #ff8a80, #e53935); color: white; border: 2px solid white; border-radius: 50%; width: 26px; height: 26px; font-size: 13px; cursor: pointer; padding: 0; display: flex; align-items: center; justify-content: center; opacity: 0; }
 .gallery-item:hover .delete-btn { opacity: 1; }
 
-/* ПРОФИЛЬ */
-.profile-header { display: flex; gap: 18px; align-items: center; padding: 18px; background: linear-gradient(to bottom, rgba(255,255,255,0.6), rgba(255,255,255,0.3)); border-radius: 16px; margin-bottom: 10px; border: 2px solid rgba(255,255,255,0.8); box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 6px 18px rgba(0,0,0,0.12); }
+.profile-header { display: flex; gap: 18px; align-items: center; padding: 18px; background: linear-gradient(to bottom, rgba(255,255,255,0.6), rgba(255,255,255,0.3)); border-radius: 16px; margin-bottom: 10px; border: 2px solid rgba(255,255,255,0.8); }
 .profile-info { flex: 1; }
-.profile-username { font-size: 20px; font-weight: bold; color: var(--accent); margin-bottom: 6px; text-shadow: 0 1px 0 rgba(255,255,255,0.8); }
+.profile-username { font-size: 20px; font-weight: bold; color: var(--accent); margin-bottom: 6px; }
 .profile-status { color: #2a5a7a; font-size: 12px; margin-bottom: 6px; }
 .profile-bio { color: #2a5a7a; font-size: 11px; white-space: pre-wrap; }
 
-/* ЗВОНКИ */
 .call-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(15px); display: none; align-items: center; justify-content: center; z-index: 1000; flex-direction: column; color: white; gap: 15px; }
 .call-modal.open { display: flex; }
-.call-modal video { max-width: 90vw; max-height: 70vh; border-radius: 12px; background: #000; border: 3px solid rgba(255,255,255,0.5); box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
-.call-modal .local-video { position: absolute; bottom: 100px; right: 30px; width: 160px; max-height: 120px; border: 3px solid #fff; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.4); }
-.call-modal .call-info { font-size: 16px; text-align: center; padding: 0 20px; text-shadow: 1px 1px 3px rgba(0,0,0,0.8); }
+.call-modal video { max-width: 90vw; max-height: 70vh; border-radius: 12px; background: #000; border: 3px solid rgba(255,255,255,0.5); }
+.call-modal .local-video { position: absolute; bottom: 100px; right: 30px; width: 160px; max-height: 120px; border: 3px solid #fff; border-radius: 12px; }
+.call-modal .call-info { font-size: 16px; text-align: center; padding: 0 20px; }
 .call-modal .call-actions { display: flex; gap: 15px; }
 .call-modal .call-actions button { padding: 10px 24px; font-size: 14px; border-radius: 25px; cursor: pointer; }
 .call-accept { background: linear-gradient(to bottom, #a8e88a, #4caf50 50%, #2e7d32 50%, #6bcf6b) !important; }
 .call-reject { background: linear-gradient(to bottom, #ff8a80, #e53935 50%, #b71c1c 50%, #ff5252) !important; }
 
-/* УВЕДОМЛЕНИЯ */
 .toast-container { position: fixed; top: 15px; right: 15px; z-index: 3000; display: flex; flex-direction: column; gap: 10px; max-width: 340px; }
-.toast { background: linear-gradient(to bottom, var(--header-top), var(--header-mid) 50%, var(--header-bot) 50%, var(--header-hi)); color: white; border: 2px solid rgba(255,255,255,0.6); border-radius: 12px; padding: 12px 14px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.5), 0 6px 20px rgba(0,0,0,0.4); cursor: pointer; font-size: 12px; animation: toastIn 0.3s ease-out; display: flex; gap: 10px; align-items: flex-start; text-shadow: var(--text-shadow); }
+.toast { background: linear-gradient(to bottom, var(--header-top), var(--header-mid) 50%, var(--header-bot) 50%, var(--header-hi)); color: white; border: 2px solid rgba(255,255,255,0.6); border-radius: 12px; padding: 12px 14px; box-shadow: 0 6px 20px rgba(0,0,0,0.4); cursor: pointer; font-size: 12px; animation: toastIn 0.3s ease-out; display: flex; gap: 10px; align-items: flex-start; text-shadow: var(--text-shadow); }
 .toast.call-toast { background: linear-gradient(to bottom, #a8e88a, #4caf50 50%, #2e7d32 50%, #6bcf6b); }
-.toast .toast-avatar { width: 36px; height: 36px; background: rgba(255,255,255,0.3); border: 2px solid rgba(255,255,255,0.7); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; box-shadow: inset 0 1px 0 rgba(255,255,255,0.6); }
+.toast .toast-avatar { width: 36px; height: 36px; background: rgba(255,255,255,0.3); border: 2px solid rgba(255,255,255,0.7); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; }
 .toast .toast-body { flex: 1; }
 .toast .toast-title { font-weight: bold; margin-bottom: 2px; }
-.toast .toast-text { font-size: 11px; opacity: 0.95; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.toast .toast-text { font-size: 11px; opacity: 0.95; }
 .toast .toast-close { cursor: pointer; opacity: 0.8; padding: 0 4px; font-size: 16px; }
 @keyframes toastIn { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 @keyframes toastOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(120%); opacity: 0; } }
 .toast.closing { animation: toastOut 0.3s ease-in forwards; }
 
-.unread-badge { background: linear-gradient(to bottom, #ff8a80, #e53935); color: white; font-size: 10px; font-weight: bold; padding: 2px 7px; border-radius: 10px; margin-left: 6px; display: inline-block; vertical-align: middle; box-shadow: inset 0 1px 0 rgba(255,255,255,0.6), 0 2px 4px rgba(0,0,0,0.2); text-shadow: 0 1px 2px rgba(0,0,0,0.4); }
+.unread-badge { background: linear-gradient(to bottom, #ff8a80, #e53935); color: white; font-size: 10px; font-weight: bold; padding: 2px 7px; border-radius: 10px; margin-left: 6px; display: inline-block; vertical-align: middle; }
 
-/* МЕДИА-ПРОСМОТР */
 .media-viewer { position: fixed; inset: 0; background: rgba(0,0,0,0.92); backdrop-filter: blur(20px); display: none; align-items: center; justify-content: center; z-index: 1100; cursor: zoom-out; }
 .media-viewer.open { display: flex; }
-.media-viewer img, .media-viewer video { max-width: 95vw; max-height: 95vh; border-radius: 8px; border: 3px solid rgba(255,255,255,0.5); box-shadow: 0 10px 50px rgba(0,0,0,0.6); }
+.media-viewer img, .media-viewer video { max-width: 95vw; max-height: 95vh; border-radius: 8px; border: 3px solid rgba(255,255,255,0.5); }
 
-/* ИГРЫ */
 .games-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
 .games-tabs button { flex: 1; }
-.game-player { background: #000; border-radius: 12px; overflow: hidden; min-height: 400px; display: flex; align-items: center; justify-content: center; position: relative; border: 3px solid rgba(255,255,255,0.5); box-shadow: 0 10px 30px rgba(0,0,0,0.4); }
+.game-player { background: #000; border-radius: 12px; overflow: hidden; min-height: 400px; display: flex; align-items: center; justify-content: center; border: 3px solid rgba(255,255,255,0.5); }
 .game-player embed, .game-player object { width: 100%; height: 500px; }
 .game-player iframe { width: 100%; height: 500px; border: 0; background: #fff; }
 .code-area { font-family: 'Courier New', monospace; font-size: 12px; line-height: 1.4; min-height: 280px; }
 .info-box { background: rgba(255,255,255,0.6); padding: 12px; border-radius: 10px; margin-bottom: 12px; font-size: 11px; color: #2a5a7a; border: 1px solid rgba(255,255,255,0.8); }
 .info-box a { color: var(--accent); font-weight: 600; }
-.info-box code { background: #fff; padding: 2px 6px; border-radius: 4px; font-family: monospace; border: 1px solid rgba(0,0,0,0.1); }
-.warn-box { background: rgba(255,243,205,0.7); padding: 12px; border-radius: 10px; margin-bottom: 12px; font-size: 11px; color: #856404; border: 1px solid rgba(255,215,0,0.5); }
+.info-box code { background: #fff; padding: 2px 6px; border-radius: 4px; font-family: monospace; }
+.warn-box { background: rgba(255,243,205,0.7); padding: 12px; border-radius: 10px; margin-bottom: 12px; font-size: 11px; color: #856404; }
 
-/* ПЛАШКА ПРЕДУПРЕЖДЕНИЯ */
-.warn-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.92); display: none; align-items: center; justify-content: center; z-index: 9999; flex-direction: column; color: white; text-align: center; padding: 20px; animation: warnPulse 0.5s ease-out; }
+/* RETROMUSIC */
+.music-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.music-tabs button { flex: 1; min-width: 100px; }
+.track-item { display: flex; gap: 12px; align-items: center; padding: 10px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.7); background: rgba(255,255,255,0.4); margin-bottom: 8px; cursor: pointer; transition: all 0.15s; }
+.track-item:hover { background: rgba(255,255,255,0.6); transform: translateY(-1px); }
+.track-item.playing { background: linear-gradient(to bottom, rgba(115,200,248,0.5), rgba(21,131,215,0.4)); border-color: #1583d7; }
+.track-cover { width: 54px; height: 54px; border-radius: 10px; background: linear-gradient(to bottom, #b8dcff, #73c8f8, #1583d7); display: flex; align-items: center; justify-content: center; font-size: 24px; color: white; overflow: hidden; flex-shrink: 0; box-shadow: inset 0 2px 4px rgba(255,255,255,0.6), 0 3px 8px rgba(0,0,0,0.2); }
+.track-cover img { width: 100%; height: 100%; object-fit: cover; }
+.track-info { flex: 1; min-width: 0; }
+.track-title-text { font-weight: bold; color: var(--accent); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.track-artist-text { color: #2a5a7a; font-size: 11px; margin-top: 2px; }
+.track-meta-text { color: #5a8ab0; font-size: 10px; margin-top: 4px; }
+.track-actions { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+.track-actions button { font-size: 11px; padding: 4px 10px; }
+.track-play-btn { width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(to bottom, #73c8f8, #1583d7 50%, #0361a3 50%, #299eef); border: 2px solid rgba(255,255,255,0.8); color: white; font-size: 16px; cursor: pointer; box-shadow: inset 0 2px 4px rgba(255,255,255,0.6), 0 3px 8px rgba(0,0,0,0.25); padding: 0; display: flex; align-items: center; justify-content: center; }
+.track-play-btn:hover { filter: brightness(1.15); }
+
+.music-player { position: fixed; bottom: 0; left: 0; right: 0; background: linear-gradient(to bottom, rgba(115,200,248,0.95), rgba(21,131,215,0.95), rgba(3,97,163,0.95), rgba(41,158,239,0.95)); backdrop-filter: blur(12px); color: white; border-top: 2px solid rgba(255,255,255,0.7); box-shadow: 0 -4px 20px rgba(0,0,0,0.3); display: flex; align-items: center; gap: 14px; padding: 10px 16px; z-index: 950; text-shadow: var(--text-shadow); }
+.mp-cover { width: 48px; height: 48px; border-radius: 10px; background: rgba(255,255,255,0.25); border: 2px solid rgba(255,255,255,0.6); display: flex; align-items: center; justify-content: center; font-size: 22px; overflow: hidden; flex-shrink: 0; }
+.mp-cover img { width: 100%; height: 100%; object-fit: cover; }
+.mp-info { min-width: 140px; max-width: 220px; }
+.mp-title { font-weight: bold; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mp-artist { font-size: 11px; opacity: 0.9; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mp-controls { display: flex; gap: 6px; }
+.mp-controls button { background: rgba(255,255,255,0.25); border: 1px solid rgba(255,255,255,0.6); color: white; width: 38px; height: 38px; border-radius: 50%; font-size: 14px; cursor: pointer; padding: 0; }
+.mp-controls button:hover { background: rgba(255,255,255,0.4); }
+.mp-progress { flex: 1; display: flex; align-items: center; gap: 8px; font-size: 11px; }
+.mp-bar { flex: 1; height: 8px; background: rgba(0,0,0,0.25); border-radius: 4px; cursor: pointer; overflow: hidden; }
+.mp-bar-fill { height: 100%; width: 0%; background: linear-gradient(to bottom, #ffffff, #a8e0ff); transition: width 0.1s linear; }
+.mp-close { background: transparent; border: none; color: white; font-size: 18px; cursor: pointer; padding: 4px 8px; }
+
+.warn-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.92); display: none; align-items: center; justify-content: center; z-index: 9999; flex-direction: column; color: white; text-align: center; padding: 20px; }
 .warn-overlay.open { display: flex; }
-@keyframes warnPulse { 0% { background: rgba(192,57,43,0.95); } 100% { background: rgba(0,0,0,0.92); } }
-.warn-icon { font-size: 120px; margin-bottom: 20px; animation: warnShake 0.6s ease-in-out; }
-@keyframes warnShake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-15px) rotate(-5deg); } 40% { transform: translateX(15px) rotate(5deg); } 60% { transform: translateX(-10px) rotate(-3deg); } 80% { transform: translateX(10px) rotate(3deg); } }
-.warn-title { font-size: 48px; font-weight: bold; color: #e74c3c; text-shadow: 2px 2px 0 #000, 0 0 30px rgba(231,76,60,0.8); margin-bottom: 15px; letter-spacing: 2px; }
-.warn-text { font-size: 22px; margin-bottom: 10px; max-width: 600px; line-height: 1.5; }
+.warn-icon { font-size: 120px; margin-bottom: 20px; }
+.warn-title { font-size: 48px; font-weight: bold; color: #e74c3c; text-shadow: 2px 2px 0 #000; margin-bottom: 15px; }
+.warn-text { font-size: 22px; margin-bottom: 10px; max-width: 600px; }
 .warn-subtext { font-size: 14px; color: #bdc3c7; margin-top: 15px; max-width: 500px; }
-.warn-timer { font-size: 72px; font-weight: bold; color: #f39c12; margin-top: 25px; text-shadow: 2px 2px 0 #000, 0 0 20px rgba(243,156,18,0.8); animation: warnCount 1s infinite; }
-@keyframes warnCount { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.15); } }
+.warn-timer { font-size: 72px; font-weight: bold; color: #f39c12; margin-top: 25px; }
 
-/* НАСТРОЙКИ */
 .settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; }
-.theme-option {
-  padding: 14px;
-  border: 2px solid rgba(255,255,255,0.7);
-  border-radius: 12px;
-  cursor: pointer;
-  text-align: center;
-  background: rgba(255,255,255,0.4);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.8), 0 3px 8px rgba(0,0,0,0.1);
-  transition: all 0.15s;
-}
-.theme-option:hover { transform: translateY(-2px); box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 6px 16px rgba(0,0,0,0.15); }
-.theme-option.active { border-color: var(--accent-light); border-width: 3px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 0 16px rgba(41,158,239,0.6), 0 6px 16px rgba(0,0,0,0.15); }
-.theme-preview {
-  width: 100%; height: 60px; border-radius: 8px; margin-bottom: 8px;
-  box-shadow: inset 0 2px 5px rgba(0,0,0,0.15);
-  border: 2px solid rgba(255,255,255,0.8);
-}
+.theme-option { padding: 14px; border: 2px solid rgba(255,255,255,0.7); border-radius: 12px; cursor: pointer; text-align: center; background: rgba(255,255,255,0.4); }
+.theme-option.active { border-color: var(--accent-light); border-width: 3px; }
+.theme-preview { width: 100%; height: 60px; border-radius: 8px; margin-bottom: 8px; border: 2px solid rgba(255,255,255,0.8); }
 .theme-preview.aero { background: linear-gradient(to bottom, #87CEEB, #E0F6FF, #98FB98); }
 .theme-preview.nature { background: linear-gradient(to bottom, #87CEEB, #E0FFE8, #7CCD7C); }
 .theme-preview.ocean { background: linear-gradient(to bottom, #4FC3F7, #B3E5FC, #0288D1); }
@@ -532,24 +320,16 @@ textarea { resize: vertical; min-height: 50px; }
 .theme-preview.dark { background: linear-gradient(to bottom, #1a2634, #2c3e50, #0d1b2a); }
 .theme-label { font-weight: bold; color: var(--accent); font-size: 12px; }
 
-/* ЗАГРУЗКА */
-.loader { display: inline-block; width: 32px; height: 32px; border: 4px solid rgba(255,255,255,0.3); border-top-color: var(--accent-light); border-radius: 50%; animation: spin 0.8s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
-
-/* МОБИЛЬНЫЙ */
 @media (max-width: 700px) {
   .grid { grid-template-columns: 1fr; }
   .chat-box { width: calc(100% - 20px); right: 10px; }
   .nav button { font-size: 10px; padding: 3px 8px; }
   .search-wrap { max-width: none; width: 100%; }
   .profile-header { flex-direction: column; text-align: center; }
-  .story-content { width: 95%; height: 75vh; }
-  .warn-icon { font-size: 80px; }
   .warn-title { font-size: 30px; }
-  .warn-text { font-size: 16px; }
-  .warn-timer { font-size: 48px; }
-  .game-player iframe, .game-player embed { height: 350px; }
-  .header { flex-direction: column; padding: 10px; }
+  .music-player { flex-wrap: wrap; padding: 8px; gap: 8px; }
+  .mp-info { flex: 1; min-width: 100px; max-width: none; }
+  .mp-progress { width: 100%; order: 5; }
 }
 </style>
 </head>
@@ -577,7 +357,6 @@ textarea { resize: vertical; min-height: 50px; }
   </div>
 </div>
 
-<!-- ОСНОВНОЕ -->
 <div id="main" style="display:none;">
   <div class="header">
     <div class="logo" onclick="showPage('feed')">РетроСеть</div>
@@ -587,6 +366,7 @@ textarea { resize: vertical; min-height: 50px; }
       <button id="navGroups" onclick="showPage('groups')">Группы</button>
       <button id="navForums" onclick="showPage('forums')">Форумы</button>
       <button id="navGames" onclick="showPage('games')">🎮 Игры</button>
+      <button id="navMusic" onclick="showPage('music')">🎵 Retromusic</button>
       <button id="navVote" onclick="showPage('vote')">Голосование</button>
       <button id="navAdmin" style="display:none;" onclick="showPage('admin')">Админка</button>
     </div>
@@ -634,12 +414,12 @@ textarea { resize: vertical; min-height: 50px; }
             <input id="postImage" placeholder="URL картинки">
           </div>
           <div class="row">
-            <input id="postVideo" placeholder="URL видео (YouTube, VK, mp4)">
+            <input id="postVideo" placeholder="URL видео">
             <input id="postGif" placeholder="URL GIF">
           </div>
           <div style="display:flex; gap:8px; align-items:center;">
             <button onclick="togglePostStickerPanel()" style="font-size:18px; padding:4px 12px;">😀 Стикер</button>
-            <span id="postStickerPreview" style="font-size:32px; line-height:1;"></span>
+            <span id="postStickerPreview" style="font-size:32px;"></span>
             <button class="btn-primary" onclick="createPost()" style="margin-left:auto;">Опубликовать</button>
           </div>
           <div id="postStickerPanel" class="sticker-panel"></div>
@@ -696,7 +476,7 @@ textarea { resize: vertical; min-height: 50px; }
       <h3>Добавить новость (только для создателя)</h3>
       <input id="newsTitle" placeholder="Заголовок" style="margin-bottom:6px;">
       <textarea id="newsContent" placeholder="Текст новости..." style="min-height:120px;"></textarea>
-      <input id="newsImage" placeholder="URL картинки (необязательно)" style="margin-top:6px;">
+      <input id="newsImage" placeholder="URL картинки" style="margin-top:6px;">
       <button class="btn-primary" style="margin-top:8px;" onclick="createNews()">Опубликовать</button>
     </div>
     <div class="card">
@@ -711,12 +491,12 @@ textarea { resize: vertical; min-height: 50px; }
       <h3>Добавить партию (только для админа)</h3>
       <input id="partyName" placeholder="Название партии" style="margin-bottom:6px;">
       <textarea id="partyDesc" placeholder="Описание" style="min-height:60px;"></textarea>
-      <input id="partyLogo" placeholder="URL логотипа (необязательно)" style="margin-top:6px;">
+      <input id="partyLogo" placeholder="URL логотипа" style="margin-top:6px;">
       <button class="btn-primary" style="margin-top:8px;" onclick="createParty()">Добавить партию</button>
     </div>
     <div class="card">
       <h3>Голосование за партии</h3>
-      <div style="color:#2a5a7a; font-size:11px; margin-bottom:10px;">Партии фейковые, голосование настоящее. Один пользователь — один голос.</div>
+      <div style="color:#2a5a7a; font-size:11px; margin-bottom:10px;">Партии фейковые, голосование настоящее.</div>
       <div id="partiesBox"></div>
     </div>
   </div>
@@ -829,16 +609,14 @@ textarea { resize: vertical; min-height: 50px; }
         <div class="card">
           <h3>Добавить Scratch-игру</h3>
           <div class="info-box">
-            <b>Как добавить:</b><br>
-            1. Зайди на <a href="https://scratch.mit.edu" target="_blank" rel="noopener noreferrer">scratch.mit.edu</a><br>
+            <b>Как:</b> 1. Зайди на <a href="https://scratch.mit.edu" target="_blank" rel="noopener noreferrer">scratch.mit.edu</a><br>
             2. Создай игру<br>
-            3. Скопируй ссылку вида <code>https://scratch.mit.edu/projects/123456</code><br>
-            4. Вставь её ниже
+            3. Скопируй ссылку вида <code>https://scratch.mit.edu/projects/123456</code>
           </div>
           <input id="scratchTitle" placeholder="Название" style="margin-bottom:6px;">
           <textarea id="scratchDesc" placeholder="Описание" style="min-height:40px;"></textarea>
           <input id="scratchUrl" placeholder="https://scratch.mit.edu/projects/123456" style="margin-top:6px;">
-          <input id="scratchCover" placeholder="URL обложки (необязательно)" style="margin-top:6px;">
+          <input id="scratchCover" placeholder="URL обложки" style="margin-top:6px;">
           <button class="btn-primary" style="margin-top:8px;" onclick="createScratch()">Добавить</button>
         </div>
         <div class="card">
@@ -849,9 +627,7 @@ textarea { resize: vertical; min-height: 50px; }
       <div id="gamesFlash" style="display:none;">
         <div class="card">
           <h3>Добавить Flash-игру</h3>
-          <div class="warn-box">
-            <b>Важно:</b> Flash мёртв с 2020, но игры запускаются через <b>Ruffle</b>. Загрузи <code>.swf</code> на Cloudflare R2, Supabase Storage или GitHub Releases, получи ссылку и вставь ниже.
-          </div>
+          <div class="warn-box">Flash мёртв с 2020, но игры запускаются через Ruffle. Загрузи <code>.swf</code> на Cloudflare R2 и вставь ссылку.</div>
           <input id="flashTitle" placeholder="Название" style="margin-bottom:6px;">
           <textarea id="flashDesc" placeholder="Описание" style="min-height:40px;"></textarea>
           <input id="flashUrl" placeholder="URL .swf файла" style="margin-top:6px;">
@@ -867,14 +643,14 @@ textarea { resize: vertical; min-height: 50px; }
         <div class="card">
           <h3>Редактор HTML5-игр</h3>
           <div class="info-box">
-            Пиши HTML/CSS/JS прямо здесь. Игра сохранится и будет играться на сайте.<br>
-            <button class="btn-small" onclick="insertDemoGame()" style="margin-top:6px;">Вставить пример (мяч)</button>
-            <button class="btn-small" onclick="insertDemoSnake()" style="margin-top:6px;">Вставить Змейку</button>
+            Пиши HTML/CSS/JS прямо здесь.<br>
+            <button class="btn-small" onclick="insertDemoGame()" style="margin-top:6px;">Пример (мяч)</button>
+            <button class="btn-small" onclick="insertDemoSnake()" style="margin-top:6px;">Змейка</button>
           </div>
           <input id="htmlTitle" placeholder="Название игры" style="margin-bottom:6px;">
           <textarea id="htmlDesc" placeholder="Описание" style="min-height:40px;"></textarea>
-          <input id="htmlCover" placeholder="URL обложки (необязательно)" style="margin-top:6px;">
-          <textarea id="htmlCode" class="code-area" placeholder="Введи HTML/JS код..." style="margin-top:6px;"></textarea>
+          <input id="htmlCover" placeholder="URL обложки" style="margin-top:6px;">
+          <textarea id="htmlCode" class="code-area" placeholder="HTML/JS код..." style="margin-top:6px;"></textarea>
           <button class="btn-primary" style="margin-top:10px;" onclick="createHtmlGame()">Сохранить игру</button>
         </div>
         <div class="card">
@@ -900,6 +676,100 @@ textarea { resize: vertical; min-height: 50px; }
     </div>
   </div>
 
+  <!-- RETROMUSIC -->
+  <div id="pageMusic" style="display:none;">
+    <div class="card">
+      <h3>🎵 Retromusic</h3>
+      <div class="music-tabs">
+        <button onclick="showMusicTab('all')" id="mtabAll" class="btn-primary">Все треки</button>
+        <button onclick="showMusicTab('liked')" id="mtabLiked">Мне нравится</button>
+        <button onclick="showMusicTab('my')" id="mtabMy">Мои треки</button>
+        <button onclick="showMusicTab('playlists')" id="mtabPlaylists">Плейлисты</button>
+      </div>
+    </div>
+
+    <div id="musicAll">
+      <div class="card">
+        <h3>Добавить трек</h3>
+        <div class="info-box">
+          Вставь прямую ссылку на MP3/OGG. Можно загрузить на <a href="https://cloudflare.com" target="_blank" rel="noopener noreferrer">Cloudflare R2</a>, <a href="https://supabase.com" target="_blank" rel="noopener noreferrer">Supabase Storage</a> или <a href="https://github.com" target="_blank" rel="noopener noreferrer">GitHub Releases</a>.
+        </div>
+        <div class="row">
+          <input id="trackTitle" placeholder="Название">
+          <input id="trackArtist" placeholder="Исполнитель">
+        </div>
+        <input id="trackUrl" placeholder="Ссылка на MP3/OGG" style="margin-bottom:8px;">
+        <div class="row">
+          <input id="trackCover" placeholder="URL обложки">
+          <select id="trackGenre" style="flex:1;">
+            <option value="Italo Disco">Italo Disco</option>
+            <option value="Synthwave">Synthwave</option>
+            <option value="Eurodance">Eurodance</option>
+            <option value="80s">80-е</option>
+            <option value="90s">90-е</option>
+            <option value="Vaporwave">Vaporwave</option>
+            <option value="Retro Pop">Retro Pop</option>
+            <option value="Другое">Другое</option>
+          </select>
+        </div>
+        <button class="btn-primary" onclick="createTrack()">Добавить трек</button>
+      </div>
+      <div class="card">
+        <h3>Каталог</h3>
+        <input id="musicSearch" placeholder="Поиск..." oninput="onMusicSearch()" style="margin-bottom:10px;">
+        <div id="tracksBox"></div>
+      </div>
+    </div>
+
+    <div id="musicLiked" style="display:none;">
+      <div class="card">
+        <h3>Мне нравится</h3>
+        <div id="likedTracksBox"></div>
+      </div>
+    </div>
+
+    <div id="musicMy" style="display:none;">
+      <div class="card">
+        <h3>Мои треки</h3>
+        <div id="myTracksBox"></div>
+      </div>
+    </div>
+
+    <div id="musicPlaylists" style="display:none;">
+      <div class="card">
+        <h3>Создать плейлист</h3>
+        <input id="playlistName" placeholder="Название" style="margin-bottom:6px;">
+        <textarea id="playlistDesc" placeholder="Описание" style="min-height:40px;"></textarea>
+        <input id="playlistCover" placeholder="URL обложки" style="margin-top:6px;">
+        <button class="btn-primary" style="margin-top:8px;" onclick="createPlaylist()">Создать</button>
+      </div>
+      <div class="card">
+        <h3>Мои плейлисты</h3>
+        <div id="playlistsBox"></div>
+      </div>
+    </div>
+
+    <div id="playlistView" style="display:none;">
+      <div class="breadcrumb"><a onclick="showMusicTab('playlists')">Плейлисты</a> / <span id="plCrumb"></span></div>
+      <div class="card">
+        <div style="display:flex; gap:14px; align-items:center; margin-bottom:12px;">
+          <div class="avatar" style="width:64px; height:64px; font-size:26px; border-radius:10px;" id="plCover">🎵</div>
+          <div style="flex:1;">
+            <h3 style="border:none; margin:0 0 4px;" id="plName"></h3>
+            <div style="color:#2a5a7a; font-size:11px;" id="plMeta"></div>
+          </div>
+          <button class="btn-primary" onclick="playPlaylist()">▶ Играть всё</button>
+          <button class="btn-danger" id="plDeleteBtn" style="display:none;" onclick="deleteCurrentPlaylist()">Удалить</button>
+        </div>
+        <div id="plDesc" style="color:#2a5a7a; font-size:11px; margin-bottom:12px;"></div>
+      </div>
+      <div class="card">
+        <h3>Треки</h3>
+        <div id="plTracks"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- АДМИНКА -->
   <div id="pageAdmin" style="display:none;">
     <div class="card">
@@ -917,7 +787,7 @@ textarea { resize: vertical; min-height: 50px; }
       <div id="adminContent"></div>
     </div>
     <div class="card">
-      <h3>Журнал действий (аудит)</h3>
+      <h3>Журнал действий</h3>
       <div style="max-height:400px; overflow-y:auto;">
         <table class="admin-table" id="adminAuditTable"></table>
       </div>
@@ -927,7 +797,7 @@ textarea { resize: vertical; min-height: 50px; }
   <!-- ПОИСК -->
   <div id="pageSearch" style="display:none;">
     <div class="card">
-      <h3>Результаты поиска: <span id="searchQuery"></span></h3>
+      <h3>Результаты: <span id="searchQuery"></span></h3>
       <div id="searchResults"></div>
     </div>
   </div>
@@ -947,8 +817,8 @@ textarea { resize: vertical; min-height: 50px; }
   <div class="attach-preview" id="attachPreview" style="display:none;"></div>
   <div class="sticker-panel" id="chatStickerPanel"></div>
   <div class="chat-input">
-    <button class="attach-btn" onclick="openAttach()" title="Прикрепить">📎</button>
-    <button class="attach-btn" onclick="toggleChatStickerPanel()" title="Стикеры">😀</button>
+    <button class="attach-btn" onclick="openAttach()">📎</button>
+    <button class="attach-btn" onclick="toggleChatStickerPanel()">😀</button>
     <input id="chatInput" placeholder="Сообщение..." onkeydown="if(event.key==='Enter')sendMsg()">
     <button onclick="sendMsg()">➤</button>
   </div>
@@ -962,7 +832,7 @@ textarea { resize: vertical; min-height: 50px; }
   <div class="call-actions" id="callActions"></div>
 </div>
 
-<!-- ИСТОРИЯ - ПРОСМОТР -->
+<!-- ИСТОРИЯ -->
 <div id="storyViewer" class="story-viewer">
   <div class="story-progress" id="storyProgress"></div>
   <span class="story-close" onclick="closeStoryViewer()">✕</span>
@@ -973,108 +843,92 @@ textarea { resize: vertical; min-height: 50px; }
   <div class="story-views" id="storyViews"></div>
 </div>
 
-<!-- ИСТОРИЯ - СОЗДАНИЕ -->
 <div id="addStoryModal" class="story-viewer">
   <span class="story-close" onclick="closeAddStory()">✕</span>
-  <div style="background:white; padding:24px; border-radius:16px; max-width:420px; width:90%; color:#2a2a2a; border:3px solid rgba(255,255,255,0.9); box-shadow: 0 20px 60px rgba(0,0,0,0.5);">
+  <div style="background:white; padding:24px; border-radius:16px; max-width:420px; width:90%; color:#2a2a2a; border:3px solid rgba(255,255,255,0.9);">
     <h3 style="color:#0361a3; margin-bottom:14px;">Добавить историю</h3>
-    <textarea id="storyText" placeholder="Текст истории..." style="min-height:80px; margin-bottom:8px;"></textarea>
-    <input id="storyImage" placeholder="URL картинки (необязательно)" style="margin-bottom:8px;">
-    <input id="storyVideo" placeholder="URL видео (необязательно)" style="margin-bottom:8px;">
+    <textarea id="storyText" placeholder="Текст" style="min-height:80px; margin-bottom:8px;"></textarea>
+    <input id="storyImage" placeholder="URL картинки" style="margin-bottom:8px;">
+    <input id="storyVideo" placeholder="URL видео" style="margin-bottom:8px;">
     <div style="margin-bottom:12px;">
-      <label style="font-size:11px; color:#2a5a7a; font-weight:600;">Фон (если без картинки):</label>
+      <label style="font-size:11px; color:#2a5a7a; font-weight:600;">Фон:</label>
       <div style="display:flex; gap:8px; margin-top:6px;" id="bgColors"></div>
     </div>
     <button class="btn-primary" style="width:100%; padding:10px;" onclick="publishStory()">Опубликовать</button>
   </div>
 </div>
 
-<!-- СМЕНА ПАРОЛЯ -->
 <div id="changePasswordModal" class="story-viewer">
   <span class="story-close" onclick="closeChangePassword()">✕</span>
-  <div style="background:white; padding:24px; border-radius:16px; max-width:420px; width:90%; color:#2a2a2a; border:3px solid rgba(255,255,255,0.9); box-shadow: 0 20px 60px rgba(0,0,0,0.5);">
+  <div style="background:white; padding:24px; border-radius:16px; max-width:420px; width:90%; color:#2a2a2a; border:3px solid rgba(255,255,255,0.9);">
     <h3 style="color:#0361a3; margin-bottom:14px;">Смена пароля</h3>
     <input id="oldPassword" type="password" placeholder="Текущий пароль" style="margin-bottom:8px;">
     <input id="newPassword" type="password" placeholder="Новый пароль (мин. 6)" style="margin-bottom:8px;">
-    <input id="newPassword2" type="password" placeholder="Повторите новый" style="margin-bottom:8px;">
+    <input id="newPassword2" type="password" placeholder="Повторите" style="margin-bottom:8px;">
     <div id="pwdErr" style="color:#e53935; font-size:12px; margin-bottom:10px; display:none; font-weight:600;"></div>
     <button class="btn-primary" style="width:100%; padding:10px;" onclick="changePassword()">Сменить пароль</button>
-    <div style="color:#5a8ab0; font-size:11px; margin-top:10px; text-align:center;">После смены пароля текущая сессия останется активной.</div>
   </div>
 </div>
 
-<!-- НАСТРОЙКИ -->
 <div id="settingsModal" class="story-viewer">
   <span class="story-close" onclick="closeSettings()">✕</span>
-  <div style="background:white; padding:24px; border-radius:16px; max-width:520px; width:90%; color:#2a2a2a; border:3px solid rgba(255,255,255,0.9); box-shadow: 0 20px 60px rgba(0,0,0,0.5);">
+  <div style="background:white; padding:24px; border-radius:16px; max-width:520px; width:90%; color:#2a2a2a; border:3px solid rgba(255,255,255,0.9);">
     <h3 style="color:#0361a3; margin-bottom:14px;">Настройки</h3>
-
     <div style="margin-bottom:16px;">
-      <label style="font-size:12px; color:#0361a3; font-weight:bold; display:block; margin-bottom:10px;">Тема оформления</label>
+      <label style="font-size:12px; color:#0361a3; font-weight:bold; display:block; margin-bottom:10px;">Тема</label>
       <div class="settings-grid" id="themeGrid">
-        <div class="theme-option" data-theme="aero" onclick="setTheme('aero')">
-          <div class="theme-preview aero"></div>
-          <div class="theme-label">Aero</div>
-        </div>
-        <div class="theme-option" data-theme="nature" onclick="setTheme('nature')">
-          <div class="theme-preview nature"></div>
-          <div class="theme-label">Природа</div>
-        </div>
-        <div class="theme-option" data-theme="ocean" onclick="setTheme('ocean')">
-          <div class="theme-preview ocean"></div>
-          <div class="theme-label">Океан</div>
-        </div>
-        <div class="theme-option" data-theme="sunset" onclick="setTheme('sunset')">
-          <div class="theme-preview sunset"></div>
-          <div class="theme-label">Закат</div>
-        </div>
-        <div class="theme-option" data-theme="dark" onclick="setTheme('dark')">
-          <div class="theme-preview dark"></div>
-          <div class="theme-label">Тёмная</div>
-        </div>
+        <div class="theme-option" data-theme="aero" onclick="setTheme('aero')"><div class="theme-preview aero"></div><div class="theme-label">Aero</div></div>
+        <div class="theme-option" data-theme="nature" onclick="setTheme('nature')"><div class="theme-preview nature"></div><div class="theme-label">Природа</div></div>
+        <div class="theme-option" data-theme="ocean" onclick="setTheme('ocean')"><div class="theme-preview ocean"></div><div class="theme-label">Океан</div></div>
+        <div class="theme-option" data-theme="sunset" onclick="setTheme('sunset')"><div class="theme-preview sunset"></div><div class="theme-label">Закат</div></div>
+        <div class="theme-option" data-theme="dark" onclick="setTheme('dark')"><div class="theme-preview dark"></div><div class="theme-label">Тёмная</div></div>
       </div>
     </div>
-
     <div style="margin-bottom:16px;">
-      <label style="font-size:12px; color:#0361a3; font-weight:bold; display:block; margin-bottom:10px;">Звуки</label>
       <button onclick="toggleSounds()" id="soundsBtn" style="width:100%;">🔊 Звуки: ВКЛ</button>
     </div>
-
-    <div style="margin-bottom:16px;">
-      <label style="font-size:12px; color:#0361a3; font-weight:bold; display:block; margin-bottom:10px;">Уведомления</label>
-      <button onclick="requestNotificationPermission()" style="width:100%;">🔔 Запросить разрешение</button>
-    </div>
-
     <button onclick="closeSettings()" class="btn-primary" style="width:100%; padding:10px;">Готово</button>
   </div>
 </div>
 
-<!-- ПРОСМОТР МЕДИА -->
 <div id="mediaViewer" class="media-viewer" onclick="closeMediaViewer()">
   <img id="mediaViewerImg" src="">
 </div>
 
-<!-- УВЕДОМЛЕНИЯ -->
 <div class="toast-container" id="toastContainer"></div>
 
-<!-- ПЛАШКА ПРЕДУПРЕЖДЕНИЯ -->
 <div id="warnOverlay" class="warn-overlay">
   <div class="warn-icon">🚫</div>
   <div class="warn-title">АЙ-ЯЙ-ЯЙ! ТАК ДЕЛАТЬ НЕЛЬЗЯ!</div>
   <div class="warn-text">Тебе грозит бан на год.</div>
-  <div class="warn-subtext">
-    Попытка зафиксирована. Логин, IP и время записаны в журнал безопасности. Администратор увидит это.
-  </div>
+  <div class="warn-subtext">Попытка зафиксирована. Логин, IP и время записаны.</div>
   <div class="warn-timer" id="warnTimer">5</div>
 </div>
 
-<!-- СКРЫТЫЕ INPUT -->
+<!-- ПЛЕЕР RETROMUSIC -->
+<div id="musicPlayer" class="music-player" style="display:none;">
+  <div class="mp-cover" id="mpCover">🎵</div>
+  <div class="mp-info">
+    <div class="mp-title" id="mpTitle">—</div>
+    <div class="mp-artist" id="mpArtist">—</div>
+  </div>
+  <audio id="mpAudio" preload="metadata"></audio>
+  <div class="mp-controls">
+    <button onclick="mpPrev()">⏮</button>
+    <button onclick="mpToggle()" id="mpPlayBtn">▶</button>
+    <button onclick="mpNext()">⏭</button>
+  </div>
+  <div class="mp-progress">
+    <span id="mpCur">0:00</span>
+    <div class="mp-bar" onclick="mpSeek(event)"><div class="mp-bar-fill" id="mpBarFill"></div></div>
+    <span id="mpDur">0:00</span>
+  </div>
+  <button onclick="mpClose()" class="mp-close">✕</button>
+</div>
+
 <input type="file" id="fileInput" accept="image/png,image/jpeg,image/gif,image/webp,video/mp4,video/webm,audio/mpeg,audio/ogg,.gif,.png,.jpg,.jpeg,.webp,.mp4,.webm,.mp3,.ogg" style="display:none;">
 
 <script>
-// ============================================================
-// СОСТОЯНИЕ
-// ============================================================
 let token = localStorage.getItem('token');
 let me = null;
 let socket = null;
@@ -1094,56 +948,21 @@ let currentGameId = null;
 let currentGameType = null;
 let currentGamesTab = 'scratch';
 let soundsEnabled = localStorage.getItem('sounds') !== 'off';
+let allTracks = [];
+let currentMusicTab = 'all';
+let currentPlaylistId = null;
+let mpQueue = [];
+let mpIndex = -1;
 
-const STICKERS = [
-  '😀','😂','🥰','😎','🤔','😴','🥳','😭','😡','🤯',
-  '👍','👎','👋','🙏','💪','🤝','✌️','🤘','👌','🫡',
-  '❤️','💔','💯','🔥','⭐','✨','🎉','🎁','🏆','🎯',
-  '🐱','🐶','🦊','🐼','🐧','🦄','🐉','🦋','🐸','🐵',
-  '🍕','🍔','🍩','🍭','☕','🍺','🍎','🍉','🌮','🍿',
-  '🌈','☀️','🌙','⚡','❄️','💧','🌊','🌋','🌸','🍀'
-];
+const STICKERS = ['😀','😂','🥰','😎','🤔','😴','🥳','😭','😡','🤯','👍','👎','👋','🙏','💪','🤝','✌️','🤘','👌','🫡','❤️','💔','💯','🔥','⭐','✨','🎉','🎁','🏆','🎯','🐱','🐶','🦊','🐼','🐧','🦄','🐉','🦋','🐸','🐵','🍕','🍔','🍩','🍭','☕','🍺','🍎','🍉','🌮','🍿','🌈','☀️','🌙','⚡','❄️','💧','🌊','🌋','🌸','🍀'];
 
-// ============================================================
-// ТЕМЫ
-// ============================================================
-function initTheme() {
-  const saved = localStorage.getItem('theme') || 'aero';
-  setTheme(saved);
+// ПРЕФИКС
+function renderPrefix(prefix) {
+  if (!prefix) return '';
+  return `<span class="prefix-retro">${esc(prefix)}</span>`;
 }
 
-function setTheme(name) {
-  document.documentElement.setAttribute('data-theme', name);
-  localStorage.setItem('theme', name);
-  document.querySelectorAll('.theme-option').forEach(el => {
-    el.classList.toggle('active', el.dataset.theme === name);
-  });
-}
-
-function openSettings() {
-  document.getElementById('settingsModal').classList.add('open');
-  updateSoundsBtn();
-}
-
-function closeSettings() {
-  document.getElementById('settingsModal').classList.remove('open');
-}
-
-function toggleSounds() {
-  soundsEnabled = !soundsEnabled;
-  localStorage.setItem('sounds', soundsEnabled ? 'on' : 'off');
-  updateSoundsBtn();
-  if (soundsEnabled) playNotificationSound();
-}
-
-function updateSoundsBtn() {
-  const btn = document.getElementById('soundsBtn');
-  if (btn) btn.textContent = soundsEnabled ? '🔊 Звуки: ВКЛ' : '🔇 Звуки: ВЫКЛ';
-}
-
-// ============================================================
 // API
-// ============================================================
 async function api(url, method = 'GET', body = null) {
   const opts = { method, headers: { 'Content-Type': 'application/json' } };
   if (token) opts.headers['Authorization'] = 'Bearer ' + token;
@@ -1154,90 +973,42 @@ async function api(url, method = 'GET', body = null) {
   return data;
 }
 
-// ============================================================
-// ESC
-// ============================================================
 function esc(s) {
-  return String(s ?? '').replace(/[&<>"'`=\/]/g, c => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;',
-    "'": '&#39;', '`': '&#96;', '=': '&#61;', '/': '&#47;'
-  }[c]));
+  return String(s ?? '').replace(/[&<>"'`=\/]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;', '`': '&#96;', '=': '&#61;', '/': '&#47;' }[c]));
 }
 
-// ============================================================
-// ЗАЩИТА
-// ============================================================
-const FORBIDDEN_PATTERNS = [
-  /<svg/i, /<script/i, /<iframe/i, /<object/i, /<embed/i,
-  /javascript:/i, /vbscript:/i,
-  /data:text\/html/i, /data:image\/svg/i,
-  /onerror\s*=/i, /onload\s*=/i, /onclick\s*=/i
-];
+const FORBIDDEN_PATTERNS = [/<svg/i, /<script/i, /<iframe/i, /<object/i, /<embed/i, /javascript:/i, /vbscript:/i, /data:text\/html/i, /data:image\/svg/i, /onerror\s*=/i, /onload\s*=/i, /onclick\s*=/i];
 const FORBIDDEN_MIME = ['image/svg+xml', 'image/svg', 'text/html', 'application/xhtml+xml', 'text/xml', 'application/xml'];
 const FORBIDDEN_EXT = ['.svg', '.svgz', '.xml', '.html', '.htm', '.js', '.mjs'];
 
-function containsForbidden(str) {
-  if (!str) return false;
-  return FORBIDDEN_PATTERNS.some(p => p.test(String(str)));
-}
-
-function isForbiddenFile(file) {
-  if (!file) return false;
-  const type = (file.type || '').toLowerCase();
-  const name = (file.name || '').toLowerCase();
-  if (FORBIDDEN_MIME.includes(type)) return true;
-  for (const ext of FORBIDDEN_EXT) if (name.endsWith(ext)) return true;
-  return false;
-}
-
-function isValidUrl(url) {
-  if (!url) return false;
-  const s = String(url).trim().toLowerCase();
-  if (s.startsWith('data:')) {
-    return s.startsWith('data:image/png') || s.startsWith('data:image/jpeg') ||
-           s.startsWith('data:image/jpg') || s.startsWith('data:image/gif') ||
-           s.startsWith('data:image/webp') || s.startsWith('data:video/mp4') ||
-           s.startsWith('data:video/webm') || s.startsWith('data:audio/');
-  }
-  if (s.startsWith('javascript:') || s.startsWith('vbscript:') || s.startsWith('file:')) return false;
-  return true;
-}
-
-function checkContent(...fields) {
-  for (const f of fields) if (containsForbidden(f)) return true;
-  return false;
-}
+function containsForbidden(str) { if (!str) return false; return FORBIDDEN_PATTERNS.some(p => p.test(String(str))); }
+function isForbiddenFile(file) { if (!file) return false; const t = (file.type||'').toLowerCase(); const n = (file.name||'').toLowerCase(); if (FORBIDDEN_MIME.includes(t)) return true; for (const e of FORBIDDEN_EXT) if (n.endsWith(e)) return true; return false; }
+function isValidUrl(url) { if (!url) return false; const s = String(url).trim().toLowerCase(); if (s.startsWith('data:')) return s.startsWith('data:image/png')||s.startsWith('data:image/jpeg')||s.startsWith('data:image/jpg')||s.startsWith('data:image/gif')||s.startsWith('data:image/webp')||s.startsWith('data:video/mp4')||s.startsWith('data:video/webm')||s.startsWith('data:audio/'); if (s.startsWith('javascript:')||s.startsWith('vbscript:')||s.startsWith('file:')) return false; return true; }
+function checkContent(...f) { for (const x of f) if (containsForbidden(x)) return true; return false; }
 
 let warnTimerInterval = null;
-
 function showForbiddenWarning(reason) {
-  const overlay = document.getElementById('warnOverlay');
-  const timerEl = document.getElementById('warnTimer');
-  if (!overlay) return;
-  overlay.classList.add('open');
-  let count = 5;
-  timerEl.textContent = count;
+  const o = document.getElementById('warnOverlay'), t = document.getElementById('warnTimer');
+  if (!o) return;
+  o.classList.add('open'); let c = 5; t.textContent = c;
   if (warnTimerInterval) clearInterval(warnTimerInterval);
-  warnTimerInterval = setInterval(() => {
-    count--;
-    if (count <= 0) {
-      clearInterval(warnTimerInterval);
-      warnTimerInterval = null;
-      overlay.classList.remove('open');
-    } else {
-      timerEl.textContent = count;
-    }
-  }, 1000);
-  sendSecurityLog(reason).catch(() => {});
+  warnTimerInterval = setInterval(() => { c--; if (c <= 0) { clearInterval(warnTimerInterval); warnTimerInterval = null; o.classList.remove('open'); } else t.textContent = c; }, 1000);
+  api('/security/attempt', 'POST', { reason: reason || 'forbidden' }).catch(() => {});
 }
 
-async function sendSecurityLog(reason) {
-  try { await api('/security/attempt', 'POST', { reason: reason || 'forbidden_content' }); } catch (e) {}
+// ТЕМЫ
+function initTheme() { const s = localStorage.getItem('theme') || 'aero'; setTheme(s); }
+function setTheme(name) {
+  document.documentElement.setAttribute('data-theme', name);
+  localStorage.setItem('theme', name);
+  document.querySelectorAll('.theme-option').forEach(el => el.classList.toggle('active', el.dataset.theme === name));
 }
+function openSettings() { document.getElementById('settingsModal').classList.add('open'); updateSoundsBtn(); }
+function closeSettings() { document.getElementById('settingsModal').classList.remove('open'); }
+function toggleSounds() { soundsEnabled = !soundsEnabled; localStorage.setItem('sounds', soundsEnabled ? 'on' : 'off'); updateSoundsBtn(); if (soundsEnabled) playNotificationSound(); }
+function updateSoundsBtn() { const b = document.getElementById('soundsBtn'); if (b) b.textContent = soundsEnabled ? '🔊 Звуки: ВКЛ' : '🔇 Звуки: ВЫКЛ'; }
 
-// ============================================================
 // АВТОРИЗАЦИЯ
-// ============================================================
 function switchTab(t) {
   document.getElementById('tabLogin').classList.toggle('active', t === 'login');
   document.getElementById('tabReg').classList.toggle('active', t === 'reg');
@@ -1245,89 +1016,55 @@ function switchTab(t) {
   document.getElementById('regForm').style.display = t === 'reg' ? 'block' : 'none';
   document.getElementById('authErr').textContent = '';
 }
-
 async function doLogin() {
   try {
     const u = document.getElementById('loginUser').value.trim();
     const p = document.getElementById('loginPass').value;
     const data = await api('/login', 'POST', { username: u, password: p });
-    token = data.token;
-    localStorage.setItem('token', token);
-    startApp();
+    token = data.token; localStorage.setItem('token', token); startApp();
   } catch (e) { document.getElementById('authErr').textContent = e.message; }
 }
-
 async function doRegister() {
   try {
     const u = document.getElementById('regUser').value.trim();
     const p = document.getElementById('regPass').value;
     const data = await api('/register', 'POST', { username: u, password: p });
-    token = data.token;
-    localStorage.setItem('token', token);
-    startApp();
+    token = data.token; localStorage.setItem('token', token); startApp();
   } catch (e) { document.getElementById('authErr').textContent = e.message; }
 }
+function logout() { localStorage.removeItem('token'); if (socket) socket.disconnect(); location.reload(); }
 
-function logout() {
-  localStorage.removeItem('token');
-  if (socket) socket.disconnect();
-  location.reload();
-}
-
-// ============================================================
-// СТАРТ
-// ============================================================
 async function startApp() {
   try { me = await api('/me'); }
-  catch {
-    localStorage.removeItem('token');
-    token = null;
-    showAuth();
-    return;
-  }
+  catch { localStorage.removeItem('token'); token = null; showAuth(); return; }
   document.getElementById('auth').style.display = 'none';
   document.getElementById('main').style.display = 'block';
-  document.getElementById('meName').textContent = me.username + (me.role === 'admin' ? ' 👑' : '');
-  document.getElementById('myName').textContent = me.username;
+  document.getElementById('meName').innerHTML = esc(me.username) + renderPrefix(me.prefix) + (me.role === 'admin' ? ' 👑' : '');
+  document.getElementById('myName').innerHTML = esc(me.username) + renderPrefix(me.prefix);
   document.getElementById('myAvatar').textContent = me.username[0].toUpperCase();
   document.getElementById('myStatus').value = me.status || '';
-
   if (me.role === 'admin') {
     document.getElementById('navAdmin').style.display = 'inline-block';
     document.getElementById('newsAdmin').style.display = 'block';
     document.getElementById('voteAdmin').style.display = 'block';
   }
-
-  initSocket();
-  initStickerPanels();
-  initBgColors();
-  loadPosts();
-  loadFriends();
-  loadNews();
-  loadGroups();
-  loadForums();
-  loadStories();
+  initSocket(); initStickerPanels(); initBgColors();
+  loadPosts(); loadFriends(); loadNews(); loadGroups(); loadForums(); loadStories();
   requestNotificationPermission();
 }
 
-function showAuth() {
-  document.getElementById('auth').style.display = 'block';
-  document.getElementById('main').style.display = 'none';
-}
+function showAuth() { document.getElementById('auth').style.display = 'block'; document.getElementById('main').style.display = 'none'; }
 
-// ============================================================
-// НАВИГАЦИЯ
-// ============================================================
 function showPage(page) {
   currentPage = page;
-  const pages = ['feed','profile','news','groups','forums','games','vote','admin','search'];
+  const pages = ['feed','profile','news','groups','forums','games','music','vote','admin','search'];
   pages.forEach(p => {
     const nav = document.getElementById('nav' + p.charAt(0).toUpperCase() + p.slice(1));
     if (nav) nav.classList.toggle('active', p === page);
     const el = document.getElementById('page' + p.charAt(0).toUpperCase() + p.slice(1));
     if (el) el.style.display = 'none';
   });
-  const map = { feed: 'pageFeed', profile: 'pageProfile', news: 'pageNews', groups: 'pageGroups', forums: 'pageForums', games: 'pageGames', vote: 'pageVote', admin: 'pageAdmin', search: 'pageSearch' };
+  const map = { feed:'pageFeed', profile:'pageProfile', news:'pageNews', groups:'pageGroups', forums:'pageForums', games:'pageGames', music:'pageMusic', vote:'pageVote', admin:'pageAdmin', search:'pageSearch' };
   const el = document.getElementById(map[page]);
   if (el) el.style.display = 'block';
   if (page === 'news') loadNews();
@@ -1335,43 +1072,34 @@ function showPage(page) {
   if (page === 'groups') { document.getElementById('groupsList').style.display = 'block'; document.getElementById('groupView').style.display = 'none'; loadGroups(); }
   if (page === 'forums') { document.getElementById('forumsList').style.display = 'block'; document.getElementById('forumView').style.display = 'none'; document.getElementById('topicView').style.display = 'none'; loadForums(); }
   if (page === 'games') { showGamesHome(); showGamesTab(currentGamesTab); }
+  if (page === 'music') showMusicTab(currentMusicTab);
   if (page === 'admin') loadAdmin();
   if (page === 'feed') loadStories();
 }
 
-// ============================================================
-// SOCKET
-// ============================================================
 function initSocket() {
   socket = io({ auth: { token } });
   socket.on('online', ids => { onlineIds = ids; renderFriends(); });
   socket.on('new_post', () => { if (currentPage === 'feed') loadPosts(); });
   socket.on('new_news', () => { if (currentPage === 'news') loadNews(); });
   socket.on('new_vote', () => { if (currentPage === 'vote') loadParties(); });
-  socket.on('new_story', () => { loadStories(); });
-  socket.on('new_game', () => {
-    if (currentGamesTab === 'scratch' && currentPage === 'games') loadScratch();
-    if (currentGamesTab === 'flash' && currentPage === 'games') loadFlash();
-    if (currentGamesTab === 'html' && currentPage === 'games') loadHtmlGames();
-  });
+  socket.on('new_story', () => loadStories());
+  socket.on('new_game', () => { if (currentPage === 'games') showGamesTab(currentGamesTab); });
+  socket.on('new_track', () => { if (currentPage === 'music') showMusicTab(currentMusicTab); });
   socket.on('new_message', handleIncomingMessage);
-  socket.on('new_forum_post', data => { if (currentPage === 'forums' && currentTopicId == data.topic_id) loadTopic(currentTopicId); });
-  socket.on('new_group_post', data => { if (currentPage === 'groups' && currentGroupId == data.group_id) loadGroupPosts(); });
+  socket.on('new_forum_post', d => { if (currentPage === 'forums' && currentTopicId == d.topic_id) loadTopic(currentTopicId); });
+  socket.on('new_group_post', d => { if (currentPage === 'groups' && currentGroupId == d.group_id) loadGroupPosts(); });
   initCallSocket();
 }
 
-// ============================================================
-// МЕДИА
-// ============================================================
 function renderMedia(p) {
-  let html = '';
-  if (p.sticker) html += `<div class="sticker-big">${esc(p.sticker)}</div>`;
-  if (p.image && isValidUrl(p.image)) html += `<img class="media" src="${esc(p.image)}" data-media="${esc(p.image)}" onerror="this.style.display='none'">`;
-  if (p.gif && isValidUrl(p.gif)) html += `<img class="media" src="${esc(p.gif)}" data-media="${esc(p.gif)}" onerror="this.style.display='none'">`;
-  if (p.video && isValidUrl(p.video)) html += renderVideo(p.video);
-  return html;
+  let h = '';
+  if (p.sticker) h += `<div class="sticker-big">${esc(p.sticker)}</div>`;
+  if (p.image && isValidUrl(p.image)) h += `<img class="media" src="${esc(p.image)}" data-media="${esc(p.image)}" onerror="this.style.display='none'">`;
+  if (p.gif && isValidUrl(p.gif)) h += `<img class="media" src="${esc(p.gif)}" data-media="${esc(p.gif)}" onerror="this.style.display='none'">`;
+  if (p.video && isValidUrl(p.video)) h += renderVideo(p.video);
+  return h;
 }
-
 function renderVideo(url) {
   if (!url) return '';
   const yt = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
@@ -1382,9 +1110,7 @@ function renderVideo(url) {
   return `<div style="margin-top:6px;"><a href="${esc(url)}" target="_blank" rel="noopener noreferrer" style="color:#0361a3;">Видео</a></div>`;
 }
 
-// ============================================================
 // ПОСТЫ
-// ============================================================
 async function loadPosts() {
   const posts = await api('/posts');
   const el = document.getElementById('posts');
@@ -1394,7 +1120,7 @@ async function loadPosts() {
       <div class="post-head">
         <div class="avatar" data-profile-uid="${p.user_id}">${p.avatar ? `<img src="${esc(p.avatar)}">` : esc(p.username[0].toUpperCase())}</div>
         <div>
-          <div class="post-author" data-profile-uid="${p.user_id}">${esc(p.username)}</div>
+          <div class="post-author" data-profile-uid="${p.user_id}">${esc(p.username)}${renderPrefix(p.prefix)}</div>
           <div class="post-date">${fmtDate(p.created_at)}</div>
         </div>
       </div>
@@ -1418,7 +1144,7 @@ async function createPost() {
   const gif = document.getElementById('postGif').value.trim();
   const sticker = document.getElementById('postStickerPreview').textContent;
   if (!content && !image && !video && !gif && !sticker) return;
-  if (checkContent(content, image, video, gif)) { showForbiddenWarning('В посте найден запрещённый контент'); return; }
+  if (checkContent(content, image, video, gif)) { showForbiddenWarning('В посте запрещённый контент'); return; }
   if ((image && !isValidUrl(image)) || (video && !isValidUrl(video)) || (gif && !isValidUrl(gif))) { showForbiddenWarning('Недопустимый URL'); return; }
   await api('/posts', 'POST', { content, image, video, gif, sticker });
   ['postContent','postImage','postVideo','postGif'].forEach(id => document.getElementById(id).value = '');
@@ -1429,9 +1155,7 @@ async function createPost() {
 async function toggleLike(id) { await api('/like/' + id, 'POST'); loadPosts(); }
 async function deletePost(id) { if (!confirm('Удалить?')) return; await api('/posts/' + id, 'DELETE'); loadPosts(); }
 
-// ============================================================
 // ДРУЗЬЯ
-// ============================================================
 async function loadFriends() { window._friends = await api('/users'); renderFriends(); }
 
 function renderFriends() {
@@ -1444,7 +1168,7 @@ function renderFriends() {
       <div class="friend ${unread ? 'unread' : ''}" data-uid="${u.id}">
         <div class="avatar sm">${u.avatar ? `<img src="${esc(u.avatar)}">` : esc(u.username[0].toUpperCase())}</div>
         <div style="flex:1;">
-          <div>${isOnline ? '<span class="online-dot"></span>' : ''}${esc(u.username)}${unread ? `<span class="unread-badge">${unread}</span>` : ''}</div>
+          <div>${isOnline ? '<span class="online-dot"></span>' : ''}${esc(u.username)}${renderPrefix(u.prefix)}${unread ? `<span class="unread-badge">${unread}</span>` : ''}</div>
           <div style="color:#5a8ab0; font-size:10px;">${isOnline ? 'в сети' : 'не в сети'}</div>
         </div>
       </div>
@@ -1460,7 +1184,6 @@ function renderFriends() {
 }
 
 function openFriendChat(id, username) { clearUnread(id); openChat(id, username); }
-
 async function saveStatus() {
   const status = document.getElementById('myStatus').value;
   if (containsForbidden(status)) { showForbiddenWarning('В статусе запрещённый контент'); return; }
@@ -1468,19 +1191,9 @@ async function saveStatus() {
   alert('Сохранено');
 }
 
-// ============================================================
-// СМЕНА ПАРОЛЯ
-// ============================================================
-function openChangePassword() {
-  document.getElementById('changePasswordModal').classList.add('open');
-  document.getElementById('oldPassword').value = '';
-  document.getElementById('newPassword').value = '';
-  document.getElementById('newPassword2').value = '';
-  document.getElementById('pwdErr').style.display = 'none';
-}
-
+// ПАРОЛЬ
+function openChangePassword() { document.getElementById('changePasswordModal').classList.add('open'); document.getElementById('oldPassword').value = ''; document.getElementById('newPassword').value = ''; document.getElementById('newPassword2').value = ''; document.getElementById('pwdErr').style.display = 'none'; }
 function closeChangePassword() { document.getElementById('changePasswordModal').classList.remove('open'); }
-
 async function changePassword() {
   const oldP = document.getElementById('oldPassword').value;
   const newP = document.getElementById('newPassword').value;
@@ -1490,33 +1203,22 @@ async function changePassword() {
   if (!oldP || !newP || !newP2) { errEl.textContent = 'Заполните все поля'; errEl.style.display = 'block'; return; }
   if (newP !== newP2) { errEl.textContent = 'Новые пароли не совпадают'; errEl.style.display = 'block'; return; }
   if (newP.length < 6) { errEl.textContent = 'Минимум 6 символов'; errEl.style.display = 'block'; return; }
-  try {
-    await api('/me/password', 'PUT', { oldPassword: oldP, newPassword: newP });
-    closeChangePassword();
-    showToast({ username: 'Безопасность', text: 'Пароль изменён', onClick: () => {} });
-  } catch (e) { errEl.textContent = e.message; errEl.style.display = 'block'; }
+  try { await api('/me/password', 'PUT', { oldPassword: oldP, newPassword: newP }); closeChangePassword(); showToast({ username: 'Безопасность', text: 'Пароль изменён', onClick: () => {} }); }
+  catch (e) { errEl.textContent = e.message; errEl.style.display = 'block'; }
 }
 
-// ============================================================
 // ПРОФИЛЬ
-// ============================================================
 async function openProfile(userId) {
   currentProfileId = userId;
   showPage('profile');
   const data = await api('/users/' + userId);
   document.getElementById('profAvatar').innerHTML = data.user.avatar ? `<img src="${esc(data.user.avatar)}">` : esc(data.user.username[0].toUpperCase());
-  document.getElementById('profUsername').textContent = data.user.username;
+  document.getElementById('profUsername').innerHTML = esc(data.user.username) + renderPrefix(data.user.prefix);
   document.getElementById('profStatus').textContent = data.user.status || '';
   document.getElementById('profBio').textContent = data.user.bio || '';
   const msgBtn = document.getElementById('profMessageBtn');
-  if (userId === me.id) {
-    msgBtn.style.display = 'none';
-    document.getElementById('galleryUploadBox').style.display = 'block';
-  } else {
-    msgBtn.style.display = 'inline-block';
-    msgBtn.onclick = () => openChat(userId, data.user.username);
-    document.getElementById('galleryUploadBox').style.display = 'none';
-  }
+  if (userId === me.id) { msgBtn.style.display = 'none'; document.getElementById('galleryUploadBox').style.display = 'block'; }
+  else { msgBtn.style.display = 'inline-block'; msgBtn.onclick = () => openChat(userId, data.user.username); document.getElementById('galleryUploadBox').style.display = 'none'; }
   document.getElementById('profilePosts').innerHTML = data.posts.map(p => `
     <div class="post">
       <div class="post-date">${fmtDate(p.created_at)}</div>
@@ -1531,44 +1233,31 @@ async function openProfile(userId) {
       ${userId === me.id ? `<button class="delete-btn" data-gallery-del="${g.id}">✕</button>` : ''}
     </div>
   `).join('') || '<div style="color:#5a8ab0; padding:10px;">Пусто</div>';
-  grid.querySelectorAll('[data-gallery-url]').forEach(n => {
-    n.addEventListener('click', (e) => { if (e.target.dataset.galleryDel) return; openMediaViewer(n.dataset.galleryUrl); });
-  });
-  grid.querySelectorAll('[data-gallery-del]').forEach(n => {
-    n.addEventListener('click', (e) => { e.stopPropagation(); removeFromGallery(Number(n.dataset.galleryDel)); });
-  });
+  grid.querySelectorAll('[data-gallery-url]').forEach(n => n.addEventListener('click', (e) => { if (e.target.dataset.galleryDel) return; openMediaViewer(n.dataset.galleryUrl); }));
+  grid.querySelectorAll('[data-gallery-del]').forEach(n => n.addEventListener('click', (e) => { e.stopPropagation(); removeFromGallery(Number(n.dataset.galleryDel)); }));
   showProfileTab('posts');
 }
 
 function openMyProfile() { openProfile(me.id); }
 function messageCurrentProfile() { if (currentProfileId) openChat(currentProfileId, document.getElementById('profUsername').textContent); }
-
 function showProfileTab(tab) {
   document.getElementById('profTabPosts').className = tab === 'posts' ? 'btn-primary' : '';
   document.getElementById('profTabGallery').className = tab === 'gallery' ? 'btn-primary' : '';
   document.getElementById('profilePostsView').style.display = tab === 'posts' ? 'block' : 'none';
   document.getElementById('profileGalleryView').style.display = tab === 'gallery' ? 'block' : 'none';
 }
-
 async function addToGallery() {
   const url = document.getElementById('galleryUrl').value.trim();
   const media_type = document.getElementById('galleryType').value;
   if (!url) return alert('Введите ссылку');
-  if (containsForbidden(url) || !isValidUrl(url)) { showForbiddenWarning('Недопустимый URL галереи'); return; }
+  if (containsForbidden(url) || !isValidUrl(url)) { showForbiddenWarning('Недопустимый URL'); return; }
   await api('/profile/gallery', 'POST', { url, media_type });
   document.getElementById('galleryUrl').value = '';
   openProfile(me.id);
 }
+async function removeFromGallery(id) { if (!confirm('Удалить?')) return; await api('/profile/gallery/' + id, 'DELETE'); openProfile(me.id); }
 
-async function removeFromGallery(id) {
-  if (!confirm('Удалить?')) return;
-  await api('/profile/gallery/' + id, 'DELETE');
-  openProfile(me.id);
-}
-
-// ============================================================
 // ИСТОРИИ
-// ============================================================
 let allStories = [];
 let currentStoryIndex = 0;
 let currentStoryGroup = [];
@@ -1579,16 +1268,10 @@ function initBgColors() {
   const colors = ['#3b5998','#c0392b','#27ae60','#8e44ad','#e67e22','#16a085','#2c3e50','#d35400'];
   const el = document.getElementById('bgColors');
   if (!el) return;
-  el.innerHTML = colors.map(c => `<div data-bg="${c}" style="width:34px; height:34px; border-radius:50%; background:${c}; cursor:pointer; border:3px solid ${c === selectedBg ? '#000' : 'transparent'}; box-shadow: inset 0 2px 4px rgba(255,255,255,0.4), 0 2px 5px rgba(0,0,0,0.2);"></div>`).join('');
+  el.innerHTML = colors.map(c => `<div data-bg="${c}" style="width:34px; height:34px; border-radius:50%; background:${c}; cursor:pointer; border:3px solid ${c === selectedBg ? '#000' : 'transparent'};"></div>`).join('');
   el.querySelectorAll('[data-bg]').forEach(n => n.addEventListener('click', () => selectBg(n.dataset.bg)));
 }
-
-function selectBg(c) {
-  selectedBg = c;
-  document.querySelectorAll('#bgColors [data-bg]').forEach(d => {
-    d.style.border = d.dataset.bg === c ? '3px solid #000' : '3px solid transparent';
-  });
-}
+function selectBg(c) { selectedBg = c; document.querySelectorAll('#bgColors [data-bg]').forEach(d => d.style.border = d.dataset.bg === c ? '3px solid #000' : '3px solid transparent'); }
 
 async function loadStories() {
   const stories = await api('/stories');
@@ -1596,7 +1279,7 @@ async function loadStories() {
   const bar = document.getElementById('storiesBar');
   const grouped = {};
   stories.forEach(s => {
-    if (!grouped[s.user_id]) grouped[s.user_id] = { user_id: s.user_id, username: s.username, avatar: s.avatar, stories: [], allViewed: true };
+    if (!grouped[s.user_id]) grouped[s.user_id] = { user_id: s.user_id, username: s.username, avatar: s.avatar, prefix: s.prefix, stories: [], allViewed: true };
     grouped[s.user_id].stories.push(s);
     if (!s.viewed) grouped[s.user_id].allViewed = false;
   });
@@ -1604,9 +1287,7 @@ async function loadStories() {
   bar.innerHTML = users.map(u => `
     <div class="story-circle" data-story-uid="${u.user_id}">
       <div class="story-ring ${u.allViewed ? 'viewed' : ''}">
-        <div class="story-ring-inner">
-          ${u.avatar ? `<img src="${esc(u.avatar)}">` : esc(u.username[0].toUpperCase())}
-        </div>
+        <div class="story-ring-inner">${u.avatar ? `<img src="${esc(u.avatar)}">` : esc(u.username[0].toUpperCase())}</div>
       </div>
       <div class="story-name">${esc(u.username)}</div>
     </div>
@@ -1626,8 +1307,7 @@ async function publishStory() {
   if ((image && !isValidUrl(image)) || (video && !isValidUrl(video))) { showForbiddenWarning('Недопустимый URL'); return; }
   await api('/stories', 'POST', { content, image, video, background: selectedBg });
   ['storyText','storyImage','storyVideo'].forEach(id => document.getElementById(id).value = '');
-  closeAddStory();
-  loadStories();
+  closeAddStory(); loadStories();
 }
 
 function openStoryViewer(userId) {
@@ -1644,120 +1324,70 @@ function renderStory() {
   const content = document.getElementById('storyContent');
   content.style.background = s.background || '#3b5998';
   content.innerHTML = '';
-  if (s.image && isValidUrl(s.image)) {
-    const img = document.createElement('img');
-    img.src = s.image;
-    img.onerror = () => img.style.display = 'none';
-    content.appendChild(img);
-  } else if (s.video && isValidUrl(s.video)) {
-    const v = document.createElement('video');
-    v.src = s.video;
-    v.autoplay = true; v.muted = true;
-    content.appendChild(v);
-  }
-  if (s.content) {
-    const txt = document.createElement('div');
-    txt.className = 'story-text';
-    txt.textContent = s.content;
-    content.appendChild(txt);
-  }
+  if (s.image && isValidUrl(s.image)) { const img = document.createElement('img'); img.src = s.image; img.onerror = () => img.style.display = 'none'; content.appendChild(img); }
+  else if (s.video && isValidUrl(s.video)) { const v = document.createElement('video'); v.src = s.video; v.autoplay = true; v.muted = true; content.appendChild(v); }
+  if (s.content) { const txt = document.createElement('div'); txt.className = 'story-text'; txt.textContent = s.content; content.appendChild(txt); }
   const header = document.getElementById('storyHeader');
-  header.innerHTML = `
-    <div class="avatar">${s.avatar ? `<img src="${esc(s.avatar)}">` : esc(s.username[0].toUpperCase())}</div>
-    <div style="font-weight:bold;">${esc(s.username)}</div>
-    <div style="font-size:11px; opacity:0.9; margin-left:auto;">${fmtDate(s.created_at)}</div>
-  `;
+  header.innerHTML = `<div class="avatar">${s.avatar ? `<img src="${esc(s.avatar)}">` : esc(s.username[0].toUpperCase())}</div><div style="font-weight:bold;">${esc(s.username)}${renderPrefix(s.prefix)}</div><div style="font-size:11px; opacity:0.9; margin-left:auto;">${fmtDate(s.created_at)}</div>`;
   document.getElementById('storyViews').textContent = `👁 ${s.views} просмотров`;
   api('/stories/' + s.id + '/view', 'POST').catch(() => {});
   const progress = document.getElementById('storyProgress');
-  progress.innerHTML = currentStoryGroup.map((_, i) => `
-    <div class="story-progress-bar"><div class="story-progress-fill" id="storyFill${i}" style="width:${i < currentStoryIndex ? '100%' : '0%'}"></div></div>
-  `).join('');
+  progress.innerHTML = currentStoryGroup.map((_, i) => `<div class="story-progress-bar"><div class="story-progress-fill" id="storyFill${i}" style="width:${i < currentStoryIndex ? '100%' : '0%'}"></div></div>`).join('');
   if (storyTimer) clearInterval(storyTimer);
   storyStartTime = Date.now();
-  const duration = 5000;
   storyTimer = setInterval(() => {
-    const elapsed = Date.now() - storyStartTime;
-    const percent = Math.min(100, (elapsed / duration) * 100);
+    const percent = Math.min(100, ((Date.now() - storyStartTime) / 5000) * 100);
     const fill = document.getElementById('storyFill' + currentStoryIndex);
     if (fill) fill.style.width = percent + '%';
-    if (percent >= 100) {
-      clearInterval(storyTimer);
-      if (currentStoryIndex < currentStoryGroup.length - 1) { currentStoryIndex++; renderStory(); }
-      else closeStoryViewer();
-    }
+    if (percent >= 100) { clearInterval(storyTimer); if (currentStoryIndex < currentStoryGroup.length - 1) { currentStoryIndex++; renderStory(); } else closeStoryViewer(); }
   }, 50);
 }
-
 function nextStory() { if (currentStoryIndex < currentStoryGroup.length - 1) { currentStoryIndex++; renderStory(); } else closeStoryViewer(); }
 function prevStory() { if (currentStoryIndex > 0) { currentStoryIndex--; renderStory(); } }
-function closeStoryViewer() {
-  document.getElementById('storyViewer').classList.remove('open');
-  if (storyTimer) clearInterval(storyTimer);
-  loadStories();
-}
+function closeStoryViewer() { document.getElementById('storyViewer').classList.remove('open'); if (storyTimer) clearInterval(storyTimer); loadStories(); }
 
-// ============================================================
 // СТИКЕРЫ
-// ============================================================
 function renderStickerPanel(el) {
   el.innerHTML = STICKERS.map(s => `<button class="sticker-btn" data-sticker="${s}" data-panel="${el.id}">${s}</button>`).join('');
   el.querySelectorAll('.sticker-btn').forEach(n => n.addEventListener('click', () => pickSticker(n.dataset.sticker, n.dataset.panel)));
 }
-
 function initStickerPanels() {
   renderStickerPanel(document.getElementById('postStickerPanel'));
   renderStickerPanel(document.getElementById('groupStickerPanel'));
   renderStickerPanel(document.getElementById('chatStickerPanel'));
 }
-
 function togglePostStickerPanel() { document.getElementById('postStickerPanel').classList.toggle('open'); }
 function toggleGroupStickerPanel() { document.getElementById('groupStickerPanel').classList.toggle('open'); }
 function toggleChatStickerPanel() { document.getElementById('chatStickerPanel').classList.toggle('open'); }
-
 let chatSticker = '';
-
 function pickSticker(sticker, panelId) {
-  if (panelId === 'postStickerPanel') {
-    document.getElementById('postStickerPreview').textContent = sticker;
-    document.getElementById('postStickerPanel').classList.remove('open');
-  } else if (panelId === 'groupStickerPanel') {
-    document.getElementById('groupStickerPreview').textContent = sticker;
-    document.getElementById('groupStickerPanel').classList.remove('open');
-  } else if (panelId === 'chatStickerPanel') {
-    chatSticker = sticker;
-    sendSticker();
-  }
+  if (panelId === 'postStickerPanel') { document.getElementById('postStickerPreview').textContent = sticker; document.getElementById('postStickerPanel').classList.remove('open'); }
+  else if (panelId === 'groupStickerPanel') { document.getElementById('groupStickerPreview').textContent = sticker; document.getElementById('groupStickerPanel').classList.remove('open'); }
+  else if (panelId === 'chatStickerPanel') { chatSticker = sticker; sendSticker(); }
 }
-
 async function sendSticker() {
   if (!chatSticker || !currentChat) return;
-  const sticker = chatSticker;
-  chatSticker = '';
+  const sticker = chatSticker; chatSticker = '';
   document.getElementById('chatStickerPanel').classList.remove('open');
   const m = await api('/messages/' + currentChat.id, 'POST', { content: '', sticker });
-  addChatMsg({ ...m, from_username: me.username }, true);
+  addChatMsg({ ...m, from_username: me.username, from_prefix: me.prefix }, true);
 }
 
-// ============================================================
 // ПОИСК
-// ============================================================
 let suggestTimer = null;
-
 function onSearchInput() {
   clearTimeout(suggestTimer);
   const q = document.getElementById('searchInput').value.trim();
   if (q.length < 2) { document.getElementById('searchSuggest').classList.remove('open'); return; }
   suggestTimer = setTimeout(() => loadSuggest(q), 250);
 }
-
 async function loadSuggest(q) {
   try {
     const data = await api('/search/suggest?q=' + encodeURIComponent(q));
     let html = '';
     if (data.users.length) {
       html += '<div class="suggest-section">Люди</div>';
-      html += data.users.map(u => `<div class="suggest-item" data-suggest-user="${u.id}"><div class="suggest-avatar">${u.avatar ? `<img src="${esc(u.avatar)}">` : esc(u.username[0].toUpperCase())}</div><span>${esc(u.username)}</span></div>`).join('');
+      html += data.users.map(u => `<div class="suggest-item" data-suggest-user="${u.id}"><div class="suggest-avatar">${u.avatar ? `<img src="${esc(u.avatar)}">` : esc(u.username[0].toUpperCase())}</div><span>${esc(u.username)}${renderPrefix(getPrefixFromCache(u.username))}</span></div>`).join('');
     }
     if (data.groups.length) {
       html += '<div class="suggest-section">Группы</div>';
@@ -1769,17 +1399,15 @@ async function loadSuggest(q) {
     }
     const el = document.getElementById('searchSuggest');
     if (!html) { el.classList.remove('open'); return; }
-    el.innerHTML = html;
-    el.classList.add('open');
+    el.innerHTML = html; el.classList.add('open');
     el.querySelectorAll('[data-suggest-user]').forEach(n => n.addEventListener('click', () => { el.classList.remove('open'); openProfile(Number(n.dataset.suggestUser)); }));
     el.querySelectorAll('[data-suggest-group]').forEach(n => n.addEventListener('click', () => { el.classList.remove('open'); openGroup(Number(n.dataset.suggestGroup)); }));
     el.querySelectorAll('[data-suggest-forum]').forEach(n => n.addEventListener('click', () => { el.classList.remove('open'); openForum(Number(n.dataset.suggestForum)); }));
   } catch (e) {}
 }
+function getPrefixFromCache(username) { return username === 'qwyrta' ? 'Любитель ретро' : null; }
 
-document.addEventListener('click', (e) => {
-  if (!e.target.closest('.search-wrap')) document.getElementById('searchSuggest').classList.remove('open');
-});
+document.addEventListener('click', (e) => { if (!e.target.closest('.search-wrap')) document.getElementById('searchSuggest').classList.remove('open'); });
 
 async function doSearch() {
   const q = document.getElementById('searchInput').value.trim();
@@ -1816,9 +1444,7 @@ async function doSearch() {
   document.querySelectorAll('[data-search-fid]').forEach(n => n.addEventListener('click', () => openForum(Number(n.dataset.searchFid))));
 }
 
-// ============================================================
 // ЧАТ
-// ============================================================
 async function openChat(userId, username) {
   currentChat = { id: userId, username };
   clearUnread(userId);
@@ -1830,20 +1456,16 @@ async function openChat(userId, username) {
   msgs.forEach(m => addChatMsg(m, m.from_id === me.id));
   el.scrollTop = el.scrollHeight;
 }
-
-function closeChat() {
-  document.getElementById('chatBox').classList.remove('open');
-  currentChat = null;
-  pendingAttach = [];
-  renderAttachPreview();
-}
+function closeChat() { document.getElementById('chatBox').classList.remove('open'); currentChat = null; pendingAttach = []; renderAttachPreview(); }
 
 function addChatMsg(m, mine) {
   const el = document.getElementById('chatMsgs');
   const div = document.createElement('div');
   div.className = 'msg' + (mine ? ' mine' : '');
+  const from = mine ? 'Я' : esc(m.from_username || currentChat.username);
+  const prefix = mine ? renderPrefix(me.prefix) : renderPrefix(m.from_prefix);
   div.innerHTML = `
-    <div><span class="from">${mine ? 'Я' : esc(m.from_username || currentChat.username)}:</span> ${esc(m.content || '')}</div>
+    <div><span class="from">${from}${prefix}:</span> ${esc(m.content || '')}</div>
     ${m.sticker ? `<div class="msg-media"><div class="sticker">${esc(m.sticker)}</div></div>` : ''}
     ${renderMsgMedia(m.media)}
   `;
@@ -1855,48 +1477,32 @@ function renderMsgMedia(media) {
   if (!media || !media.length) return '';
   let html = '<div class="msg-media">';
   for (const m of media) {
-    if ((m.type === 'image' || m.type === 'gif') && isValidUrl(m.url)) {
-      html += `<img src="${esc(m.url)}" data-media="${esc(m.url)}" onerror="this.style.display='none'">`;
-    } else if (m.type === 'audio' && isValidUrl(m.url)) {
-      html += `<audio controls src="${esc(m.url)}"></audio>`;
-    } else if (m.type === 'video' && isValidUrl(m.url)) {
-      if (/^data:video/.test(m.url) || /\.(mp4|webm|ogg)(\?.*)?$/i.test(m.url)) {
-        html += `<video controls src="${esc(m.url)}"></video>`;
-      } else {
-        const yt = m.url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-        if (yt) html += `<div class="video-wrap"><iframe src="https://www.youtube.com/embed/${yt[1]}" allowfullscreen></iframe></div>`;
-        else html += `<a href="${esc(m.url)}" target="_blank" rel="noopener noreferrer" style="color:#0361a3;">Видео</a>`;
-      }
+    if ((m.type === 'image' || m.type === 'gif') && isValidUrl(m.url)) html += `<img src="${esc(m.url)}" data-media="${esc(m.url)}" onerror="this.style.display='none'">`;
+    else if (m.type === 'audio' && isValidUrl(m.url)) html += `<audio controls src="${esc(m.url)}"></audio>`;
+    else if (m.type === 'video' && isValidUrl(m.url)) {
+      if (/^data:video/.test(m.url) || /\.(mp4|webm|ogg)(\?.*)?$/i.test(m.url)) html += `<video controls src="${esc(m.url)}"></video>`;
+      else { const yt = m.url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/); if (yt) html += `<div class="video-wrap"><iframe src="https://www.youtube.com/embed/${yt[1]}" allowfullscreen></iframe></div>`; else html += `<a href="${esc(m.url)}" target="_blank" rel="noopener noreferrer" style="color:#0361a3;">Видео</a>`; }
     }
   }
-  html += '</div>';
-  return html;
+  return html + '</div>';
 }
 
-// ============================================================
 // ВЛОЖЕНИЯ
-// ============================================================
 function openAttach() { document.getElementById('fileInput').click(); }
-
 document.getElementById('fileInput').addEventListener('change', (e) => {
   const file = e.target.files[0];
   if (!file) return;
-  if (isForbiddenFile(file)) { showForbiddenWarning('Попытка загрузить запрещённый файл: ' + file.name); e.target.value = ''; return; }
+  if (isForbiddenFile(file)) { showForbiddenWarning('Запрещённый файл: ' + file.name); e.target.value = ''; return; }
   let type = 'file';
   if (file.type.startsWith('image/gif') || file.name.toLowerCase().endsWith('.gif')) type = 'gif';
   else if (file.type.startsWith('image/')) type = 'image';
   else if (file.type.startsWith('video/')) type = 'video';
   else if (file.type.startsWith('audio/')) type = 'audio';
-  else { showForbiddenWarning('Недопустимый формат файла'); e.target.value = ''; return; }
+  else { showForbiddenWarning('Недопустимый формат'); e.target.value = ''; return; }
   if (file.size > 25 * 1024 * 1024) return alert('Файл больше 25 МБ');
   const reader = new FileReader();
   reader.onload = () => {
-    if (typeof reader.result === 'string') {
-      if (reader.result.startsWith('data:image/svg') || containsForbidden(reader.result.slice(0, 500))) {
-        showForbiddenWarning('В файле найден запрещённый контент');
-        return;
-      }
-    }
+    if (typeof reader.result === 'string' && (reader.result.startsWith('data:image/svg') || containsForbidden(reader.result.slice(0, 500)))) { showForbiddenWarning('В файле запрещённый контент'); return; }
     pendingAttach.push({ type, url: reader.result, filename: file.name });
     renderAttachPreview();
   };
@@ -1914,7 +1520,6 @@ function renderAttachPreview() {
   }).join('');
   el.querySelectorAll('[data-rm-attach]').forEach(n => n.addEventListener('click', () => removeAttach(Number(n.dataset.rmAttach))));
 }
-
 function removeAttach(i) { pendingAttach.splice(i, 1); renderAttachPreview(); }
 
 async function sendMsg() {
@@ -1922,32 +1527,21 @@ async function sendMsg() {
   const content = input.value.trim();
   if ((!content && !pendingAttach.length) || !currentChat) return;
   if (containsForbidden(content)) { showForbiddenWarning('В сообщении запрещённый контент'); return; }
-  for (const a of pendingAttach) {
-    if (containsForbidden(a.url?.slice(0, 500) || '')) { showForbiddenWarning('Во вложении запрещённый контент'); return; }
-  }
+  for (const a of pendingAttach) { if (containsForbidden(a.url?.slice(0, 500) || '')) { showForbiddenWarning('Запрещённое вложение'); return; } }
   const media = pendingAttach.map(a => ({ type: a.type, url: a.url, filename: a.filename }));
-  input.value = '';
-  pendingAttach = [];
-  renderAttachPreview();
+  input.value = ''; pendingAttach = []; renderAttachPreview();
   const m = await api('/messages/' + currentChat.id, 'POST', { content, media });
-  addChatMsg({ ...m, from_username: me.username }, true);
+  addChatMsg({ ...m, from_username: me.username, from_prefix: me.prefix }, true);
 }
 
-// ============================================================
 // УВЕДОМЛЕНИЯ
-// ============================================================
 function handleIncomingMessage(msg) {
   const fromId = msg.from_id;
   const fromName = msg.from_username || ('Пользователь ' + fromId);
-  if (currentChat && currentChat.id === fromId && !document.hidden) {
-    addChatMsg(msg, false);
-    if (soundsEnabled) playNotificationSound();
-    return;
-  }
+  if (currentChat && currentChat.id === fromId && !document.hidden) { addChatMsg(msg, false); if (soundsEnabled) playNotificationSound(); return; }
   unreadCounts[fromId] = (unreadCounts[fromId] || 0) + 1;
-  renderFriends();
-  updateTitleWithUnread();
-  showToast({ userId: fromId, username: fromName, text: summarizeMessage(msg), onClick: () => { clearUnread(fromId); openChat(fromId, fromName); } });
+  renderFriends(); updateTitleWithUnread();
+  showToast({ userId: fromId, username: fromName, prefix: msg.from_prefix, text: summarizeMessage(msg), onClick: () => { clearUnread(fromId); openChat(fromId, fromName); } });
   if (soundsEnabled) playNotificationSound();
   showSystemNotification(fromName, summarizeMessage(msg), () => { clearUnread(fromId); openChat(fromId, fromName); window.focus(); });
 }
@@ -1955,25 +1549,15 @@ function handleIncomingMessage(msg) {
 function summarizeMessage(msg) {
   if (msg.sticker) return 'Стикер ' + msg.sticker;
   if (msg.content && msg.content.trim()) return msg.content;
-  if (msg.media && msg.media.length) {
-    const map = { image: '[Картинка]', gif: '[GIF]', video: '[Видео]', audio: '[Аудио]', file: '[Файл]' };
-    return map[msg.media[0].type] || '[Вложение]';
-  }
+  if (msg.media && msg.media.length) { const map = { image: '[Картинка]', gif: '[GIF]', video: '[Видео]', audio: '[Аудио]', file: '[Файл]' }; return map[msg.media[0].type] || '[Вложение]'; }
   return '[Сообщение]';
 }
 
-function showToast({ userId, username, text, onClick, type }) {
+function showToast({ userId, username, prefix, text, onClick, type }) {
   const container = document.getElementById('toastContainer');
   const toast = document.createElement('div');
   toast.className = 'toast' + (type === 'call' ? ' call-toast' : '');
-  toast.innerHTML = `
-    <div class="toast-avatar">${esc(username[0].toUpperCase())}</div>
-    <div class="toast-body">
-      <div class="toast-title">${esc(username)}</div>
-      <div class="toast-text">${esc(text)}</div>
-    </div>
-    <span class="toast-close">×</span>
-  `;
+  toast.innerHTML = `<div class="toast-avatar">${esc(username[0].toUpperCase())}</div><div class="toast-body"><div class="toast-title">${esc(username)}${renderPrefix(prefix)}</div><div class="toast-text">${esc(text)}</div></div><span class="toast-close">×</span>`;
   const close = (e) => { if (e) e.stopPropagation(); toast.classList.add('closing'); setTimeout(() => toast.remove(), 300); };
   toast.querySelector('.toast-close').addEventListener('click', close);
   toast.addEventListener('click', () => { onClick && onClick(); close(); });
@@ -1986,8 +1570,7 @@ function playNotificationSound() {
   try {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     if (audioCtx.state === 'suspended') audioCtx.resume();
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
+    const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
     osc.type = 'sine';
     osc.frequency.setValueAtTime(880, audioCtx.currentTime);
     osc.frequency.exponentialRampToValueAtTime(1320, audioCtx.currentTime + 0.08);
@@ -2003,8 +1586,7 @@ function playCallSound() {
   try {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     if (audioCtx.state === 'suspended') audioCtx.resume();
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
+    const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
     osc.frequency.setValueAtTime(600, audioCtx.currentTime);
     gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
@@ -2017,69 +1599,35 @@ function updateTitleWithUnread() {
   const total = Object.values(unreadCounts).reduce((a, b) => a + b, 0);
   if (total > 0) {
     document.title = '(' + total + ') РетроСеть 2010';
-    if (!titleFlashInterval) {
-      let alt = false;
-      titleFlashInterval = setInterval(() => {
-        document.title = alt ? 'Новое сообщение!' : '(' + total + ') РетроСеть 2010';
-        alt = !alt;
-      }, 1500);
-    }
+    if (!titleFlashInterval) { let alt = false; titleFlashInterval = setInterval(() => { document.title = alt ? 'Новое сообщение!' : '(' + total + ') РетроСеть 2010'; alt = !alt; }, 1500); }
   } else {
     document.title = 'РетроСеть 2010';
     if (titleFlashInterval) { clearInterval(titleFlashInterval); titleFlashInterval = null; }
   }
 }
 
-function clearUnread(userId) {
-  if (unreadCounts[userId]) { delete unreadCounts[userId]; renderFriends(); updateTitleWithUnread(); }
-}
-
-function requestNotificationPermission() {
-  if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
-}
-
+function clearUnread(userId) { if (unreadCounts[userId]) { delete unreadCounts[userId]; renderFriends(); updateTitleWithUnread(); } }
+function requestNotificationPermission() { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission(); }
 function showSystemNotification(title, body, onClick) {
   if (!('Notification' in window)) return;
   if (Notification.permission !== 'granted') return;
   if (!document.hidden) return;
-  try {
-    const n = new Notification(title, { body, tag: 'msg-' + Date.now() });
-    n.onclick = () => { onClick && onClick(); n.close(); };
-  } catch (e) {}
+  try { const n = new Notification(title, { body, tag: 'msg-' + Date.now() }); n.onclick = () => { onClick && onClick(); n.close(); }; } catch (e) {}
 }
 
-document.addEventListener('visibilitychange', () => {
-  if (!document.hidden && titleFlashInterval) {
-    const total = Object.values(unreadCounts).reduce((a, b) => a + b, 0);
-    if (total > 0) { clearInterval(titleFlashInterval); titleFlashInterval = null; document.title = '(' + total + ') РетроСеть 2010'; }
-  }
-});
-
 document.addEventListener('click', function unlockAudio() {
-  try {
-    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-  } catch (e) {}
+  try { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); } catch (e) {}
   document.removeEventListener('click', unlockAudio);
 }, { once: true });
 
-// ============================================================
 // ЗВОНКИ
-// ============================================================
-let pc = null;
-let localStream = null;
-let callPeer = null;
-let callType = null;
-let incomingCall = null;
-let callRingInterval = null;
+let pc = null, localStream = null, callPeer = null, callType = null, incomingCall = null, callRingInterval = null;
 
 async function startCall(type) {
   if (!currentChat) return;
-  callType = type;
-  callPeer = currentChat.id;
-  try {
-    localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: type === 'video' });
-  } catch (e) { return alert('Нет доступа: ' + e.message); }
+  callType = type; callPeer = currentChat.id;
+  try { localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: type === 'video' }); }
+  catch (e) { return alert('Нет доступа: ' + e.message); }
   document.getElementById('callModal').classList.add('open');
   document.getElementById('callInfo').textContent = 'Звоним ' + currentChat.username + '...';
   document.getElementById('localVideo').srcObject = localStream;
@@ -2091,24 +1639,18 @@ async function startCall(type) {
 
 async function acceptCall() {
   if (!incomingCall) return;
-  callPeer = incomingCall.from;
-  callType = incomingCall.type;
+  callPeer = incomingCall.from; callType = incomingCall.type;
   document.getElementById('callModal').classList.add('open');
   document.getElementById('callInfo').textContent = 'Подключаемся...';
   socket.emit('call:accept', { to: callPeer });
   await setupPeerConnection();
 }
 
-function rejectCall() {
-  if (!incomingCall) return;
-  socket.emit('call:reject', { to: incomingCall.from });
-  closeCallUI();
-}
+function rejectCall() { if (!incomingCall) return; socket.emit('call:reject', { to: incomingCall.from }); closeCallUI(); }
 
 async function setupPeerConnection() {
-  try {
-    localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: callType === 'video' });
-  } catch (e) { alert('Нет доступа'); endCall(); return; }
+  try { localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: callType === 'video' }); }
+  catch (e) { alert('Нет доступа'); endCall(); return; }
   document.getElementById('localVideo').srcObject = localStream;
   document.getElementById('localVideo').style.display = callType === 'video' ? 'block' : 'none';
   pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
@@ -2119,11 +1661,7 @@ async function setupPeerConnection() {
   document.getElementById('callEndBtn').addEventListener('click', endCall);
 }
 
-function endCall() {
-  if (callPeer) socket.emit('call:end', { to: callPeer });
-  closeCallUI();
-}
-
+function endCall() { if (callPeer) socket.emit('call:end', { to: callPeer }); closeCallUI(); }
 function closeCallUI() {
   if (pc) { pc.close(); pc = null; }
   if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
@@ -2131,8 +1669,7 @@ function closeCallUI() {
   document.getElementById('remoteVideo').srcObject = null;
   document.getElementById('localVideo').srcObject = null;
   if (callRingInterval) { clearInterval(callRingInterval); callRingInterval = null; }
-  incomingCall = null;
-  callPeer = null;
+  incomingCall = null; callPeer = null;
 }
 
 function initCallSocket() {
@@ -2140,10 +1677,7 @@ function initCallSocket() {
     incomingCall = data;
     document.getElementById('callInfo').textContent = data.fromName + ' звонит (' + (data.type === 'video' ? 'видео' : 'аудио') + ')...';
     document.getElementById('localVideo').style.display = 'none';
-    document.getElementById('callActions').innerHTML = `
-      <button class="call-accept" id="callAcceptBtn">Принять</button>
-      <button class="call-reject" id="callRejectBtn">Отклонить</button>
-    `;
+    document.getElementById('callActions').innerHTML = `<button class="call-accept" id="callAcceptBtn">Принять</button><button class="call-reject" id="callRejectBtn">Отклонить</button>`;
     document.getElementById('callAcceptBtn').addEventListener('click', acceptCall);
     document.getElementById('callRejectBtn').addEventListener('click', rejectCall);
     document.getElementById('callModal').classList.add('open');
@@ -2151,9 +1685,7 @@ function initCallSocket() {
     playCallSound();
     if (callRingInterval) clearInterval(callRingInterval);
     callRingInterval = setInterval(playCallSound, 3000);
-    showSystemNotification(data.fromName, 'Звонит вам!', () => { document.getElementById('callModal').classList.add('open'); window.focus(); });
   });
-
   socket.on('call:accepted', async () => {
     document.getElementById('callInfo').textContent = 'Соединение...';
     await setupPeerConnection();
@@ -2161,10 +1693,8 @@ function initCallSocket() {
     await pc.setLocalDescription(offer);
     socket.emit('webrtc:offer', { to: callPeer, offer });
   });
-
   socket.on('call:rejected', () => { alert('Звонок отклонён'); closeCallUI(); });
   socket.on('call:ended', () => { closeCallUI(); });
-
   socket.on('webrtc:offer', async (data) => {
     if (!pc) await setupPeerConnection();
     await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
@@ -2172,130 +1702,69 @@ function initCallSocket() {
     await pc.setLocalDescription(answer);
     socket.emit('webrtc:answer', { to: data.from, answer });
   });
-
-  socket.on('webrtc:answer', async (data) => {
-    if (!pc) return;
-    await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
-  });
-
-  socket.on('webrtc:ice', async (data) => {
-    if (!pc) return;
-    try { await pc.addIceCandidate(new RTCIceCandidate(data.candidate)); } catch (e) {}
-  });
+  socket.on('webrtc:answer', async (data) => { if (!pc) return; await pc.setRemoteDescription(new RTCSessionDescription(data.answer)); });
+  socket.on('webrtc:ice', async (data) => { if (!pc) return; try { await pc.addIceCandidate(new RTCIceCandidate(data.candidate)); } catch (e) {} });
 }
 
-// ============================================================
 // НОВОСТИ
-// ============================================================
 async function loadNews() {
   const news = await api('/news');
   const el = document.getElementById('newsBox');
   if (!news.length) { el.innerHTML = '<div style="color:#5a8ab0; text-align:center; padding:20px;">Новостей нет</div>'; return; }
-  el.innerHTML = news.map(n => `
-    <div class="news-item">
-      <div class="news-title">${esc(n.title)}</div>
-      <div class="news-date">${fmtDate(n.created_at)}</div>
-      <div class="news-content">${esc(n.content)}${n.image && isValidUrl(n.image) ? `<img src="${esc(n.image)}" onerror="this.style.display='none'">` : ''}</div>
-      ${me.role === 'admin' ? `<button class="btn-danger btn-small" data-news-del="${n.id}">Удалить</button>` : ''}
-    </div>
-  `).join('');
+  el.innerHTML = news.map(n => `<div class="news-item"><div class="news-title">${esc(n.title)}</div><div class="news-date">${fmtDate(n.created_at)}</div><div class="news-content">${esc(n.content)}${n.image && isValidUrl(n.image) ? `<img src="${esc(n.image)}" onerror="this.style.display='none'">` : ''}</div>${me.role === 'admin' ? `<button class="btn-danger btn-small" data-news-del="${n.id}">Удалить</button>` : ''}</div>`).join('');
   el.querySelectorAll('[data-news-del]').forEach(n => n.addEventListener('click', () => deleteNews(Number(n.dataset.newsDel))));
 }
-
 async function createNews() {
-  const title = document.getElementById('newsTitle').value.trim();
-  const content = document.getElementById('newsContent').value.trim();
-  const image = document.getElementById('newsImage').value.trim();
+  const title = document.getElementById('newsTitle').value.trim(), content = document.getElementById('newsContent').value.trim(), image = document.getElementById('newsImage').value.trim();
   if (!title || !content) return alert('Заполните');
-  if (checkContent(title, content, image)) { showForbiddenWarning('В новости запрещённый контент'); return; }
+  if (checkContent(title, content, image)) { showForbiddenWarning('Запрещённый контент'); return; }
   if (image && !isValidUrl(image)) { showForbiddenWarning('Недопустимый URL'); return; }
   await api('/news', 'POST', { title, content, image });
   ['newsTitle','newsContent','newsImage'].forEach(id => document.getElementById(id).value = '');
   loadNews();
 }
-
 async function deleteNews(id) { if (!confirm('Удалить?')) return; await api('/news/' + id, 'DELETE'); loadNews(); }
 
-// ============================================================
-// ГОЛОСОВАНИЕ
-// ============================================================
+// ПАРТИИ
 async function loadParties() {
   const data = await api('/parties');
   const el = document.getElementById('partiesBox');
   if (!data.parties.length) { el.innerHTML = '<div style="color:#5a8ab0; text-align:center; padding:20px;">Партий нет</div>'; return; }
   const totalVotes = data.parties.reduce((s, p) => s + Number(p.votes), 0);
   el.innerHTML = data.parties.map(p => {
-    const votes = Number(p.votes);
-    const percent = totalVotes > 0 ? Math.round(votes / totalVotes * 100) : 0;
-    const voted = data.myVote === p.id;
-    return `
-      <div class="party-card">
-        <div class="party-logo">${p.logo && isValidUrl(p.logo) ? `<img src="${esc(p.logo)}">` : esc(p.name[0].toUpperCase())}</div>
-        <div class="party-info">
-          <div class="party-name">${esc(p.name)}</div>
-          <div class="party-desc">${esc(p.description || '')}</div>
-          <div class="party-votes">Голосов: <b>${votes}</b> (${percent}%)</div>
-          <div class="vote-progress"><div class="vote-progress-fill" style="width:${percent}%"></div></div>
-        </div>
-        <div style="display:flex; flex-direction:column; gap:6px;">
-          ${voted ? `<span class="party-voted">Ваш голос</span>` : data.myVote ? `<span style="color:#5a8ab0; font-size:11px;">Вы голосовали</span>` : `<button class="btn-primary" data-vote="${p.id}">Голосовать</button>`}
-          ${me.role === 'admin' ? `<button class="btn-danger btn-small" data-party-del="${p.id}">Удалить</button>` : ''}
-        </div>
-      </div>
-    `;
+    const votes = Number(p.votes), percent = totalVotes > 0 ? Math.round(votes / totalVotes * 100) : 0, voted = data.myVote === p.id;
+    return `<div class="party-card"><div class="party-logo">${p.logo && isValidUrl(p.logo) ? `<img src="${esc(p.logo)}">` : esc(p.name[0].toUpperCase())}</div><div class="party-info"><div class="party-name">${esc(p.name)}</div><div class="party-desc">${esc(p.description || '')}</div><div class="party-votes">Голосов: <b>${votes}</b> (${percent}%)</div><div class="vote-progress"><div class="vote-progress-fill" style="width:${percent}%"></div></div></div><div style="display:flex; flex-direction:column; gap:6px;">${voted ? `<span class="party-voted">Ваш голос</span>` : data.myVote ? `<span style="color:#5a8ab0; font-size:11px;">Вы голосовали</span>` : `<button class="btn-primary" data-vote="${p.id}">Голосовать</button>`}${me.role === 'admin' ? `<button class="btn-danger btn-small" data-party-del="${p.id}">Удалить</button>` : ''}</div></div>`;
   }).join('');
   el.querySelectorAll('[data-vote]').forEach(n => n.addEventListener('click', () => voteFor(Number(n.dataset.vote))));
   el.querySelectorAll('[data-party-del]').forEach(n => n.addEventListener('click', () => deleteParty(Number(n.dataset.partyDel))));
 }
-
 async function voteFor(id) { if (!confirm('Отдать голос? Изменить нельзя.')) return; try { await api('/parties/vote/' + id, 'POST'); loadParties(); } catch (e) { alert(e.message); } }
-
 async function createParty() {
-  const name = document.getElementById('partyName').value.trim();
-  const description = document.getElementById('partyDesc').value.trim();
-  const logo = document.getElementById('partyLogo').value.trim();
+  const name = document.getElementById('partyName').value.trim(), description = document.getElementById('partyDesc').value.trim(), logo = document.getElementById('partyLogo').value.trim();
   if (!name) return alert('Введите название');
-  if (checkContent(name, description, logo)) { showForbiddenWarning('В партии запрещённый контент'); return; }
+  if (checkContent(name, description, logo)) { showForbiddenWarning('Запрещённый контент'); return; }
   await api('/parties', 'POST', { name, description, logo });
   ['partyName','partyDesc','partyLogo'].forEach(id => document.getElementById(id).value = '');
   loadParties();
 }
-
 async function deleteParty(id) { if (!confirm('Удалить?')) return; await api('/parties/' + id, 'DELETE'); loadParties(); }
 
-// ============================================================
 // ГРУППЫ
-// ============================================================
 async function loadGroups() {
   const groups = await api('/groups');
   const el = document.getElementById('groupsBox');
   if (!groups.length) { el.innerHTML = '<div style="color:#5a8ab0; text-align:center; padding:20px;">Групп нет</div>'; return; }
-  el.innerHTML = groups.map(g => `
-    <div class="group-item" data-gid="${g.id}">
-      <div style="display:flex; gap:10px; align-items:center;">
-        <div class="avatar sm">${g.avatar && isValidUrl(g.avatar) ? `<img src="${esc(g.avatar)}">` : esc(g.name[0].toUpperCase())}</div>
-        <div style="flex:1;">
-          <div class="forum-title">${esc(g.name)} ${g.is_member ? '✓' : ''}</div>
-          <div class="forum-desc">${esc(g.description || '')}</div>
-          <div class="forum-meta">Создал: ${esc(g.author || '—')} · Участников: ${g.members_count}</div>
-        </div>
-      </div>
-    </div>
-  `).join('');
+  el.innerHTML = groups.map(g => `<div class="group-item" data-gid="${g.id}"><div style="display:flex; gap:10px; align-items:center;"><div class="avatar sm">${g.avatar && isValidUrl(g.avatar) ? `<img src="${esc(g.avatar)}">` : esc(g.name[0].toUpperCase())}</div><div style="flex:1;"><div class="forum-title">${esc(g.name)} ${g.is_member ? '✓' : ''}</div><div class="forum-desc">${esc(g.description || '')}</div><div class="forum-meta">Создал: ${esc(g.author || '—')} · Участников: ${g.members_count}</div></div></div></div>`).join('');
   el.querySelectorAll('[data-gid]').forEach(n => n.addEventListener('click', () => openGroup(Number(n.dataset.gid))));
 }
-
 async function createGroup() {
-  const name = document.getElementById('groupName').value.trim();
-  const description = document.getElementById('groupDesc').value.trim();
-  const avatar = document.getElementById('groupAvatar').value.trim();
+  const name = document.getElementById('groupName').value.trim(), description = document.getElementById('groupDesc').value.trim(), avatar = document.getElementById('groupAvatar').value.trim();
   if (!name) return alert('Введите название');
-  if (checkContent(name, description, avatar)) { showForbiddenWarning('В группе запрещённый контент'); return; }
+  if (checkContent(name, description, avatar)) { showForbiddenWarning('Запрещённый контент'); return; }
   await api('/groups', 'POST', { name, description, avatar });
   ['groupName','groupDesc','groupAvatar'].forEach(id => document.getElementById(id).value = '');
   loadGroups();
 }
-
 async function openGroup(id) {
   currentGroupId = id;
   document.getElementById('groupsList').style.display = 'none';
@@ -2303,7 +1772,6 @@ async function openGroup(id) {
   await loadGroupView();
   await loadGroupPosts();
 }
-
 async function loadGroupView() {
   const g = await api('/groups/' + currentGroupId);
   document.getElementById('gCrumb').textContent = g.name;
@@ -2316,32 +1784,15 @@ async function loadGroupView() {
   joinBtn.className = g.is_member ? 'btn-danger' : 'btn-primary';
   document.getElementById('gPostForm').style.display = g.is_member ? 'block' : 'none';
   const members = await api('/groups/' + currentGroupId + '/members');
-  document.getElementById('gMembersBox').innerHTML = `
-    <div style="font-size:11px; color:#2a5a7a; margin-bottom:6px; font-weight:600;">Участники:</div>
-    <div style="display:flex; flex-wrap:wrap; gap:6px;">
-      ${members.map(m => `<span style="background:rgba(255,255,255,0.6); padding:4px 10px; border-radius:12px; font-size:11px; border:1px solid rgba(255,255,255,0.8); box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);">${m.role === 'admin' ? '👑 ' : ''}${esc(m.username)}</span>`).join('')}
-    </div>
-  `;
+  document.getElementById('gMembersBox').innerHTML = `<div style="font-size:11px; color:#2a5a7a; margin-bottom:6px; font-weight:600;">Участники:</div><div style="display:flex; flex-wrap:wrap; gap:6px;">${members.map(m => `<span style="background:rgba(255,255,255,0.6); padding:4px 10px; border-radius:12px; font-size:11px; border:1px solid rgba(255,255,255,0.8);">${m.role === 'admin' ? '👑 ' : ''}${esc(m.username)}${renderPrefix(m.prefix)}</span>`).join('')}</div>`;
 }
-
 async function toggleJoinGroup() { await api('/groups/' + currentGroupId + '/join', 'POST'); await loadGroupView(); await loadGroupPosts(); }
 
 async function loadGroupPosts() {
   const posts = await api('/groups/' + currentGroupId + '/posts');
   const el = document.getElementById('gPosts');
   if (!posts.length) { el.innerHTML = '<div style="color:#5a8ab0; text-align:center; padding:15px;">Постов нет</div>'; return; }
-  el.innerHTML = posts.map(p => `
-    <div class="post">
-      <div class="post-head">
-        <div class="avatar">${p.avatar ? `<img src="${esc(p.avatar)}">` : esc(p.username[0].toUpperCase())}</div>
-        <div><div class="post-author">${esc(p.username)}</div><div class="post-date">${fmtDate(p.created_at)}</div></div>
-      </div>
-      <div class="post-content">${esc(p.content)}${renderMedia(p)}</div>
-      <div class="post-actions">
-        <button data-glike="${p.id}" class="${p.liked ? 'liked' : ''}">${p.liked ? '♥' : '♡'} ${p.likes}</button>
-      </div>
-    </div>
-  `).join('');
+  el.innerHTML = posts.map(p => `<div class="post"><div class="post-head"><div class="avatar">${p.avatar ? `<img src="${esc(p.avatar)}">` : esc(p.username[0].toUpperCase())}</div><div><div class="post-author">${esc(p.username)}${renderPrefix(p.prefix)}</div><div class="post-date">${fmtDate(p.created_at)}</div></div></div><div class="post-content">${esc(p.content)}${renderMedia(p)}</div><div class="post-actions"><button data-glike="${p.id}" class="${p.liked ? 'liked' : ''}">${p.liked ? '♥' : '♡'} ${p.likes}</button></div></div>`).join('');
   el.querySelectorAll('[data-glike]').forEach(n => n.addEventListener('click', () => toggleGroupLike(Number(n.dataset.glike))));
 }
 
@@ -2352,7 +1803,7 @@ async function createGroupPost() {
   const gif = document.getElementById('gPostGif').value.trim();
   const sticker = document.getElementById('groupStickerPreview').textContent;
   if (!content && !image && !video && !gif && !sticker) return;
-  if (checkContent(content, image, video, gif)) { showForbiddenWarning('В посте группы запрещённый контент'); return; }
+  if (checkContent(content, image, video, gif)) { showForbiddenWarning('Запрещённый контент'); return; }
   if ((image && !isValidUrl(image)) || (video && !isValidUrl(video)) || (gif && !isValidUrl(gif))) { showForbiddenWarning('Недопустимый URL'); return; }
   try {
     await api('/groups/' + currentGroupId + '/posts', 'POST', { content, image, video, gif, sticker });
@@ -2361,37 +1812,24 @@ async function createGroupPost() {
     loadGroupPosts();
   } catch (e) { alert(e.message); }
 }
-
 async function toggleGroupLike(id) { await api('/group-like/' + id, 'POST'); loadGroupPosts(); }
 
-// ============================================================
 // ФОРУМЫ
-// ============================================================
 async function loadForums() {
   const forums = await api('/forums');
   const el = document.getElementById('forumsBox');
   if (!forums.length) { el.innerHTML = '<div style="color:#5a8ab0; text-align:center; padding:20px;">Форумов нет</div>'; return; }
-  el.innerHTML = forums.map(f => `
-    <div class="forum-item" data-fid="${f.id}">
-      <div class="forum-title">${esc(f.title)}</div>
-      <div class="forum-desc">${esc(f.description || '')}</div>
-      <div class="forum-meta">Создал: ${esc(f.author || '—')} · Тем: ${f.topics_count} · Сообщений: ${f.posts_count}</div>
-    </div>
-  `).join('');
+  el.innerHTML = forums.map(f => `<div class="forum-item" data-fid="${f.id}"><div class="forum-title">${esc(f.title)}</div><div class="forum-desc">${esc(f.description || '')}</div><div class="forum-meta">Создал: ${esc(f.author || '—')} · Тем: ${f.topics_count} · Сообщений: ${f.posts_count}</div></div>`).join('');
   el.querySelectorAll('[data-fid]').forEach(n => n.addEventListener('click', () => openForum(Number(n.dataset.fid))));
 }
-
 async function createForum() {
-  const title = document.getElementById('forumTitle').value.trim();
-  const description = document.getElementById('forumDesc').value.trim();
+  const title = document.getElementById('forumTitle').value.trim(), description = document.getElementById('forumDesc').value.trim();
   if (!title) return alert('Введите название');
-  if (checkContent(title, description)) { showForbiddenWarning('На форуме запрещённый контент'); return; }
+  if (checkContent(title, description)) { showForbiddenWarning('Запрещённый контент'); return; }
   await api('/forums', 'POST', { title, description });
-  document.getElementById('forumTitle').value = '';
-  document.getElementById('forumDesc').value = '';
+  document.getElementById('forumTitle').value = ''; document.getElementById('forumDesc').value = '';
   loadForums();
 }
-
 async function openForum(id) {
   currentForumId = id;
   document.getElementById('forumsList').style.display = 'none';
@@ -2399,7 +1837,6 @@ async function openForum(id) {
   document.getElementById('topicView').style.display = 'none';
   await loadForumView();
 }
-
 async function loadForumView() {
   const data = await api('/forums/' + currentForumId);
   document.getElementById('fCrumb').textContent = data.forum.title;
@@ -2407,27 +1844,17 @@ async function loadForumView() {
   document.getElementById('fDesc').textContent = data.forum.description || '';
   const el = document.getElementById('topicsBox');
   if (!data.topics.length) { el.innerHTML = '<div style="color:#5a8ab0; text-align:center; padding:15px;">Тем нет</div>'; return; }
-  el.innerHTML = data.topics.map(t => `
-    <div class="topic-item" data-tid="${t.id}">
-      <div>
-        <div class="topic-title">${esc(t.title)}</div>
-        <div class="topic-meta">Автор: ${esc(t.author || '—')} · ${fmtDate(t.created_at)}</div>
-      </div>
-      <div class="topic-meta">${t.posts_count} сообщ.</div>
-    </div>
-  `).join('');
+  el.innerHTML = data.topics.map(t => `<div class="topic-item" data-tid="${t.id}"><div><div class="topic-title">${esc(t.title)}</div><div class="topic-meta">Автор: ${esc(t.author || '—')} · ${fmtDate(t.created_at)}</div></div><div class="topic-meta">${t.posts_count} сообщ.</div></div>`).join('');
   el.querySelectorAll('[data-tid]').forEach(n => n.addEventListener('click', () => openTopic(Number(n.dataset.tid))));
 }
-
 async function createTopic() {
   const title = document.getElementById('topicTitle').value.trim();
   if (!title) return alert('Введите название');
-  if (containsForbidden(title)) { showForbiddenWarning('В теме запрещённый контент'); return; }
+  if (containsForbidden(title)) { showForbiddenWarning('Запрещённый контент'); return; }
   await api('/forums/' + currentForumId + '/topics', 'POST', { title });
   document.getElementById('topicTitle').value = '';
   loadForumView();
 }
-
 async function openTopic(id) {
   currentTopicId = id;
   document.getElementById('forumsList').style.display = 'none';
@@ -2435,7 +1862,6 @@ async function openTopic(id) {
   document.getElementById('topicView').style.display = 'block';
   await loadTopic(id);
 }
-
 async function loadTopic(id) {
   const data = await api('/topics/' + id);
   document.getElementById('tCrumb').textContent = data.topic.title;
@@ -2444,34 +1870,19 @@ async function loadTopic(id) {
   document.getElementById('tTitle').textContent = data.topic.title;
   const el = document.getElementById('tPosts');
   if (!data.posts.length) { el.innerHTML = '<div style="color:#5a8ab0; text-align:center; padding:15px;">Сообщений нет</div>'; return; }
-  el.innerHTML = data.posts.map(p => `
-    <div class="forum-post">
-      <div class="avatar">${p.avatar ? `<img src="${esc(p.avatar)}">` : esc(p.username[0].toUpperCase())}</div>
-      <div class="body">
-        <div><span class="post-author">${esc(p.username)}</span> <span class="post-date">${fmtDate(p.created_at)}</span></div>
-        <div style="margin-top:6px;">${esc(p.content)}</div>
-      </div>
-    </div>
-  `).join('');
+  el.innerHTML = data.posts.map(p => `<div class="forum-post"><div class="avatar">${p.avatar ? `<img src="${esc(p.avatar)}">` : esc(p.username[0].toUpperCase())}</div><div class="body"><div><span class="post-author">${esc(p.username)}${renderPrefix(p.prefix)}</span> <span class="post-date">${fmtDate(p.created_at)}</span></div><div style="margin-top:6px;">${esc(p.content)}</div></div></div>`).join('');
 }
-
 async function replyTopic() {
   const content = document.getElementById('topicReply').value.trim();
   if (!content) return;
-  if (containsForbidden(content)) { showForbiddenWarning('В ответе запрещённый контент'); return; }
+  if (containsForbidden(content)) { showForbiddenWarning('Запрещённый контент'); return; }
   await api('/topics/' + currentTopicId + '/posts', 'POST', { content });
   document.getElementById('topicReply').value = '';
   loadTopic(currentTopicId);
 }
 
-// ============================================================
 // ИГРЫ
-// ============================================================
-function showGamesHome() {
-  document.getElementById('gamesHome').style.display = 'block';
-  document.getElementById('gameView').style.display = 'none';
-}
-
+function showGamesHome() { document.getElementById('gamesHome').style.display = 'block'; document.getElementById('gameView').style.display = 'none'; }
 function showGamesTab(tab) {
   currentGamesTab = tab;
   document.getElementById('gtabScratch').className = tab === 'scratch' ? 'btn-primary' : '';
@@ -2484,169 +1895,53 @@ function showGamesTab(tab) {
   if (tab === 'flash') loadFlash();
   if (tab === 'html') loadHtmlGames();
 }
-
 async function loadScratch() {
   const games = await api('/scratch');
   const el = document.getElementById('scratchBox');
   if (!games.length) { el.innerHTML = '<div style="color:#5a8ab0; text-align:center; padding:20px;">Игр нет</div>'; return; }
-  el.innerHTML = games.map(g => `
-    <div class="group-item" data-scratch-id="${g.id}">
-      <div style="display:flex; gap:10px; align-items:center;">
-        <div class="avatar" style="width:50px; height:50px; font-size:22px;">🐱</div>
-        <div style="flex:1;">
-          <div class="forum-title">${esc(g.title)}</div>
-          <div class="forum-desc">${esc(g.description || '')}</div>
-          <div class="forum-meta">Автор: ${esc(g.author || '—')} · ♥ ${g.likes} · ▶ ${g.plays}</div>
-        </div>
-      </div>
-    </div>
-  `).join('');
+  el.innerHTML = games.map(g => `<div class="group-item" data-scratch-id="${g.id}"><div style="display:flex; gap:10px; align-items:center;"><div class="avatar" style="width:50px; height:50px; font-size:22px;">🐱</div><div style="flex:1;"><div class="forum-title">${esc(g.title)}</div><div class="forum-desc">${esc(g.description || '')}</div><div class="forum-meta">Автор: ${esc(g.author || '—')} · ♥ ${g.likes} · ▶ ${g.plays}</div></div></div></div>`).join('');
   el.querySelectorAll('[data-scratch-id]').forEach(n => n.addEventListener('click', () => openGame('scratch', Number(n.dataset.scratchId))));
 }
-
 async function createScratch() {
-  const title = document.getElementById('scratchTitle').value.trim();
-  const description = document.getElementById('scratchDesc').value.trim();
-  const scratch_url = document.getElementById('scratchUrl').value.trim();
-  const cover = document.getElementById('scratchCover').value.trim();
+  const title = document.getElementById('scratchTitle').value.trim(), description = document.getElementById('scratchDesc').value.trim(), scratch_url = document.getElementById('scratchUrl').value.trim(), cover = document.getElementById('scratchCover').value.trim();
   if (!title) return alert('Введите название');
   if (!scratch_url) return alert('Введите ссылку');
-  try {
-    await api('/scratch', 'POST', { title, description, scratch_url, cover });
-    ['scratchTitle','scratchDesc','scratchUrl','scratchCover'].forEach(id => document.getElementById(id).value = '');
-    loadScratch();
-    alert('Игра добавлена!');
-  } catch (e) { alert(e.message); }
+  try { await api('/scratch', 'POST', { title, description, scratch_url, cover }); ['scratchTitle','scratchDesc','scratchUrl','scratchCover'].forEach(id => document.getElementById(id).value = ''); loadScratch(); alert('Добавлено!'); } catch (e) { alert(e.message); }
 }
-
 async function loadFlash() {
   const games = await api('/flash');
   const el = document.getElementById('flashBox');
   if (!games.length) { el.innerHTML = '<div style="color:#5a8ab0; text-align:center; padding:20px;">Игр нет</div>'; return; }
-  el.innerHTML = games.map(g => `
-    <div class="group-item" data-flash-id="${g.id}">
-      <div style="display:flex; gap:10px; align-items:center;">
-        <div class="avatar" style="width:50px; height:50px; font-size:22px;">⚡</div>
-        <div style="flex:1;">
-          <div class="forum-title">${esc(g.title)}</div>
-          <div class="forum-desc">${esc(g.description || '')}</div>
-          <div class="forum-meta">Автор: ${esc(g.author || '—')} · ♥ ${g.likes} · ▶ ${g.plays}</div>
-        </div>
-      </div>
-    </div>
-  `).join('');
+  el.innerHTML = games.map(g => `<div class="group-item" data-flash-id="${g.id}"><div style="display:flex; gap:10px; align-items:center;"><div class="avatar" style="width:50px; height:50px; font-size:22px;">⚡</div><div style="flex:1;"><div class="forum-title">${esc(g.title)}</div><div class="forum-desc">${esc(g.description || '')}</div><div class="forum-meta">Автор: ${esc(g.author || '—')} · ♥ ${g.likes} · ▶ ${g.plays}</div></div></div></div>`).join('');
   el.querySelectorAll('[data-flash-id]').forEach(n => n.addEventListener('click', () => openGame('flash', Number(n.dataset.flashId))));
 }
-
 async function createFlash() {
-  const title = document.getElementById('flashTitle').value.trim();
-  const description = document.getElementById('flashDesc').value.trim();
-  const swf_url = document.getElementById('flashUrl').value.trim();
-  const cover = document.getElementById('flashCover').value.trim();
+  const title = document.getElementById('flashTitle').value.trim(), description = document.getElementById('flashDesc').value.trim(), swf_url = document.getElementById('flashUrl').value.trim(), cover = document.getElementById('flashCover').value.trim();
   if (!title) return alert('Введите название');
   if (!swf_url) return alert('Введите URL');
-  try {
-    await api('/flash', 'POST', { title, description, swf_url, cover });
-    ['flashTitle','flashDesc','flashUrl','flashCover'].forEach(id => document.getElementById(id).value = '');
-    loadFlash();
-    alert('Игра добавлена!');
-  } catch (e) { alert(e.message); }
+  try { await api('/flash', 'POST', { title, description, swf_url, cover }); ['flashTitle','flashDesc','flashUrl','flashCover'].forEach(id => document.getElementById(id).value = ''); loadFlash(); alert('Добавлено!'); } catch (e) { alert(e.message); }
 }
-
 async function loadHtmlGames() {
   const games = await api('/htmlgames');
   const el = document.getElementById('htmlBox');
-  if (!games.length) { el.innerHTML = '<div style="color:#5a8ab0; text-align:center; padding:20px;">Игр нет. Создай первую в редакторе!</div>'; return; }
-  el.innerHTML = games.map(g => `
-    <div class="group-item" data-html-id="${g.id}">
-      <div style="display:flex; gap:10px; align-items:center;">
-        <div class="avatar" style="width:50px; height:50px; font-size:22px;">🛠</div>
-        <div style="flex:1;">
-          <div class="forum-title">${esc(g.title)}</div>
-          <div class="forum-desc">${esc(g.description || '')}</div>
-          <div class="forum-meta">Автор: ${esc(g.author || '—')} · ♥ ${g.likes} · ▶ ${g.plays}</div>
-        </div>
-      </div>
-    </div>
-  `).join('');
+  if (!games.length) { el.innerHTML = '<div style="color:#5a8ab0; text-align:center; padding:20px;">Игр нет</div>'; return; }
+  el.innerHTML = games.map(g => `<div class="group-item" data-html-id="${g.id}"><div style="display:flex; gap:10px; align-items:center;"><div class="avatar" style="width:50px; height:50px; font-size:22px;">🛠</div><div style="flex:1;"><div class="forum-title">${esc(g.title)}</div><div class="forum-desc">${esc(g.description || '')}</div><div class="forum-meta">Автор: ${esc(g.author || '—')} · ♥ ${g.likes} · ▶ ${g.plays}</div></div></div></div>`).join('');
   el.querySelectorAll('[data-html-id]').forEach(n => n.addEventListener('click', () => openGame('html', Number(n.dataset.htmlId))));
 }
-
 async function createHtmlGame() {
-  const title = document.getElementById('htmlTitle').value.trim();
-  const description = document.getElementById('htmlDesc').value.trim();
-  const code = document.getElementById('htmlCode').value.trim();
-  const cover = document.getElementById('htmlCover').value.trim();
+  const title = document.getElementById('htmlTitle').value.trim(), description = document.getElementById('htmlDesc').value.trim(), code = document.getElementById('htmlCode').value.trim(), cover = document.getElementById('htmlCover').value.trim();
   if (!title) return alert('Введите название');
   if (!code) return alert('Введите код');
-  try {
-    await api('/htmlgames', 'POST', { title, description, code, cover });
-    ['htmlTitle','htmlDesc','htmlCode','htmlCover'].forEach(id => document.getElementById(id).value = '');
-    loadHtmlGames();
-    alert('Игра сохранена!');
-  } catch (e) { alert(e.message); }
+  try { await api('/htmlgames', 'POST', { title, description, code, cover }); ['htmlTitle','htmlDesc','htmlCode','htmlCover'].forEach(id => document.getElementById(id).value = ''); loadHtmlGames(); alert('Сохранено!'); } catch (e) { alert(e.message); }
 }
-
 function insertDemoGame() {
-  const demo = `<!DOCTYPE html>
-<html>
-<head><style>body{margin:0;background:#111;display:flex;align-items:center;justify-content:center;height:100vh;overflow:hidden;font-family:sans-serif;}canvas{background:#000;border-radius:6px;}.score{position:absolute;top:10px;left:10px;color:#fff;font-size:18px;}</style></head>
-<body><div class="score">Счёт: <span id="s">0</span></div><canvas id="c" width="500" height="400"></canvas>
-<script>
-const c = document.getElementById('c'), ctx = c.getContext('2d');
-let x = 250, y = 200, dx = 3, dy = 3, r = 20, score = 0;
-let px = 200, pw = 100, ph = 12;
-c.addEventListener('mousemove', e => { const rect = c.getBoundingClientRect(); px = e.clientX - rect.left - pw/2; });
-c.addEventListener('touchmove', e => { e.preventDefault(); const rect = c.getBoundingClientRect(); px = e.touches[0].clientX - rect.left - pw/2; });
-function loop() {
-  ctx.fillStyle = '#000'; ctx.fillRect(0,0,500,400);
-  ctx.fillStyle = '#4a76a8'; ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
-  ctx.fillStyle = '#fff'; ctx.fillRect(px, 380, pw, ph);
-  x += dx; y += dy;
-  if (x < r || x > 500-r) dx = -dx;
-  if (y < r) dy = -dy;
-  if (y > 380 - r && x > px && x < px + pw) { dy = -Math.abs(dy); score++; document.getElementById('s').textContent = score; }
-  if (y > 420) { score = 0; document.getElementById('s').textContent = 0; x = 250; y = 200; dy = 3; }
-  requestAnimationFrame(loop);
+  document.getElementById('htmlCode').value = `<!DOCTYPE html><html><head><style>body{margin:0;background:#111;display:flex;align-items:center;justify-content:center;height:100vh;overflow:hidden;}canvas{background:#000;border-radius:6px;}</style></head><body><canvas id="c" width="500" height="400"></canvas><script>const c=document.getElementById('c'),ctx=c.getContext('2d');let x=250,y=200,dx=3,dy=3,r=20;let px=200,pw=100,ph=12;c.addEventListener('mousemove',e=>{const rect=c.getBoundingClientRect();px=e.clientX-rect.left-pw/2;});function loop(){ctx.fillStyle='#000';ctx.fillRect(0,0,500,400);ctx.fillStyle='#4a76a8';ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();ctx.fillStyle='#fff';ctx.fillRect(px,380,pw,ph);x+=dx;y+=dy;if(x<r||x>500-r)dx=-dx;if(y<r)dy=-dy;if(y>380-r&&x>px&&x<px+pw)dy=-Math.abs(dy);if(y>420){x=250;y=200;dy=3;}requestAnimationFrame(loop);}loop();<\/script></body></html>`;
 }
-loop();
-<\/script></body></html>`;
-  document.getElementById('htmlCode').value = demo;
-}
-
 function insertDemoSnake() {
-  const demo = `<!DOCTYPE html>
-<html><head><style>body{margin:0;background:#111;display:flex;align-items:center;justify-content:center;height:100vh;overflow:hidden;font-family:sans-serif;color:#fff;flex-direction:column;}canvas{background:#000;border-radius:6px;}.score{margin-top:10px;font-size:18px;}</style></head>
-<body><canvas id="c" width="400" height="400"></canvas><div class="score">Счёт: <span id="s">0</span> (стрелки)</div>
-<script>
-const c = document.getElementById('c'), ctx = c.getContext('2d');
-const S = 20, N = 20;
-let snake = [{x:10,y:10}], dir = {x:1,y:0}, food = randFood(), score = 0;
-function randFood() { return { x: Math.floor(Math.random()*N), y: Math.floor(Math.random()*N) }; }
-document.addEventListener('keydown', e => {
-  if (e.key === 'ArrowUp' && dir.y === 0) dir = {x:0,y:-1};
-  if (e.key === 'ArrowDown' && dir.y === 0) dir = {x:0,y:1};
-  if (e.key === 'ArrowLeft' && dir.x === 0) dir = {x:-1,y:0};
-  if (e.key === 'ArrowRight' && dir.x === 0) dir = {x:1,y:0};
-});
-setInterval(() => {
-  const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
-  if (head.x < 0 || head.x >= N || head.y < 0 || head.y >= N || snake.some(s => s.x === head.x && s.y === head.y)) {
-    snake = [{x:10,y:10}]; dir = {x:1,y:0}; score = 0; food = randFood(); document.getElementById('s').textContent = 0; return;
-  }
-  snake.unshift(head);
-  if (head.x === food.x && head.y === food.y) { score++; document.getElementById('s').textContent = score; food = randFood(); } else snake.pop();
-  ctx.fillStyle = '#000'; ctx.fillRect(0,0,400,400);
-  ctx.fillStyle = '#c0392b'; ctx.fillRect(food.x*S, food.y*S, S-2, S-2);
-  snake.forEach((s,i) => { ctx.fillStyle = i === 0 ? '#6d8fc7' : '#4a76a8'; ctx.fillRect(s.x*S, s.y*S, S-2, S-2); });
-}, 120);
-<\/script></body></html>`;
-  document.getElementById('htmlCode').value = demo;
+  document.getElementById('htmlCode').value = `<!DOCTYPE html><html><head><style>body{margin:0;background:#111;display:flex;align-items:center;justify-content:center;height:100vh;color:#fff;flex-direction:column;font-family:sans-serif;}canvas{background:#000;border-radius:6px;}</style></head><body><canvas id="c" width="400" height="400"></canvas><script>const c=document.getElementById('c'),ctx=c.getContext('2d');const S=20,N=20;let snake=[{x:10,y:10}],dir={x:1,y:0},food={x:15,y:15};function rf(){return{x:Math.floor(Math.random()*N),y:Math.floor(Math.random()*N)};}food=rf();document.addEventListener('keydown',e=>{if(e.key==='ArrowUp'&&dir.y===0)dir={x:0,y:-1};if(e.key==='ArrowDown'&&dir.y===0)dir={x:0,y:1};if(e.key==='ArrowLeft'&&dir.x===0)dir={x:-1,y:0};if(e.key==='ArrowRight'&&dir.x===0)dir={x:1,y:0};});setInterval(()=>{const h={x:snake[0].x+dir.x,y:snake[0].y+dir.y};if(h.x<0||h.x>=N||h.y<0||h.y>=N||snake.some(s=>s.x===h.x&&s.y===h.y)){snake=[{x:10,y:10}];dir={x:1,y:0};food=rf();return;}snake.unshift(h);if(h.x===food.x&&h.y===food.y)food=rf();else snake.pop();ctx.fillStyle='#000';ctx.fillRect(0,0,400,400);ctx.fillStyle='#c0392b';ctx.fillRect(food.x*S,food.y*S,S-2,S-2);snake.forEach((s,i)=>{ctx.fillStyle=i===0?'#6d8fc7':'#4a76a8';ctx.fillRect(s.x*S,s.y*S,S-2,S-2);});},120);<\/script></body></html>`;
 }
-
 async function openGame(type, id) {
-  currentGameId = id;
-  currentGameType = type;
+  currentGameId = id; currentGameType = type;
   document.getElementById('gamesHome').style.display = 'none';
   document.getElementById('gameView').style.display = 'block';
   let g;
@@ -2661,24 +1956,14 @@ async function openGame(type, id) {
   const likeBtn = document.getElementById('gameLikeBtn');
   likeBtn.className = g.liked ? 'liked' : '';
   likeBtn.innerHTML = (g.liked ? '♥' : '♡') + ' ' + g.likes;
-  const delBtn = document.getElementById('gameDeleteBtn');
-  delBtn.style.display = (me.role === 'admin' || g.user_id === me.id) ? 'inline-block' : 'none';
-  const editBtn = document.getElementById('gameEditBtn');
-  editBtn.style.display = (type === 'html' && (me.role === 'admin' || g.user_id === me.id)) ? 'inline-block' : 'none';
+  document.getElementById('gameDeleteBtn').style.display = (me.role === 'admin' || g.user_id === me.id) ? 'inline-block' : 'none';
+  document.getElementById('gameEditBtn').style.display = (type === 'html' && (me.role === 'admin' || g.user_id === me.id)) ? 'inline-block' : 'none';
   const player = document.getElementById('gamePlayer');
   player.innerHTML = '';
-  if (type === 'scratch') {
-    player.innerHTML = '<iframe src="https://scratch.mit.edu/projects/' + g.scratch_id + '/embed" allowfullscreen></iframe>';
-  } else if (type === 'flash') {
-    player.innerHTML = '<embed src="' + esc(g.swf_url) + '" width="100%" height="500" type="application/x-shockwave-flash" allowfullscreen="true">';
-  } else if (type === 'html') {
-    const full = await api('/htmlgames/' + id + '/code');
-    const blob = new Blob([full.code], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    player.innerHTML = '<iframe src="' + url + '" sandbox="allow-scripts allow-same-origin allow-pointer-lock"></iframe>';
-  }
+  if (type === 'scratch') player.innerHTML = '<iframe src="https://scratch.mit.edu/projects/' + g.scratch_id + '/embed" allowfullscreen></iframe>';
+  else if (type === 'flash') player.innerHTML = '<embed src="' + esc(g.swf_url) + '" width="100%" height="500" type="application/x-shockwave-flash" allowfullscreen="true">';
+  else if (type === 'html') { const full = await api('/htmlgames/' + id + '/code'); const blob = new Blob([full.code], { type: 'text/html' }); player.innerHTML = '<iframe src="' + URL.createObjectURL(blob) + '" sandbox="allow-scripts allow-same-origin allow-pointer-lock"></iframe>'; }
 }
-
 async function toggleGameLike() {
   if (!currentGameId || !currentGameType) return;
   const base = currentGameType === 'scratch' ? '/scratch/' : currentGameType === 'flash' ? '/flash/' : '/htmlgames/';
@@ -2688,20 +1973,16 @@ async function toggleGameLike() {
   btn.className = g.liked ? 'liked' : '';
   btn.innerHTML = (g.liked ? '♥' : '♡') + ' ' + g.likes;
 }
-
 async function deleteCurrentGame() {
   if (!confirm('Удалить игру?')) return;
   const base = currentGameType === 'scratch' ? '/scratch/' : currentGameType === 'flash' ? '/flash/' : '/htmlgames/';
   await api(base + currentGameId, 'DELETE');
-  showGamesHome();
-  showGamesTab(currentGamesTab);
+  showGamesHome(); showGamesTab(currentGamesTab);
 }
-
 async function editCurrentGame() {
   if (currentGameType !== 'html') return;
   const g = await api('/htmlgames/' + currentGameId + '/code');
-  showGamesHome();
-  showGamesTab('html');
+  showGamesHome(); showGamesTab('html');
   document.getElementById('htmlTitle').value = g.title;
   document.getElementById('htmlDesc').value = g.description || '';
   document.getElementById('htmlCover').value = g.cover || '';
@@ -2710,13 +1991,8 @@ async function editCurrentGame() {
   btn.textContent = 'Обновить игру';
   btn.onclick = async () => {
     try {
-      await api('/htmlgames/' + currentGameId, 'PUT', {
-        title: document.getElementById('htmlTitle').value.trim(),
-        description: document.getElementById('htmlDesc').value.trim(),
-        code: document.getElementById('htmlCode').value.trim(),
-        cover: document.getElementById('htmlCover').value.trim()
-      });
-      alert('Игра обновлена!');
+      await api('/htmlgames/' + currentGameId, 'PUT', { title: document.getElementById('htmlTitle').value.trim(), description: document.getElementById('htmlDesc').value.trim(), code: document.getElementById('htmlCode').value.trim(), cover: document.getElementById('htmlCover').value.trim() });
+      alert('Обновлено!');
       btn.textContent = 'Сохранить игру';
       btn.onclick = createHtmlGame;
       ['htmlTitle','htmlDesc','htmlCover','htmlCode'].forEach(id => document.getElementById(id).value = '');
@@ -2726,8 +2002,241 @@ async function editCurrentGame() {
 }
 
 // ============================================================
-// АДМИНКА
+// RETROMUSIC
 // ============================================================
+function showMusicTab(tab) {
+  currentMusicTab = tab;
+  ['all','liked','my','playlists'].forEach(t => {
+    const btn = document.getElementById('mtab' + t.charAt(0).toUpperCase() + t.slice(1));
+    if (btn) btn.className = t === tab ? 'btn-primary' : '';
+    const el = document.getElementById('music' + t.charAt(0).toUpperCase() + t.slice(1));
+    if (el) el.style.display = t === tab ? 'block' : 'none';
+  });
+  document.getElementById('playlistView').style.display = 'none';
+  if (tab === 'all') loadTracks();
+  if (tab === 'liked') loadLikedTracks();
+  if (tab === 'my') loadMyTracks();
+  if (tab === 'playlists') loadPlaylists();
+}
+
+async function loadTracks() {
+  allTracks = await api('/tracks');
+  renderTracks(allTracks, 'tracksBox');
+}
+async function loadLikedTracks() {
+  const liked = await api('/tracks/liked');
+  renderTracks(liked, 'likedTracksBox');
+}
+async function loadMyTracks() {
+  const my = await api('/tracks/my');
+  renderTracks(my, 'myTracksBox');
+}
+
+function renderTracks(tracks, containerId) {
+  const el = document.getElementById(containerId);
+  if (!tracks.length) { el.innerHTML = '<div style="color:#5a8ab0; text-align:center; padding:20px;">Треков нет</div>'; return; }
+  el.innerHTML = tracks.map((t, i) => `
+    <div class="track-item ${mpQueue[mpIndex]?.id === t.id ? 'playing' : ''}" data-track-id="${t.id}">
+      <div class="track-cover" data-play="${i}">${t.cover && isValidUrl(t.cover) ? `<img src="${esc(t.cover)}">` : '🎵'}</div>
+      <div class="track-info">
+        <div class="track-title-text">${esc(t.title)}</div>
+        <div class="track-artist-text">${esc(t.artist)}</div>
+        <div class="track-meta-text">${esc(t.genre || 'Retro')} · ▶ ${t.plays} · ♥ ${t.likes} · ${esc(t.author || '—')}${renderPrefix(t.prefix)}</div>
+      </div>
+      <div class="track-actions">
+        <button class="track-play-btn" data-play="${i}">▶</button>
+        <button data-like-track="${t.id}" class="${t.liked ? 'liked' : ''}">${t.liked ? '♥' : '♡'}</button>
+        ${me.role === 'admin' || t.user_id === me.id ? `<button class="btn-danger btn-small" data-del-track="${t.id}">✕</button>` : ''}
+      </div>
+    </div>
+  `).join('');
+
+  el.querySelectorAll('[data-play]').forEach(n => {
+    n.addEventListener('click', (e) => { e.stopPropagation(); playQueue(tracks, Number(n.dataset.play)); });
+  });
+  el.querySelectorAll('[data-like-track]').forEach(n => {
+    n.addEventListener('click', (e) => { e.stopPropagation(); toggleTrackLike(Number(n.dataset.likeTrack), containerId); });
+  });
+  el.querySelectorAll('[data-del-track]').forEach(n => {
+    n.addEventListener('click', (e) => { e.stopPropagation(); deleteTrack(Number(n.dataset.delTrack), containerId); });
+  });
+}
+
+async function createTrack() {
+  const title = document.getElementById('trackTitle').value.trim();
+  const artist = document.getElementById('trackArtist').value.trim();
+  const url = document.getElementById('trackUrl').value.trim();
+  const cover = document.getElementById('trackCover').value.trim();
+  const genre = document.getElementById('trackGenre').value;
+  if (!title || !artist || !url) return alert('Заполните название, исполнителя и ссылку');
+  if (!isValidUrl(url)) { showForbiddenWarning('Недопустимый URL'); return; }
+  if (checkContent(title, artist)) { showForbiddenWarning('Запрещённый контент'); return; }
+  try {
+    await api('/tracks', 'POST', { title, artist, url, cover, genre });
+    ['trackTitle','trackArtist','trackUrl','trackCover'].forEach(id => document.getElementById(id).value = '');
+    loadTracks();
+    alert('Трек добавлен!');
+  } catch (e) { alert(e.message); }
+}
+
+async function toggleTrackLike(id, containerId) {
+  await api('/tracks/' + id + '/like', 'POST');
+  showMusicTab(currentMusicTab);
+}
+
+async function deleteTrack(id, containerId) {
+  if (!confirm('Удалить трек?')) return;
+  await api('/tracks/' + id, 'DELETE');
+  showMusicTab(currentMusicTab);
+}
+
+let musicSearchTimer = null;
+function onMusicSearch() {
+  clearTimeout(musicSearchTimer);
+  const q = document.getElementById('musicSearch').value.trim();
+  if (!q) { loadTracks(); return; }
+  musicSearchTimer = setTimeout(async () => {
+    const results = await api('/tracks-search?q=' + encodeURIComponent(q));
+    renderTracks(results, 'tracksBox');
+  }, 300);
+}
+
+// ПЛЕЙЛИСТЫ
+async function loadPlaylists() {
+  const pl = await api('/playlists');
+  const my = pl.filter(p => p.user_id === me.id);
+  const el = document.getElementById('playlistsBox');
+  if (!my.length) { el.innerHTML = '<div style="color:#5a8ab0; text-align:center; padding:20px;">Плейлистов нет</div>'; return; }
+  el.innerHTML = my.map(p => `
+    <div class="group-item" data-playlist-id="${p.id}">
+      <div style="display:flex; gap:10px; align-items:center;">
+        <div class="avatar" style="width:50px; height:50px; font-size:22px; border-radius:10px;">${p.cover && isValidUrl(p.cover) ? `<img src="${esc(p.cover)}">` : '🎵'}</div>
+        <div style="flex:1;">
+          <div class="forum-title">${esc(p.name)}</div>
+          <div class="forum-desc">${esc(p.description || '')}</div>
+          <div class="forum-meta">Треков: ${p.tracks_count} · ${esc(p.author || '—')}</div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+  el.querySelectorAll('[data-playlist-id]').forEach(n => n.addEventListener('click', () => openPlaylist(Number(n.dataset.playlistId))));
+}
+
+async function createPlaylist() {
+  const name = document.getElementById('playlistName').value.trim();
+  const description = document.getElementById('playlistDesc').value.trim();
+  const cover = document.getElementById('playlistCover').value.trim();
+  if (!name) return alert('Введите название');
+  if (checkContent(name, description)) { showForbiddenWarning('Запрещённый контент'); return; }
+  await api('/playlists', 'POST', { name, description, cover });
+  ['playlistName','playlistDesc','playlistCover'].forEach(id => document.getElementById(id).value = '');
+  loadPlaylists();
+}
+
+async function openPlaylist(id) {
+  currentPlaylistId = id;
+  document.getElementById('musicPlaylists').style.display = 'none';
+  document.getElementById('musicAll').style.display = 'none';
+  document.getElementById('musicLiked').style.display = 'none';
+  document.getElementById('musicMy').style.display = 'none';
+  document.getElementById('playlistView').style.display = 'block';
+  const data = await api('/playlists/' + id);
+  document.getElementById('plCrumb').textContent = data.playlist.name;
+  document.getElementById('plName').textContent = data.playlist.name;
+  document.getElementById('plMeta').textContent = 'Треков: ' + data.tracks.length + ' · Автор: ' + (data.playlist.author || '—');
+  document.getElementById('plDesc').textContent = data.playlist.description || '';
+  document.getElementById('plCover').innerHTML = data.playlist.cover && isValidUrl(data.playlist.cover) ? `<img src="${esc(data.playlist.cover)}">` : '🎵';
+  document.getElementById('plDeleteBtn').style.display = data.playlist.user_id === me.id ? 'inline-block' : 'none';
+  renderTracks(data.tracks, 'plTracks');
+}
+
+async function deleteCurrentPlaylist() {
+  if (!confirm('Удалить плейлист?')) return;
+  await api('/playlists/' + currentPlaylistId, 'DELETE');
+  showMusicTab('playlists');
+}
+
+function playPlaylist() {
+  const el = document.getElementById('plTracks');
+  const items = el.querySelectorAll('.track-item');
+  if (!items.length) return;
+  // Собираем треки из очереди
+  openPlaylist(currentPlaylistId);
+}
+
+// ПЛЕЕР
+function playQueue(tracks, index) {
+  mpQueue = tracks;
+  mpIndex = index;
+  playCurrent();
+}
+
+function playCurrent() {
+  const t = mpQueue[mpIndex];
+  if (!t) return;
+  const player = document.getElementById('musicPlayer');
+  player.style.display = 'flex';
+  document.getElementById('mpTitle').textContent = t.title;
+  document.getElementById('mpArtist').textContent = t.artist;
+  const cover = document.getElementById('mpCover');
+  cover.innerHTML = t.cover && isValidUrl(t.cover) ? `<img src="${esc(t.cover)}">` : '🎵';
+  const audio = document.getElementById('mpAudio');
+  audio.src = t.url;
+  audio.play().catch(() => {});
+  document.getElementById('mpPlayBtn').textContent = '⏸';
+  api('/tracks/' + t.id + '/play', 'POST').catch(() => {});
+  socket.emit('music:play', { trackId: t.id });
+  showMusicTab(currentMusicTab);
+}
+
+function mpToggle() {
+  const audio = document.getElementById('mpAudio');
+  if (audio.paused) { audio.play(); document.getElementById('mpPlayBtn').textContent = '⏸'; }
+  else { audio.pause(); document.getElementById('mpPlayBtn').textContent = '▶'; }
+}
+
+function mpNext() {
+  if (mpIndex < mpQueue.length - 1) { mpIndex++; playCurrent(); }
+}
+
+function mpPrev() {
+  if (mpIndex > 0) { mpIndex--; playCurrent(); }
+}
+
+function mpClose() {
+  const audio = document.getElementById('mpAudio');
+  audio.pause();
+  document.getElementById('musicPlayer').style.display = 'none';
+  mpQueue = []; mpIndex = -1;
+}
+
+function mpSeek(e) {
+  const audio = document.getElementById('mpAudio');
+  if (!audio.duration) return;
+  const bar = e.currentTarget;
+  const percent = (e.offsetX / bar.offsetWidth) * 100;
+  audio.currentTime = (percent / 100) * audio.duration;
+}
+
+document.getElementById('mpAudio').addEventListener('timeupdate', (e) => {
+  const audio = e.target;
+  if (!audio.duration) return;
+  const percent = (audio.currentTime / audio.duration) * 100;
+  document.getElementById('mpBarFill').style.width = percent + '%';
+  document.getElementById('mpCur').textContent = formatTime(audio.currentTime);
+  document.getElementById('mpDur').textContent = formatTime(audio.duration);
+});
+
+document.getElementById('mpAudio').addEventListener('ended', () => { mpNext(); });
+
+function formatTime(s) {
+  if (!s || isNaN(s)) return '0:00';
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60);
+  return m + ':' + String(sec).padStart(2, '0');
+}
+
+// АДМИНКА
 async function loadAdmin() {
   const stats = await api('/admin/stats');
   document.getElementById('adminStats').innerHTML = `
@@ -2737,102 +2246,42 @@ async function loadAdmin() {
     <div class="stat-box"><div class="stat-num">${stats.forums}</div><div class="stat-label">Форумов</div></div>
     <div class="stat-box"><div class="stat-num">${stats.topics}</div><div class="stat-label">Тем</div></div>
     <div class="stat-box"><div class="stat-num">${stats.messages}</div><div class="stat-label">Сообщений</div></div>
-    <div class="stat-box"><div class="stat-num">${stats.news}</div><div class="stat-label">Новостей</div></div>
-  `;
+    <div class="stat-box"><div class="stat-num">${stats.news}</div><div class="stat-label">Новостей</div></div>`;
   const users = await api('/admin/users');
   const table = document.getElementById('adminUsersTable');
-  table.innerHTML = `
-    <tr><th>ID</th><th>Логин</th><th>Роль</th><th>Постов</th><th>Дата</th><th>Действия</th></tr>
-    ${users.map(u => `
-      <tr>
-        <td>${u.id}</td>
-        <td>${esc(u.username)} ${u.banned ? '<span class="banned">(бан)</span>' : ''}</td>
-        <td class="${u.role === 'admin' ? 'role-admin' : 'role-user'}">${esc(u.role)}</td>
-        <td>${u.posts_count}</td>
-        <td>${fmtDate(u.created_at)}</td>
-        <td>
-          ${u.id !== me.id ? `
-            <button class="btn-small" data-admin-ban="${u.id}">${u.banned ? 'Разбан' : 'Бан'}</button>
-            <button class="btn-danger btn-small" data-admin-deluser="${u.id}">Удалить</button>
-          ` : '—'}
-        </td>
-      </tr>
-    `).join('')}
-  `;
+  table.innerHTML = `<tr><th>ID</th><th>Логин</th><th>Роль</th><th>Постов</th><th>Дата</th><th>Действия</th></tr>${users.map(u => `<tr><td>${u.id}</td><td>${esc(u.username)}${renderPrefix(getPrefixFromCache(u.username))} ${u.banned ? '<span class="banned">(бан)</span>' : ''}</td><td class="${u.role === 'admin' ? 'role-admin' : 'role-user'}">${esc(u.role)}</td><td>${u.posts_count}</td><td>${fmtDate(u.created_at)}</td><td>${u.id !== me.id ? `<button class="btn-small" data-admin-ban="${u.id}">${u.banned ? 'Разбан' : 'Бан'}</button><button class="btn-danger btn-small" data-admin-deluser="${u.id}">Удалить</button>` : '—'}</td></tr>`).join('')}`;
   table.querySelectorAll('[data-admin-ban]').forEach(n => n.addEventListener('click', () => adminBan(Number(n.dataset.adminBan))));
   table.querySelectorAll('[data-admin-deluser]').forEach(n => n.addEventListener('click', () => adminDeleteUser(Number(n.dataset.adminDeluser))));
 
   const audit = await api('/admin/audit');
-  document.getElementById('adminAuditTable').innerHTML = `
-    <tr><th>Время</th><th>Юзер</th><th>Действие</th><th>Детали</th><th>IP</th></tr>
-    ${audit.map(a => {
-      const danger = a.action === 'FORBIDDEN_CONTENT_ATTEMPT';
-      return `
-      <tr class="${danger ? 'audit-danger' : ''}">
-        <td>${fmtDate(a.created_at)}</td>
-        <td>${esc(a.username || '—')}</td>
-        <td>${danger ? '⚠ ' : ''}${esc(a.action)}</td>
-        <td>${esc(a.details || '')}</td>
-        <td style="font-size:10px; color:#5a8ab0;">${esc(a.ip || '')}</td>
-      </tr>
-    `}).join('')}
-  `;
+  document.getElementById('adminAuditTable').innerHTML = `<tr><th>Время</th><th>Юзер</th><th>Действие</th><th>Детали</th><th>IP</th></tr>${audit.map(a => { const danger = a.action === 'FORBIDDEN_CONTENT_ATTEMPT'; return `<tr class="${danger ? 'audit-danger' : ''}"><td>${fmtDate(a.created_at)}</td><td>${esc(a.username || '—')}</td><td>${danger ? '⚠ ' : ''}${esc(a.action)}</td><td>${esc(a.details || '')}</td><td style="font-size:10px; color:#5a8ab0;">${esc(a.ip || '')}</td></tr>`; }).join('')}`;
 
   const groups = await api('/groups');
   const forums = await api('/forums');
   const contentEl = document.getElementById('adminContent');
-  contentEl.innerHTML = `
-    <div style="margin-bottom:10px; font-weight:600;"><b>Группы:</b></div>
-    ${groups.map(g => `
-      <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.6);">
-        <span>${esc(g.name)} (${g.members_count} участников)</span>
-        <button class="btn-danger btn-small" data-admin-delgroup="${g.id}">Удалить</button>
-      </div>
-    `).join('') || '<div style="color:#5a8ab0;">Групп нет</div>'}
-    <div style="margin:12px 0 10px; font-weight:600;"><b>Форумы:</b></div>
-    ${forums.map(f => `
-      <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.6);">
-        <span>${esc(f.title)} (${f.topics_count} тем)</span>
-        <button class="btn-danger btn-small" data-admin-delforum="${f.id}">Удалить</button>
-      </div>
-    `).join('') || '<div style="color:#5a8ab0;">Форумов нет</div>'}
-  `;
+  contentEl.innerHTML = `<div style="margin-bottom:10px; font-weight:600;">Группы:</div>${groups.map(g => `<div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.6);"><span>${esc(g.name)} (${g.members_count})</span><button class="btn-danger btn-small" data-admin-delgroup="${g.id}">Удалить</button></div>`).join('') || '<div style="color:#5a8ab0;">Групп нет</div>'}<div style="margin:12px 0 10px; font-weight:600;">Форумы:</div>${forums.map(f => `<div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.6);"><span>${esc(f.title)} (${f.topics_count})</span><button class="btn-danger btn-small" data-admin-delforum="${f.id}">Удалить</button></div>`).join('') || '<div style="color:#5a8ab0;">Форумов нет</div>'}`;
   contentEl.querySelectorAll('[data-admin-delgroup]').forEach(n => n.addEventListener('click', () => adminDeleteGroup(Number(n.dataset.adminDelgroup))));
   contentEl.querySelectorAll('[data-admin-delforum]').forEach(n => n.addEventListener('click', () => adminDeleteForum(Number(n.dataset.adminDelforum))));
 }
-
 async function adminBan(id) { await api('/admin/ban/' + id, 'POST'); loadAdmin(); }
 async function adminDeleteUser(id) { if (!confirm('Удалить?')) return; await api('/admin/users/' + id, 'DELETE'); loadAdmin(); }
 async function adminDeleteGroup(id) { if (!confirm('Удалить?')) return; await api('/admin/groups/' + id, 'DELETE'); loadAdmin(); }
 async function adminDeleteForum(id) { if (!confirm('Удалить?')) return; await api('/admin/forums/' + id, 'DELETE'); loadAdmin(); }
 
-// ============================================================
 // МЕДИА
-// ============================================================
-function openMediaViewer(url) {
-  if (!isValidUrl(url)) return;
-  document.getElementById('mediaViewerImg').src = url;
-  document.getElementById('mediaViewer').classList.add('open');
-}
-
+function openMediaViewer(url) { if (!isValidUrl(url)) return; document.getElementById('mediaViewerImg').src = url; document.getElementById('mediaViewer').classList.add('open'); }
 function closeMediaViewer() { document.getElementById('mediaViewer').classList.remove('open'); }
 
-// ============================================================
 // УТИЛИТЫ
-// ============================================================
 function fmtDate(d) {
-  const date = new Date(d);
-  const now = new Date();
-  const diff = (now - date) / 1000;
+  const date = new Date(d), now = new Date(), diff = (now - date) / 1000;
   if (diff < 60) return 'только что';
   if (diff < 3600) return Math.floor(diff/60) + ' мин назад';
   if (diff < 86400) return Math.floor(diff/3600) + ' ч назад';
   return date.toLocaleDateString('ru-RU') + ' ' + date.toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'});
 }
 
-// ============================================================
 // ЗАПУСК
-// ============================================================
 initTheme();
 if (token) startApp(); else showAuth();
 </script>
