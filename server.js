@@ -31,7 +31,8 @@ app.use((req, res, next) => {
 // ============================================================
 const HARDCODED_DB_URL = 'postgresql://neondb_owner:npg_yOQcIwub8V6N@ep-solitary-rain-a5orxtnv-pooler.us-east-2.aws.neon.tech/neondb';
 const HARDCODED_JWT_SECRET = 'retro2010secret123';
-const OWNER_USERNAME = 'lol';
+const OWNER_USERNAMES = ['lol', 'qwyrta'];
+const OWNER_USERNAME = OWNER_USERNAMES[0]; // первый — главный владелец (для обратной совместимости)
 // ============================================================
 
 const JWT_SECRET = process.env.JWT_SECRET || HARDCODED_JWT_SECRET || 'retro-2010-secret';
