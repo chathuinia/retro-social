@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>РетроСеть 2010</title>
 <script src="/socket.io/socket.io.js"></script>
+<script src="https://unpkg.com/@ruffle-rs/ruffle"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: Tahoma, Verdana, Arial, sans-serif; font-size: 12px; background: #e8ebf0; color: #2a2a2a; }
@@ -269,17 +270,33 @@
   .media-viewer.open { display: flex; }
   .media-viewer img, .media-viewer video { max-width: 95vw; max-height: 95vh; border-radius: 4px; }
 
-  /* Полноэкранная плашка-предупреждение */
+  /* Игры */
+  .games-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+  .games-tabs button { flex: 1; }
+  .game-player {
+    background: #000; border-radius: 4px; overflow: hidden;
+    min-height: 400px; display: flex; align-items: center; justify-content: center;
+    position: relative;
+  }
+  .game-player embed, .game-player object { width: 100%; height: 500px; }
+  .game-player iframe { width: 100%; height: 500px; border: 0; background: #fff; }
+  .code-area {
+    font-family: 'Courier New', monospace;
+    font-size: 12px; line-height: 1.4;
+    min-height: 280px;
+  }
+  .info-box { background: #f0f4f8; padding: 10px; border-radius: 3px; margin-bottom: 10px; font-size: 11px; color: #333; }
+  .info-box a { color: #3b5998; }
+  .info-box code { background: #fff; padding: 1px 4px; border-radius: 2px; font-family: monospace; }
+  .warn-box { background: #fff3cd; padding: 10px; border-radius: 3px; margin-bottom: 10px; font-size: 11px; color: #856404; }
+
+  /* Плашка предупреждения */
   .warn-overlay {
     position: fixed; inset: 0;
     background: rgba(0, 0, 0, 0.92);
-    display: none;
-    align-items: center; justify-content: center;
-    z-index: 9999;
-    flex-direction: column;
-    color: white;
-    text-align: center;
-    padding: 20px;
+    display: none; align-items: center; justify-content: center;
+    z-index: 9999; flex-direction: column; color: white;
+    text-align: center; padding: 20px;
     animation: warnPulse 0.5s ease-out;
   }
   .warn-overlay.open { display: flex; }
@@ -295,21 +312,11 @@
     60% { transform: translateX(-10px) rotate(-3deg); }
     80% { transform: translateX(10px) rotate(3deg); }
   }
-  .warn-title {
-    font-size: 48px; font-weight: bold; color: #e74c3c;
-    text-shadow: 2px 2px 0 #000; margin-bottom: 15px; letter-spacing: 2px;
-  }
+  .warn-title { font-size: 48px; font-weight: bold; color: #e74c3c; text-shadow: 2px 2px 0 #000; margin-bottom: 15px; letter-spacing: 2px; }
   .warn-text { font-size: 22px; margin-bottom: 10px; max-width: 600px; line-height: 1.5; }
   .warn-subtext { font-size: 14px; color: #bdc3c7; margin-top: 15px; max-width: 500px; }
-  .warn-timer {
-    font-size: 72px; font-weight: bold; color: #f39c12;
-    margin-top: 25px; text-shadow: 2px 2px 0 #000;
-    animation: warnCount 1s infinite;
-  }
-  @keyframes warnCount {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.15); }
-  }
+  .warn-timer { font-size: 72px; font-weight: bold; color: #f39c12; margin-top: 25px; text-shadow: 2px 2px 0 #000; animation: warnCount 1s infinite; }
+  @keyframes warnCount { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.15); } }
 
   @media (max-width: 700px) {
     .grid { grid-template-columns: 1fr; }
@@ -322,6 +329,7 @@
     .warn-title { font-size: 32px; }
     .warn-text { font-size: 16px; }
     .warn-timer { font-size: 48px; }
+    .game-player iframe, .game-player embed { height: 350px; }
   }
 </style>
 </head>
@@ -358,6 +366,7 @@
       <button id="navNews" onclick="showPage('news')">Новости</button>
       <button id="navGroups" onclick="showPage('groups')">Группы</button>
       <button id="navForums" onclick="showPage('forums')">Форумы</button>
+      <button id="navGames" onclick="showPage('games')">🎮 Игры</button>
       <button id="navVote" onclick="showPage('vote')">Голосование</button>
       <button id="navAdmin" style="display:none;" onclick="showPage('admin')">Админка</button>
     </div>
@@ -388,6 +397,7 @@
           <textarea id="myStatus" placeholder="Статус..." style="min-height:40px; font-size:11px;"></textarea>
           <button style="width:100%; margin-top:4px;" onclick="saveStatus()">Сохранить</button>
           <button style="width:100%; margin-top:4px;" onclick="openAddStory()">+ Добавить историю</button>
+          <button style="width:100%; margin-top:4px;" onclick="openChangePassword()">Сменить пароль</button>
         </div>
         <div class="card">
           <h3>Люди</h3>
@@ -582,6 +592,101 @@
     </div>
   </div>
 
+  <!-- ИГРЫ -->
+  <div id="pageGames" style="display:none;">
+    <div id="gamesHome">
+      <div class="card">
+        <h3>Игры</h3>
+        <div class="games-tabs">
+          <button onclick="showGamesTab('scratch')" id="gtabScratch" class="btn-primary">🐱 Scratch</button>
+          <button onclick="showGamesTab('flash')" id="gtabFlash">⚡ Flash</button>
+          <button onclick="showGamesTab('html')" id="gtabHtml">🛠 Редактор</button>
+        </div>
+      </div>
+
+      <!-- SCRATCH -->
+      <div id="gamesScratch">
+        <div class="card">
+          <h3>Добавить Scratch-игру</h3>
+          <div class="info-box">
+            <b>Как добавить:</b><br>
+            1. Зайди на <a href="https://scratch.mit.edu" target="_blank" rel="noopener noreferrer">scratch.mit.edu</a><br>
+            2. Создай игру<br>
+            3. Скопируй ссылку вида <code>https://scratch.mit.edu/projects/123456</code><br>
+            4. Вставь её ниже
+          </div>
+          <input id="scratchTitle" placeholder="Название" style="margin-bottom:6px;">
+          <textarea id="scratchDesc" placeholder="Описание" style="min-height:40px;"></textarea>
+          <input id="scratchUrl" placeholder="https://scratch.mit.edu/projects/123456" style="margin-top:6px;">
+          <input id="scratchCover" placeholder="URL обложки (необязательно)" style="margin-top:6px;">
+          <button class="btn-primary" style="margin-top:6px;" onclick="createScratch()">Добавить</button>
+        </div>
+        <div class="card">
+          <h3>Игры Scratch</h3>
+          <div id="scratchBox"></div>
+        </div>
+      </div>
+
+      <!-- FLASH -->
+      <div id="gamesFlash" style="display:none;">
+        <div class="card">
+          <h3>Добавить Flash-игру</h3>
+          <div class="warn-box">
+            <b>Важно:</b> Flash мёртв с 2020 года, но игры запускаются через <b>Ruffle</b> — эмулятор. 
+            Загрузи <code>.swf</code> файл на Cloudflare R2, Supabase Storage или GitHub Releases — получишь прямую ссылку. Вставь её ниже.
+          </div>
+          <input id="flashTitle" placeholder="Название" style="margin-bottom:6px;">
+          <textarea id="flashDesc" placeholder="Описание" style="min-height:40px;"></textarea>
+          <input id="flashUrl" placeholder="URL .swf файла" style="margin-top:6px;">
+          <input id="flashCover" placeholder="URL обложки" style="margin-top:6px;">
+          <button class="btn-primary" style="margin-top:6px;" onclick="createFlash()">Добавить</button>
+        </div>
+        <div class="card">
+          <h3>Flash-игры</h3>
+          <div id="flashBox"></div>
+        </div>
+      </div>
+
+      <!-- HTML5 РЕДАКТОР -->
+      <div id="gamesHtml" style="display:none;">
+        <div class="card">
+          <h3>Редактор HTML5-игр</h3>
+          <div class="info-box">
+            Пиши HTML/CSS/JS прямо здесь. Игра сохранится и будет играться прямо на сайте.<br>
+            <button class="btn-small" onclick="insertDemoGame()" style="margin-top:6px;">Вставить пример (прыгающий мяч)</button>
+            <button class="btn-small" onclick="insertDemoSnake()" style="margin-top:6px;">Вставить Змейку</button>
+          </div>
+          <input id="htmlTitle" placeholder="Название игры" style="margin-bottom:6px;">
+          <textarea id="htmlDesc" placeholder="Описание" style="min-height:40px;"></textarea>
+          <input id="htmlCover" placeholder="URL обложки (необязательно)" style="margin-top:6px;">
+          <textarea id="htmlCode" class="code-area" placeholder="Введи HTML/JS код..." style="margin-top:6px;"></textarea>
+          <button class="btn-primary" style="margin-top:8px;" onclick="createHtmlGame()">Сохранить игру</button>
+        </div>
+        <div class="card">
+          <h3>Игры сообщества</h3>
+          <div id="htmlBox"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ПРОСМОТР ИГРЫ -->
+    <div id="gameView" style="display:none;">
+      <div class="breadcrumb"><a onclick="showGamesHome()">Игры</a> / <span id="gameCrumb"></span></div>
+      <div class="card">
+        <h3 id="gameTitleView"></h3>
+        <div style="color:#888; font-size:11px; margin-bottom:10px;" id="gameMeta"></div>
+        <div id="gameDescView" style="margin-bottom:10px;"></div>
+        <div id="gamePlayer" class="game-player"></div>
+        <div class="post-actions" style="margin-top:10px;">
+          <button id="gameLikeBtn" onclick="toggleGameLike()">♡ 0</button>
+          <span style="color:#888; font-size:11px;">Запусков: <span id="gamePlays">0</span></span>
+          <button class="btn-small" id="gameEditBtn" style="display:none;" onclick="editCurrentGame()">Редактировать</button>
+          <button class="btn-danger btn-small" id="gameDeleteBtn" style="display:none;" onclick="deleteCurrentGame()">Удалить</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- АДМИНКА -->
   <div id="pageAdmin" style="display:none;">
     <div class="card">
@@ -671,6 +776,22 @@
   </div>
 </div>
 
+<!-- СМЕНА ПАРОЛЯ -->
+<div id="changePasswordModal" class="story-viewer">
+  <span class="story-close" onclick="closeChangePassword()">✕</span>
+  <div style="background:white; padding:20px; border-radius:8px; max-width:400px; width:90%; color:#2a2a2a;">
+    <h3 style="color:#3b5998; margin-bottom:10px;">Смена пароля</h3>
+    <input id="oldPassword" type="password" placeholder="Текущий пароль" style="margin-bottom:8px;">
+    <input id="newPassword" type="password" placeholder="Новый пароль (мин. 6)" style="margin-bottom:8px;">
+    <input id="newPassword2" type="password" placeholder="Повторите новый" style="margin-bottom:8px;">
+    <div id="pwdErr" style="color:#c0392b; font-size:11px; margin-bottom:8px; display:none;"></div>
+    <button class="btn-primary" style="width:100%; padding:8px;" onclick="changePassword()">Сменить пароль</button>
+    <div style="color:#888; font-size:10px; margin-top:8px; text-align:center;">
+      После смены пароля текущая сессия останется активной. Другие устройства потребуют новый пароль.
+    </div>
+  </div>
+</div>
+
 <!-- ПРОСМОТР МЕДИА -->
 <div id="mediaViewer" class="media-viewer" onclick="closeMediaViewer()">
   <img id="mediaViewerImg" src="">
@@ -685,8 +806,7 @@
   <div class="warn-title">АЙ-ЯЙ-ЯЙ! ТАК ДЕЛАТЬ НЕЛЬЗЯ!</div>
   <div class="warn-text">Тебе грозит бан на год.</div>
   <div class="warn-subtext">
-    Попытка зафиксирована. Логин, IP и время записаны в журнал безопасности.
-    Администратор увидит это.
+    Попытка зафиксирована. Логин, IP и время записаны в журнал безопасности. Администратор увидит это.
   </div>
   <div class="warn-timer" id="warnTimer">5</div>
 </div>
@@ -713,6 +833,9 @@ let titleFlashInterval = null;
 let pendingAttach = [];
 let audioCtx = null;
 let selectedBg = '#3b5998';
+let currentGameId = null;
+let currentGameType = null;
+let currentGamesTab = 'scratch';
 
 const STICKERS = [
   '😀','😂','🥰','😎','🤔','😴','🥳','😭','😡','🤯',
@@ -737,23 +860,17 @@ async function api(url, method = 'GET', body = null) {
 }
 
 // ============================================================
-// ESC — усиленный
+// ESC
 // ============================================================
 function esc(s) {
   return String(s ?? '').replace(/[&<>"'`=\/]/g, c => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#39;',
-    '`': '&#96;',
-    '=': '&#61;',
-    '/': '&#47;'
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;',
+    "'": '&#39;', '`': '&#96;', '=': '&#61;', '/': '&#47;'
   }[c]));
 }
 
 // ============================================================
-// ЗАЩИТА ОТ SVG / XSS
+// ЗАЩИТА
 // ============================================================
 const FORBIDDEN_PATTERNS = [
   /<svg/i, /<script/i, /<iframe/i, /<object/i, /<embed/i,
@@ -911,20 +1028,24 @@ function showAuth() {
 // ============================================================
 function showPage(page) {
   currentPage = page;
-  const pages = ['feed','profile','news','groups','forums','vote','admin','search'];
+  const pages = ['feed','profile','news','groups','forums','games','vote','admin','search'];
   pages.forEach(p => {
     const nav = document.getElementById('nav' + p.charAt(0).toUpperCase() + p.slice(1));
     if (nav) nav.classList.toggle('active', p === page);
     const el = document.getElementById('page' + p.charAt(0).toUpperCase() + p.slice(1));
     if (el) el.style.display = 'none';
   });
-  const map = { feed: 'pageFeed', profile: 'pageProfile', news: 'pageNews', groups: 'pageGroups', forums: 'pageForums', vote: 'pageVote', admin: 'pageAdmin', search: 'pageSearch' };
+  const map = {
+    feed: 'pageFeed', profile: 'pageProfile', news: 'pageNews', groups: 'pageGroups',
+    forums: 'pageForums', games: 'pageGames', vote: 'pageVote', admin: 'pageAdmin', search: 'pageSearch'
+  };
   const el = document.getElementById(map[page]);
   if (el) el.style.display = 'block';
   if (page === 'news') loadNews();
   if (page === 'vote') loadParties();
   if (page === 'groups') { document.getElementById('groupsList').style.display = 'block'; document.getElementById('groupView').style.display = 'none'; loadGroups(); }
   if (page === 'forums') { document.getElementById('forumsList').style.display = 'block'; document.getElementById('forumView').style.display = 'none'; document.getElementById('topicView').style.display = 'none'; loadForums(); }
+  if (page === 'games') { showGamesHome(); showGamesTab(currentGamesTab); }
   if (page === 'admin') loadAdmin();
   if (page === 'feed') loadStories();
 }
@@ -939,6 +1060,11 @@ function initSocket() {
   socket.on('new_news', () => { if (currentPage === 'news') loadNews(); });
   socket.on('new_vote', () => { if (currentPage === 'vote') loadParties(); });
   socket.on('new_story', () => { loadStories(); });
+  socket.on('new_game', () => {
+    if (currentGamesTab === 'scratch' && currentPage === 'games') loadScratch();
+    if (currentGamesTab === 'flash' && currentPage === 'games') loadFlash();
+    if (currentGamesTab === 'html' && currentPage === 'games') loadHtmlGames();
+  });
   socket.on('new_message', handleIncomingMessage);
   socket.on('new_forum_post', data => { if (currentPage === 'forums' && currentTopicId == data.topic_id) loadTopic(currentTopicId); });
   socket.on('new_group_post', data => { if (currentPage === 'groups' && currentGroupId == data.group_id) loadGroupPosts(); });
@@ -1053,6 +1179,41 @@ async function saveStatus() {
   if (containsForbidden(status)) { showForbiddenWarning('В статусе запрещённый контент'); return; }
   await api('/me', 'PUT', { status, avatar: me.avatar || '', bio: me.bio || '' });
   alert('Сохранено');
+}
+
+// ============================================================
+// СМЕНА ПАРОЛЯ
+// ============================================================
+function openChangePassword() {
+  document.getElementById('changePasswordModal').classList.add('open');
+  document.getElementById('oldPassword').value = '';
+  document.getElementById('newPassword').value = '';
+  document.getElementById('newPassword2').value = '';
+  document.getElementById('pwdErr').style.display = 'none';
+}
+
+function closeChangePassword() {
+  document.getElementById('changePasswordModal').classList.remove('open');
+}
+
+async function changePassword() {
+  const oldP = document.getElementById('oldPassword').value;
+  const newP = document.getElementById('newPassword').value;
+  const newP2 = document.getElementById('newPassword2').value;
+  const errEl = document.getElementById('pwdErr');
+  errEl.style.display = 'none';
+
+  if (!oldP || !newP || !newP2) { errEl.textContent = 'Заполните все поля'; errEl.style.display = 'block'; return; }
+  if (newP !== newP2) { errEl.textContent = 'Новые пароли не совпадают'; errEl.style.display = 'block'; return; }
+  if (newP.length < 6) { errEl.textContent = 'Минимум 6 символов'; errEl.style.display = 'block'; return; }
+  try {
+    await api('/me/password', 'PUT', { oldPassword: oldP, newPassword: newP });
+    closeChangePassword();
+    showToast({ username: 'Безопасность', text: 'Пароль изменён', onClick: () => {} });
+  } catch (e) {
+    errEl.textContent = e.message;
+    errEl.style.display = 'block';
+  }
 }
 
 // ============================================================
@@ -2029,6 +2190,299 @@ async function replyTopic() {
   await api('/topics/' + currentTopicId + '/posts', 'POST', { content });
   document.getElementById('topicReply').value = '';
   loadTopic(currentTopicId);
+}
+
+// ============================================================
+// ИГРЫ
+// ============================================================
+function showGamesHome() {
+  document.getElementById('gamesHome').style.display = 'block';
+  document.getElementById('gameView').style.display = 'none';
+}
+
+function showGamesTab(tab) {
+  currentGamesTab = tab;
+  document.getElementById('gtabScratch').className = tab === 'scratch' ? 'btn-primary' : '';
+  document.getElementById('gtabFlash').className = tab === 'flash' ? 'btn-primary' : '';
+  document.getElementById('gtabHtml').className = tab === 'html' ? 'btn-primary' : '';
+  document.getElementById('gamesScratch').style.display = tab === 'scratch' ? 'block' : 'none';
+  document.getElementById('gamesFlash').style.display = tab === 'flash' ? 'block' : 'none';
+  document.getElementById('gamesHtml').style.display = tab === 'html' ? 'block' : 'none';
+  if (tab === 'scratch') loadScratch();
+  if (tab === 'flash') loadFlash();
+  if (tab === 'html') loadHtmlGames();
+}
+
+// SCRATCH
+async function loadScratch() {
+  const games = await api('/scratch');
+  const el = document.getElementById('scratchBox');
+  if (!games.length) { el.innerHTML = '<div style="color:#888; text-align:center; padding:20px;">Игр нет</div>'; return; }
+  el.innerHTML = games.map(g => `
+    <div class="group-item" data-scratch-id="${g.id}">
+      <div style="display:flex; gap:10px; align-items:center;">
+        <div class="avatar" style="width:50px; height:50px; font-size:20px;">🐱</div>
+        <div style="flex:1;">
+          <div class="forum-title">${esc(g.title)}</div>
+          <div class="forum-desc">${esc(g.description || '')}</div>
+          <div class="forum-meta">Автор: ${esc(g.author || '—')} · ♥ ${g.likes} · ▶ ${g.plays}</div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+  el.querySelectorAll('[data-scratch-id]').forEach(n => n.addEventListener('click', () => openGame('scratch', Number(n.dataset.scratchId))));
+}
+
+async function createScratch() {
+  const title = document.getElementById('scratchTitle').value.trim();
+  const description = document.getElementById('scratchDesc').value.trim();
+  const scratch_url = document.getElementById('scratchUrl').value.trim();
+  const cover = document.getElementById('scratchCover').value.trim();
+  if (!title) return alert('Введите название');
+  if (!scratch_url) return alert('Введите ссылку');
+  try {
+    await api('/scratch', 'POST', { title, description, scratch_url, cover });
+    ['scratchTitle','scratchDesc','scratchUrl','scratchCover'].forEach(id => document.getElementById(id).value = '');
+    loadScratch();
+    alert('Игра добавлена!');
+  } catch (e) { alert(e.message); }
+}
+
+// FLASH
+async function loadFlash() {
+  const games = await api('/flash');
+  const el = document.getElementById('flashBox');
+  if (!games.length) { el.innerHTML = '<div style="color:#888; text-align:center; padding:20px;">Игр нет</div>'; return; }
+  el.innerHTML = games.map(g => `
+    <div class="group-item" data-flash-id="${g.id}">
+      <div style="display:flex; gap:10px; align-items:center;">
+        <div class="avatar" style="width:50px; height:50px; font-size:20px;">⚡</div>
+        <div style="flex:1;">
+          <div class="forum-title">${esc(g.title)}</div>
+          <div class="forum-desc">${esc(g.description || '')}</div>
+          <div class="forum-meta">Автор: ${esc(g.author || '—')} · ♥ ${g.likes} · ▶ ${g.plays}</div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+  el.querySelectorAll('[data-flash-id]').forEach(n => n.addEventListener('click', () => openGame('flash', Number(n.dataset.flashId))));
+}
+
+async function createFlash() {
+  const title = document.getElementById('flashTitle').value.trim();
+  const description = document.getElementById('flashDesc').value.trim();
+  const swf_url = document.getElementById('flashUrl').value.trim();
+  const cover = document.getElementById('flashCover').value.trim();
+  if (!title) return alert('Введите название');
+  if (!swf_url) return alert('Введите URL');
+  try {
+    await api('/flash', 'POST', { title, description, swf_url, cover });
+    ['flashTitle','flashDesc','flashUrl','flashCover'].forEach(id => document.getElementById(id).value = '');
+    loadFlash();
+    alert('Игра добавлена!');
+  } catch (e) { alert(e.message); }
+}
+
+// HTML5
+async function loadHtmlGames() {
+  const games = await api('/htmlgames');
+  const el = document.getElementById('htmlBox');
+  if (!games.length) { el.innerHTML = '<div style="color:#888; text-align:center; padding:20px;">Игр нет. Создай первую в редакторе!</div>'; return; }
+  el.innerHTML = games.map(g => `
+    <div class="group-item" data-html-id="${g.id}">
+      <div style="display:flex; gap:10px; align-items:center;">
+        <div class="avatar" style="width:50px; height:50px; font-size:20px;">🛠</div>
+        <div style="flex:1;">
+          <div class="forum-title">${esc(g.title)}</div>
+          <div class="forum-desc">${esc(g.description || '')}</div>
+          <div class="forum-meta">Автор: ${esc(g.author || '—')} · ♥ ${g.likes} · ▶ ${g.plays}</div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+  el.querySelectorAll('[data-html-id]').forEach(n => n.addEventListener('click', () => openGame('html', Number(n.dataset.htmlId))));
+}
+
+async function createHtmlGame() {
+  const title = document.getElementById('htmlTitle').value.trim();
+  const description = document.getElementById('htmlDesc').value.trim();
+  const code = document.getElementById('htmlCode').value.trim();
+  const cover = document.getElementById('htmlCover').value.trim();
+  if (!title) return alert('Введите название');
+  if (!code) return alert('Введите код');
+  try {
+    await api('/htmlgames', 'POST', { title, description, code, cover });
+    ['htmlTitle','htmlDesc','htmlCode','htmlCover'].forEach(id => document.getElementById(id).value = '');
+    loadHtmlGames();
+    alert('Игра сохранена!');
+  } catch (e) { alert(e.message); }
+}
+
+function insertDemoGame() {
+  const demo = `<!DOCTYPE html>
+<html>
+<head>
+<style>
+  body { margin:0; background:#111; display:flex; align-items:center; justify-content:center; height:100vh; overflow:hidden; font-family:sans-serif; }
+  canvas { background:#000; border-radius:6px; }
+  .score { position:absolute; top:10px; left:10px; color:#fff; font-size:18px; }
+</style>
+</head>
+<body>
+<div class="score">Счёт: <span id="s">0</span></div>
+<canvas id="c" width="500" height="400"></canvas>
+<script>
+const c = document.getElementById('c'), ctx = c.getContext('2d');
+let x = 250, y = 200, dx = 3, dy = 3, r = 20, score = 0;
+let px = 200, pw = 100, ph = 12;
+c.addEventListener('mousemove', e => { const rect = c.getBoundingClientRect(); px = e.clientX - rect.left - pw/2; });
+c.addEventListener('touchmove', e => { e.preventDefault(); const rect = c.getBoundingClientRect(); px = e.touches[0].clientX - rect.left - pw/2; });
+function loop() {
+  ctx.fillStyle = '#000'; ctx.fillRect(0,0,500,400);
+  ctx.fillStyle = '#4a76a8'; ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#fff'; ctx.fillRect(px, 380, pw, ph);
+  x += dx; y += dy;
+  if (x < r || x > 500-r) dx = -dx;
+  if (y < r) dy = -dy;
+  if (y > 380 - r && x > px && x < px + pw) { dy = -Math.abs(dy); score++; document.getElementById('s').textContent = score; }
+  if (y > 420) { score = 0; document.getElementById('s').textContent = 0; x = 250; y = 200; dy = 3; }
+  requestAnimationFrame(loop);
+}
+loop();
+<\/script>
+</body>
+</html>`;
+  document.getElementById('htmlCode').value = demo;
+}
+
+function insertDemoSnake() {
+  const demo = `<!DOCTYPE html>
+<html>
+<head>
+<style>
+  body { margin:0; background:#111; display:flex; align-items:center; justify-content:center; height:100vh; overflow:hidden; font-family:sans-serif; color:#fff; flex-direction:column; }
+  canvas { background:#000; border-radius:6px; }
+  .score { margin-top:10px; font-size:18px; }
+</style>
+</head>
+<body>
+<canvas id="c" width="400" height="400"></canvas>
+<div class="score">Счёт: <span id="s">0</span> (стрелки для управления)</div>
+<script>
+const c = document.getElementById('c'), ctx = c.getContext('2d');
+const S = 20, N = 20;
+let snake = [{x:10,y:10}], dir = {x:1,y:0}, food = randFood(), score = 0;
+function randFood() { return { x: Math.floor(Math.random()*N), y: Math.floor(Math.random()*N) }; }
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowUp' && dir.y === 0) dir = {x:0,y:-1};
+  if (e.key === 'ArrowDown' && dir.y === 0) dir = {x:0,y:1};
+  if (e.key === 'ArrowLeft' && dir.x === 0) dir = {x:-1,y:0};
+  if (e.key === 'ArrowRight' && dir.x === 0) dir = {x:1,y:0};
+});
+setInterval(() => {
+  const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
+  if (head.x < 0 || head.x >= N || head.y < 0 || head.y >= N || snake.some(s => s.x === head.x && s.y === head.y)) {
+    snake = [{x:10,y:10}]; dir = {x:1,y:0}; score = 0; food = randFood(); document.getElementById('s').textContent = 0;
+    return;
+  }
+  snake.unshift(head);
+  if (head.x === food.x && head.y === food.y) { score++; document.getElementById('s').textContent = score; food = randFood(); }
+  else snake.pop();
+  ctx.fillStyle = '#000'; ctx.fillRect(0,0,400,400);
+  ctx.fillStyle = '#c0392b'; ctx.fillRect(food.x*S, food.y*S, S-2, S-2);
+  ctx.fillStyle = '#4a76a8'; snake.forEach((s,i) => { ctx.fillStyle = i === 0 ? '#6d8fc7' : '#4a76a8'; ctx.fillRect(s.x*S, s.y*S, S-2, S-2); });
+}, 120);
+<\/script>
+</body>
+</html>`;
+  document.getElementById('htmlCode').value = demo;
+}
+
+async function openGame(type, id) {
+  currentGameId = id;
+  currentGameType = type;
+  document.getElementById('gamesHome').style.display = 'none';
+  document.getElementById('gameView').style.display = 'block';
+
+  let g;
+  if (type === 'scratch') g = await api('/scratch/' + id);
+  if (type === 'flash') g = await api('/flash/' + id);
+  if (type === 'html') g = await api('/htmlgames/' + id);
+
+  document.getElementById('gameCrumb').textContent = g.title;
+  document.getElementById('gameTitleView').textContent = g.title;
+  document.getElementById('gameMeta').textContent = 'Автор: ' + (g.author || '—') + ' · ' + fmtDate(g.created_at);
+  document.getElementById('gameDescView').textContent = g.description || '';
+  document.getElementById('gamePlays').textContent = g.plays;
+
+  const likeBtn = document.getElementById('gameLikeBtn');
+  likeBtn.className = g.liked ? 'liked' : '';
+  likeBtn.innerHTML = (g.liked ? '♥' : '♡') + ' ' + g.likes;
+
+  const delBtn = document.getElementById('gameDeleteBtn');
+  delBtn.style.display = (me.role === 'admin' || g.user_id === me.id) ? 'inline-block' : 'none';
+  const editBtn = document.getElementById('gameEditBtn');
+  editBtn.style.display = (type === 'html' && (me.role === 'admin' || g.user_id === me.id)) ? 'inline-block' : 'none';
+
+  const player = document.getElementById('gamePlayer');
+  player.innerHTML = '';
+
+  if (type === 'scratch') {
+    player.innerHTML = '<iframe src="https://scratch.mit.edu/projects/' + g.scratch_id + '/embed" allowfullscreen></iframe>';
+  } else if (type === 'flash') {
+    player.innerHTML = '<embed src="' + esc(g.swf_url) + '" width="100%" height="500" type="application/x-shockwave-flash" allowfullscreen="true">';
+  } else if (type === 'html') {
+    const full = await api('/htmlgames/' + id + '/code');
+    const blob = new Blob([full.code], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    player.innerHTML = '<iframe src="' + url + '" sandbox="allow-scripts allow-same-origin allow-pointer-lock"></iframe>';
+  }
+}
+
+async function toggleGameLike() {
+  if (!currentGameId || !currentGameType) return;
+  const base = currentGameType === 'scratch' ? '/scratch/' : currentGameType === 'flash' ? '/flash/' : '/htmlgames/';
+  await api(base + currentGameId + '/like', 'POST');
+  const g = await api(base + currentGameId);
+  const btn = document.getElementById('gameLikeBtn');
+  btn.className = g.liked ? 'liked' : '';
+  btn.innerHTML = (g.liked ? '♥' : '♡') + ' ' + g.likes;
+}
+
+async function deleteCurrentGame() {
+  if (!confirm('Удалить игру?')) return;
+  const base = currentGameType === 'scratch' ? '/scratch/' : currentGameType === 'flash' ? '/flash/' : '/htmlgames/';
+  await api(base + currentGameId, 'DELETE');
+  showGamesHome();
+  showGamesTab(currentGamesTab);
+}
+
+async function editCurrentGame() {
+  if (currentGameType !== 'html') return;
+  const g = await api('/htmlgames/' + currentGameId + '/code');
+  showGamesHome();
+  showGamesTab('html');
+  document.getElementById('htmlTitle').value = g.title;
+  document.getElementById('htmlDesc').value = g.description || '';
+  document.getElementById('htmlCover').value = g.cover || '';
+  document.getElementById('htmlCode').value = g.code;
+  const btn = document.querySelector('#gamesHtml .btn-primary');
+  btn.textContent = 'Обновить игру';
+  btn.onclick = async () => {
+    try {
+      await api('/htmlgames/' + currentGameId, 'PUT', {
+        title: document.getElementById('htmlTitle').value.trim(),
+        description: document.getElementById('htmlDesc').value.trim(),
+        code: document.getElementById('htmlCode').value.trim(),
+        cover: document.getElementById('htmlCover').value.trim()
+      });
+      alert('Игра обновлена!');
+      btn.textContent = 'Сохранить игру';
+      btn.onclick = createHtmlGame;
+      ['htmlTitle','htmlDesc','htmlCover','htmlCode'].forEach(id => document.getElementById(id).value = '');
+      loadHtmlGames();
+    } catch (e) { alert(e.message); }
+  };
 }
 
 // ============================================================
