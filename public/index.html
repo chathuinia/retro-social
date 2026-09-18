@@ -55,7 +55,6 @@ textarea { resize: vertical; min-height: 50px; }
 .row { display: flex; gap: 8px; margin-bottom: 8px; }
 .row > * { flex: 1; }
 
-/* ПРЕФИКС */
 .prefix-retro { display: inline-block; margin-left: 6px; padding: 2px 10px; border-radius: 10px; font-size: 10px; font-weight: bold; color: white; text-shadow: 0 1px 2px rgba(0,0,0,0.6); background: linear-gradient(90deg, #ff0080, #ff8c00, #ffd700, #00ff88, #00bfff, #8a2be2, #ff0080); background-size: 300% 100%; animation: retroShine 3s linear infinite; box-shadow: inset 0 1px 0 rgba(255,255,255,0.5), 0 2px 6px rgba(0,0,0,0.3); vertical-align: middle; white-space: nowrap; }
 @keyframes retroShine { 0% { background-position: 0% 50%; } 100% { background-position: 300% 50%; } }
 
@@ -245,7 +244,6 @@ textarea { resize: vertical; min-height: 50px; }
 .info-box code { background: #fff; padding: 2px 6px; border-radius: 4px; font-family: monospace; }
 .warn-box { background: rgba(255,243,205,0.7); padding: 12px; border-radius: 10px; margin-bottom: 12px; font-size: 11px; color: #856404; }
 
-/* RETROMUSIC */
 .music-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
 .music-tabs button { flex: 1; min-width: 100px; }
 .track-item { display: flex; gap: 12px; align-items: center; padding: 10px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.7); background: rgba(255,255,255,0.4); margin-bottom: 8px; cursor: pointer; transition: all 0.15s; }
@@ -273,6 +271,19 @@ textarea { resize: vertical; min-height: 50px; }
 .mp-bar { flex: 1; height: 8px; background: rgba(0,0,0,0.25); border-radius: 4px; cursor: pointer; overflow: hidden; }
 .mp-bar-fill { height: 100%; width: 0%; background: linear-gradient(to bottom, #ffffff, #a8e0ff); transition: width 0.1s linear; }
 .mp-close { background: transparent; border: none; color: white; font-size: 18px; cursor: pointer; padding: 4px 8px; }
+
+/* AI-АРТ */
+.ai-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+.ai-history-item { position: relative; cursor: pointer; }
+.ai-history-item img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 10px; border: 2px solid rgba(255,255,255,0.8); }
+.ai-history-item .ai-prompt { position: absolute; bottom: 4px; left: 4px; right: 4px; background: rgba(0,0,0,0.65); color: white; font-size: 9px; padding: 3px 6px; border-radius: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ai-result-img { max-width: 100%; border-radius: 12px; border: 3px solid rgba(255,255,255,0.9); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+.ai-actions { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 12px; }
+.loader { display: inline-block; width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.3); border-top-color: var(--accent-light); border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.ai-loading { text-align: center; padding: 40px 20px; }
+.ai-loading-text { color: var(--accent); margin-top: 14px; font-size: 13px; }
+.ai-loading-prompt { color: #5a8ab0; margin-top: 6px; font-size: 11px; font-style: italic; }
 
 .warn-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.92); display: none; align-items: center; justify-content: center; z-index: 9999; flex-direction: column; color: white; text-align: center; padding: 20px; }
 .warn-overlay.open { display: flex; }
@@ -303,6 +314,7 @@ textarea { resize: vertical; min-height: 50px; }
   .music-player { flex-wrap: wrap; padding: 8px; gap: 8px; }
   .mp-info { flex: 1; min-width: 100px; max-width: none; }
   .mp-progress { width: 100%; order: 5; }
+  .ai-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
 }
 </style>
 </head>
@@ -339,6 +351,7 @@ textarea { resize: vertical; min-height: 50px; }
       <button id="navForums" onclick="showPage('forums')">Форумы</button>
       <button id="navGames" onclick="showPage('games')">🎮 Игры</button>
       <button id="navMusic" onclick="showPage('music')">🎵 Retromusic</button>
+      <button id="navAi" onclick="showPage('ai')">🎨 AI-Арт</button>
       <button id="navVote" onclick="showPage('vote')">Голосование</button>
       <button id="navAdmin" style="display:none;" onclick="showPage('admin')">Админка</button>
     </div>
@@ -636,6 +649,48 @@ textarea { resize: vertical; min-height: 50px; }
     </div>
   </div>
 
+  <!-- AI-АРТ -->
+  <div id="pageAi" style="display:none;">
+    <div class="card">
+      <h3>🎨 AI-Арт</h3>
+      <div class="info-box">
+        Напиши, что хочешь нарисовать. Нейросеть сгенерирует картинку. <b>Бесплатно, без регистрации.</b>
+      </div>
+      <textarea id="aiPrompt" placeholder="Например: кот в неоновом городе, ретро 80-е, синтвейв" style="min-height:70px; margin-bottom:10px;"></textarea>
+      <div class="row">
+        <select id="aiModel" style="flex:1;">
+          <option value="flux">Flux (универсальная)</option>
+          <option value="flux-realism">Flux Realism (фотореализм)</option>
+          <option value="flux-anime">Flux Anime (аниме)</option>
+          <option value="flux-3d">Flux 3D (3D)</option>
+          <option value="turbo">Turbo (быстрая)</option>
+        </select>
+        <select id="aiSize" style="flex:1;">
+          <option value="1024x1024">1024×1024 (квадрат)</option>
+          <option value="1024x768">1024×768 (альбом)</option>
+          <option value="768x1024">768×1024 (портрет)</option>
+          <option value="1920x1080">1920×1080 (Full HD)</option>
+          <option value="512x512">512×512 (маленькая)</option>
+        </select>
+      </div>
+      <div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
+        <button class="btn-primary" onclick="generateAiArt()">🎨 Сгенерировать</button>
+        <button onclick="randomAiPrompt()">🎲 Случайная идея</button>
+        <button onclick="clearAiArt()">Очистить</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Результат</h3>
+      <div id="aiResult" style="min-height:200px; display:flex; align-items:center; justify-content:center; color:#5a8ab0; text-align:center;">
+        Здесь появится твоя картинка
+      </div>
+    </div>
+    <div class="card">
+      <h3>Мои работы</h3>
+      <div id="aiHistory" class="ai-grid"></div>
+    </div>
+  </div>
+
   <div id="pageAdmin" style="display:none;">
     <div class="card"><h3>Статистика</h3><div class="admin-stats" id="adminStats"></div></div>
     <div class="card"><h3>Пользователи</h3><div style="overflow-x:auto;"><table class="admin-table" id="adminUsersTable"></table></div></div>
@@ -728,13 +783,12 @@ textarea { resize: vertical; min-height: 50px; }
   </div>
 </div>
 
-<!-- МОДАЛКА СБРОСА ПАРОЛЯ -->
 <div id="resetPasswordModal" class="story-viewer">
   <span class="story-close" onclick="closeResetPassword()">✕</span>
   <div style="background:white; padding:24px; border-radius:16px; max-width:440px; width:90%; color:#2a2a2a; border:3px solid rgba(255,255,255,0.9);">
     <h3 style="color:#0361a3; margin-bottom:6px;">Сброс пароля</h3>
     <div style="color:#5a8ab0; font-size:12px; margin-bottom:14px;">Пользователь: <b id="resetTargetName">—</b></div>
-    <div class="info-box" style="margin-bottom:12px; font-size:11px;">⚠️ Пользователь получит новый пароль в личку. Сможет войти и сменить его в профиле.</div>
+    <div class="info-box" style="margin-bottom:12px; font-size:11px;">⚠️ Пользователь получит новый пароль в личку.</div>
     <label style="font-size:11px; color:#2a5a7a; font-weight:600; display:block; margin-bottom:6px;">Новый пароль:</label>
     <div style="display:flex; gap:6px; margin-bottom:10px;">
       <input id="resetNewPassword" type="text" placeholder="Минимум 6 символов" style="flex:1; font-family: monospace;">
@@ -798,8 +852,24 @@ let mpQueue = [];
 let mpIndex = -1;
 let resetTargetId = null;
 let resetTargetUsername = null;
+let aiHistory = JSON.parse(localStorage.getItem('ai_history') || '[]');
 
 const STICKERS = ['😀','😂','🥰','😎','🤔','😴','🥳','😭','😡','🤯','👍','👎','👋','🙏','💪','🤝','✌️','🤘','👌','🫡','❤️','💔','💯','🔥','⭐','✨','🎉','🎁','🏆','🎯','🐱','🐶','🦊','🐼','🐧','🦄','🐉','🦋','🐸','🐵','🍕','🍔','🍩','🍭','☕','🍺','🍎','🍉','🌮','🍿','🌈','☀️','🌙','⚡','❄️','💧','🌊','🌋','🌸','🍀'];
+
+const RANDOM_PROMPTS = [
+  'кот в неоновом городе, синтвейв, ретро 80-е',
+  'закат над океаном, пиксель-арт, 8-бит',
+  'робот в стиле vaporwave, розовые тона',
+  'старый компьютер в комнате 90-х, тёплый свет',
+  'космонавт на дискотеке, зеркальный шар',
+  'дракон из стекла, светящийся, фэнтези',
+  'ретро-машина на шоссе, закат, плёночный эффект',
+  'киберпанк-город, дождь, неон, ночь',
+  'лес с светящимися грибами, магия',
+  'пляж, пальмы, VHS-эффект, 1985 год',
+  'здание в стиле Frutiger Aero, голубое небо',
+  'пингвин в космосе, мультяшный стиль'
+];
 
 function renderPrefix(prefix) { return prefix ? `<span class="prefix-retro">${esc(prefix)}</span>` : ''; }
 function getPrefixFromCache(username) { return username === 'qwyrta' ? 'Любитель ретро' : null; }
@@ -816,7 +886,7 @@ async function api(url, method = 'GET', body = null) {
 
 function esc(s) { return String(s ?? '').replace(/[&<>"'`=\/]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;', '`': '&#96;', '=': '&#61;', '/': '&#47;' }[c])); }
 
-const FORBIDDEN_PATTERNS = [/<svg/i, /<script/i, /<iframe/i, /<object/i, /<embed/i, /javascript:/i, /vbscript:/i, /data:text\/html/i, /data:image\/svg/i, /onerror\s*=/i, /onload\s*=/i, /onclick\s*=/i];
+const FORBIDDEN_PATTERNS = [/<script/i, /<iframe/i, /<object/i, /<embed/i, /javascript:/i, /vbscript:/i, /data:text\/html/i, /data:image\/svg/i, /onerror\s*=/i, /onload\s*=/i, /onclick\s*=/i];
 const FORBIDDEN_MIME = ['image/svg+xml', 'image/svg', 'text/html', 'application/xhtml+xml', 'text/xml', 'application/xml'];
 const FORBIDDEN_EXT = ['.svg', '.svgz', '.xml', '.html', '.htm', '.js', '.mjs'];
 
@@ -864,20 +934,21 @@ async function startApp() {
   if (me.role === 'admin') { document.getElementById('navAdmin').style.display = 'inline-block'; document.getElementById('newsAdmin').style.display = 'block'; document.getElementById('voteAdmin').style.display = 'block'; }
   initSocket(); initStickerPanels(); initBgColors();
   loadPosts(); loadFriends(); loadNews(); loadGroups(); loadForums(); loadStories();
+  renderAiHistory();
   requestNotificationPermission();
 }
 function showAuth() { document.getElementById('auth').style.display = 'block'; document.getElementById('main').style.display = 'none'; }
 
 function showPage(page) {
   currentPage = page;
-  const pages = ['feed','profile','news','groups','forums','games','music','vote','admin','search'];
+  const pages = ['feed','profile','news','groups','forums','games','music','ai','vote','admin','search'];
   pages.forEach(p => {
     const nav = document.getElementById('nav' + p.charAt(0).toUpperCase() + p.slice(1));
     if (nav) nav.classList.toggle('active', p === page);
     const el = document.getElementById('page' + p.charAt(0).toUpperCase() + p.slice(1));
     if (el) el.style.display = 'none';
   });
-  const map = { feed:'pageFeed', profile:'pageProfile', news:'pageNews', groups:'pageGroups', forums:'pageForums', games:'pageGames', music:'pageMusic', vote:'pageVote', admin:'pageAdmin', search:'pageSearch' };
+  const map = { feed:'pageFeed', profile:'pageProfile', news:'pageNews', groups:'pageGroups', forums:'pageForums', games:'pageGames', music:'pageMusic', ai:'pageAi', vote:'pageVote', admin:'pageAdmin', search:'pageSearch' };
   const el = document.getElementById(map[page]);
   if (el) el.style.display = 'block';
   if (page === 'news') loadNews();
@@ -886,6 +957,7 @@ function showPage(page) {
   if (page === 'forums') { document.getElementById('forumsList').style.display = 'block'; document.getElementById('forumView').style.display = 'none'; document.getElementById('topicView').style.display = 'none'; loadForums(); }
   if (page === 'games') { showGamesHome(); showGamesTab(currentGamesTab); }
   if (page === 'music') showMusicTab(currentMusicTab);
+  if (page === 'ai') renderAiHistory();
   if (page === 'admin') loadAdmin();
   if (page === 'feed') loadStories();
 }
@@ -1509,7 +1581,7 @@ function renderTracks(tracks, containerId) {
   if (!tracks.length) { el.innerHTML = '<div style="color:#5a8ab0; text-align:center; padding:20px;">Треков нет</div>'; return; }
   el.innerHTML = tracks.map((t, i) => `<div class="track-item ${mpQueue[mpIndex]?.id === t.id ? 'playing' : ''}" data-track-id="${t.id}"><div class="track-cover" data-play="${i}">${t.cover && isValidUrl(t.cover) ? `<img src="${esc(t.cover)}">` : '🎵'}</div><div class="track-info"><div class="track-title-text">${esc(t.title)}</div><div class="track-artist-text">${esc(t.artist)}</div><div class="track-meta-text">${esc(t.genre || 'Retro')} · ▶ ${t.plays} · ♥ ${t.likes} · ${esc(t.author || '—')}${renderPrefix(t.prefix)}</div></div><div class="track-actions"><button class="track-play-btn" data-play="${i}">▶</button><button data-like-track="${t.id}" class="${t.liked ? 'liked' : ''}">${t.liked ? '♥' : '♡'}</button>${me.role === 'admin' || t.user_id === me.id ? `<button class="btn-danger btn-small" data-del-track="${t.id}">✕</button>` : ''}</div></div>`).join('');
   el.querySelectorAll('[data-play]').forEach(n => n.addEventListener('click', (e) => { e.stopPropagation(); playQueue(tracks, Number(n.dataset.play)); }));
-  el.querySelectorAll('[data-like-track]').forEach(n => n.addEventListener('click', (e) => { e.stopPropagation(); toggleTrackLike(Number(n.dataset.likeTrack), containerId); }));
+  el.querySelectorAll('[data-like-track]').forEach(n => n.addEventListener('click', (e) => { e.stopPropagation(); toggleTrackLike(Number(n.dataset.likeTrack)); }));
   el.querySelectorAll('[data-del-track]').forEach(n => n.addEventListener('click', (e) => { e.stopPropagation(); deleteTrack(Number(n.dataset.delTrack)); }));
 }
 async function createTrack() {
@@ -1578,6 +1650,135 @@ document.getElementById('mpAudio').addEventListener('timeupdate', (e) => { const
 document.getElementById('mpAudio').addEventListener('ended', () => { mpNext(); });
 function formatTime(s) { if (!s || isNaN(s)) return '0:00'; const m = Math.floor(s / 60); const sec = Math.floor(s % 60); return m + ':' + String(sec).padStart(2, '0'); }
 
+// ============================================================
+// AI-АРТ
+// ============================================================
+async function generateAiArt() {
+  const prompt = document.getElementById('aiPrompt').value.trim();
+  if (!prompt) return alert('Введи текст');
+
+  const model = document.getElementById('aiModel').value;
+  const sizeValue = document.getElementById('aiSize').value;
+  const [width, height] = sizeValue.split('x').map(Number);
+
+  const result = document.getElementById('aiResult');
+  result.innerHTML = `
+    <div class="ai-loading">
+      <div class="loader"></div>
+      <div class="ai-loading-text">Генерирую картинку...</div>
+      <div class="ai-loading-prompt">«${esc(prompt)}»</div>
+      <div style="color:#5a8ab0; font-size:10px; margin-top:6px;">Обычно 5–15 секунд</div>
+    </div>
+  `;
+
+  try {
+    const data = await api('/ai/art?prompt=' + encodeURIComponent(prompt) + '&model=' + model + '&width=' + width + '&height=' + height);
+    const img = new Image();
+    img.onload = () => {
+      result.innerHTML = `
+        <div style="text-align:center; width:100%;">
+          <img src="${data.url}" class="ai-result-img">
+          <div class="ai-actions">
+            <button class="btn-primary" onclick="saveAiToPost('${esc(data.url)}', '${esc(prompt).replace(/'/g, "\\'")}')">📝 Опубликовать</button>
+            <button onclick="downloadAiImage('${esc(data.url)}')">💾 Скачать</button>
+            <button onclick="copyAiUrl('${esc(data.url)}')">🔗 Ссылка</button>
+            <button onclick="generateAiArt()">🔄 Ещё</button>
+          </div>
+        </div>
+      `;
+      addToAiHistory(data.url, prompt);
+    };
+    img.onerror = () => {
+      result.innerHTML = '<div style="color:#e53935; text-align:center; padding:20px;">Ошибка загрузки. Попробуй ещё раз или измени текст.</div>';
+    };
+    img.src = data.url;
+    setTimeout(() => { if (!img.complete) img.onerror(); }, 90000);
+  } catch (e) {
+    result.innerHTML = '<div style="color:#e53935; text-align:center; padding:20px;">Ошибка: ' + esc(e.message) + '</div>';
+  }
+}
+
+function clearAiArt() {
+  document.getElementById('aiPrompt').value = '';
+  document.getElementById('aiResult').innerHTML = '<div style="color:#5a8ab0;">Здесь появится твоя картинка</div>';
+}
+
+function randomAiPrompt() {
+  const p = RANDOM_PROMPTS[Math.floor(Math.random() * RANDOM_PROMPTS.length)];
+  document.getElementById('aiPrompt').value = p;
+}
+
+function addToAiHistory(url, prompt) {
+  aiHistory.unshift({ url, prompt, date: Date.now() });
+  if (aiHistory.length > 30) aiHistory = aiHistory.slice(0, 30);
+  localStorage.setItem('ai_history', JSON.stringify(aiHistory));
+  renderAiHistory();
+}
+
+function renderAiHistory() {
+  const el = document.getElementById('aiHistory');
+  if (!el) return;
+  if (!aiHistory.length) {
+    el.innerHTML = '<div style="color:#5a8ab0; font-size:11px; grid-column:1/-1; text-align:center; padding:20px;">Пока ничего не сгенерировано</div>';
+    return;
+  }
+  el.innerHTML = aiHistory.map((h, i) => `
+    <div class="ai-history-item" data-ai-history="${i}">
+      <img src="${esc(h.url)}" loading="lazy">
+      <div class="ai-prompt">${esc(h.prompt.slice(0, 30))}</div>
+    </div>
+  `).join('');
+
+  el.querySelectorAll('[data-ai-history]').forEach(n => {
+    n.addEventListener('click', () => {
+      const item = aiHistory[Number(n.dataset.aiHistory)];
+      document.getElementById('aiPrompt').value = item.prompt;
+      document.getElementById('aiResult').innerHTML = `
+        <div style="text-align:center; width:100%;">
+          <img src="${esc(item.url)}" class="ai-result-img">
+          <div class="ai-actions">
+            <button class="btn-primary" onclick="saveAiToPost('${esc(item.url)}', '${esc(item.prompt).replace(/'/g, "\\'")}')">📝 Опубликовать</button>
+            <button onclick="downloadAiImage('${esc(item.url)}')">💾 Скачать</button>
+            <button onclick="copyAiUrl('${esc(item.url)}')">🔗 Ссылка</button>
+          </div>
+        </div>
+      `;
+    });
+  });
+}
+
+function downloadAiImage(url) {
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'ai-art-' + Date.now() + '.jpg';
+  a.target = '_blank';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+function copyAiUrl(url) {
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(url).then(() => {
+      showToast({ username: 'AI-Арт', text: '✅ Ссылка скопирована', onClick: () => {} });
+    }).catch(() => {
+      prompt('Скопируй ссылку:', url);
+    });
+  } else {
+    prompt('Скопируй ссылку:', url);
+  }
+}
+
+function saveAiToPost(url, promptText) {
+  document.getElementById('postContent').value = 'Сгенерировано AI: ' + promptText;
+  document.getElementById('postImage').value = url;
+  showPage('feed');
+  setTimeout(() => {
+    document.getElementById('postContent').scrollIntoView({ behavior: 'smooth' });
+    document.getElementById('postContent').focus();
+  }, 300);
+}
+
 // АДМИНКА
 async function loadAdmin() {
   const stats = await api('/admin/stats');
@@ -1611,7 +1812,6 @@ async function adminDeleteUser(id) { if (!confirm('Удалить?')) return; aw
 async function adminDeleteGroup(id) { if (!confirm('Удалить?')) return; await api('/admin/groups/' + id, 'DELETE'); loadAdmin(); }
 async function adminDeleteForum(id) { if (!confirm('Удалить?')) return; await api('/admin/forums/' + id, 'DELETE'); loadAdmin(); }
 
-// СБРОС ПАРОЛЯ
 function openResetPassword(userId, username) {
   resetTargetId = userId;
   resetTargetUsername = username;
