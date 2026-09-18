@@ -1,4 +1,4 @@
-// server.js — соцсеть + форумы + группы + поиск + истории + профиль + стикеры + звонки + защита от XSS/SVG
+// server.js — соцсеть + форумы + группы + поиск + истории + профиль + стикеры + звонки + игры + защита
 const express = require('express');
 const http = require('http');
 const path = require('path');
@@ -23,11 +23,11 @@ app.use((req, res, next) => {
     "default-src 'self'; " +
     "img-src 'self' data: https: http: blob:; " +
     "media-src 'self' data: https: http: blob:; " +
-    "script-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.socket.io; " +
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://cdn.socket.io https://scratch.mit.edu; " +
     "style-src 'self' 'unsafe-inline'; " +
     "connect-src 'self' ws: wss:; " +
-    "frame-src https://www.youtube.com https://vk.com; " +
-    "object-src 'none'; " +
+    "frame-src https://www.youtube.com https://vk.com https://scratch.mit.edu; " +
+    "object-src 'self'; " +
     "base-uri 'self'; " +
     "form-action 'self';"
   );
@@ -63,26 +63,22 @@ const pool = new Pool({
 pool.on('error', (err) => console.error('POOL ERROR:', err.message));
 
 // ============================================================
-// ЗАЩИТА ОТ ЗАПРЕЩЁННОГО КОНТЕНТА (SVG, XSS)
+// ЗАЩИТА ОТ XSS / SVG
 // ============================================================
 function containsForbidden(str) {
   if (!str) return false;
   const s = String(str);
-  return /<svg|<script|<iframe|<object|<embed|javascript:|vbscript:|data:text\/html|data:image\/svg|onerror\s*=|onload\s*=|onclick\s*=/i.test(s);
+  return /<script|<iframe|<object|<embed|javascript:|vbscript:|data:text\/html|data:image\/svg|onerror\s*=|onload\s*=|onclick\s*=/i.test(s);
 }
 
 function isValidUrl(url) {
   if (!url) return false;
   const s = String(url).trim().toLowerCase();
   if (s.startsWith('data:')) {
-    return s.startsWith('data:image/png') ||
-           s.startsWith('data:image/jpeg') ||
-           s.startsWith('data:image/jpg') ||
-           s.startsWith('data:image/gif') ||
-           s.startsWith('data:image/webp') ||
-           s.startsWith('data:video/mp4') ||
-           s.startsWith('data:video/webm') ||
-           s.startsWith('data:audio/');
+    return s.startsWith('data:image/png') || s.startsWith('data:image/jpeg') ||
+           s.startsWith('data:image/jpg') || s.startsWith('data:image/gif') ||
+           s.startsWith('data:image/webp') || s.startsWith('data:video/mp4') ||
+           s.startsWith('data:video/webm') || s.startsWith('data:audio/');
   }
   if (s.startsWith('javascript:') || s.startsWith('vbscript:') || s.startsWith('file:')) return false;
   return true;
@@ -264,6 +260,60 @@ async function initDB() {
       created_at TIMESTAMP DEFAULT NOW()
     );
 
+    CREATE TABLE IF NOT EXISTS scratch_games (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      title VARCHAR(200) NOT NULL,
+      description TEXT DEFAULT '',
+      scratch_id VARCHAR(50) NOT NULL,
+      cover TEXT DEFAULT '',
+      plays INTEGER DEFAULT 0,
+      created_at TIMESTAMP DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS scratch_likes (
+      id SERIAL PRIMARY KEY,
+      game_id INTEGER REFERENCES scratch_games(id) ON DELETE CASCADE,
+      user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      UNIQUE(game_id, user_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS flash_games (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      title VARCHAR(200) NOT NULL,
+      description TEXT DEFAULT '',
+      swf_url TEXT NOT NULL,
+      cover TEXT DEFAULT '',
+      plays INTEGER DEFAULT 0,
+      created_at TIMESTAMP DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS flash_likes (
+      id SERIAL PRIMARY KEY,
+      game_id INTEGER REFERENCES flash_games(id) ON DELETE CASCADE,
+      user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      UNIQUE(game_id, user_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS html_games (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      title VARCHAR(200) NOT NULL,
+      description TEXT DEFAULT '',
+      code TEXT NOT NULL,
+      cover TEXT DEFAULT '',
+      plays INTEGER DEFAULT 0,
+      created_at TIMESTAMP DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS html_likes (
+      id SERIAL PRIMARY KEY,
+      game_id INTEGER REFERENCES html_games(id) ON DELETE CASCADE,
+      user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      UNIQUE(game_id, user_id)
+    );
+
     CREATE INDEX IF NOT EXISTS idx_audit_user_date ON audit_log(user_id, created_at DESC);
     CREATE INDEX IF NOT EXISTS idx_stories_expires ON stories(expires_at);
   `);
@@ -366,6 +416,30 @@ app.post('/api/login', async (req, res) => {
 });
 
 // ============================================================
+// СМЕНА ПАРОЛЯ
+// ============================================================
+app.put('/api/me/password', auth, async (req, res) => {
+  const { oldPassword, newPassword } = req.body;
+  if (!oldPassword || !newPassword) return res.status(400).json({ error: 'Заполните поля' });
+  if (newPassword.length < 6) return res.status(400).json({ error: 'Новый пароль минимум 6 символов' });
+  if (newPassword.length > 100) return res.status(400).json({ error: 'Пароль слишком длинный' });
+  if (oldPassword === newPassword) return res.status(400).json({ error: 'Новый пароль совпадает со старым' });
+
+  try {
+    const r = await pool.query('SELECT password FROM users WHERE id=$1', [req.user.id]);
+    const ok = await bcrypt.compare(oldPassword, r.rows[0].password);
+    if (!ok) {
+      await audit(req, 'PASSWORD_CHANGE_FAIL', 'wrong_old_password');
+      return res.status(400).json({ error: 'Неверный старый пароль' });
+    }
+    const hash = await bcrypt.hash(newPassword, 10);
+    await pool.query('UPDATE users SET password=$1 WHERE id=$2', [hash, req.user.id]);
+    await audit(req, 'PASSWORD_CHANGED', '');
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ============================================================
 // ME / ПРОФИЛЬ
 // ============================================================
 app.get('/api/me', auth, async (req, res) => {
@@ -382,39 +456,25 @@ app.put('/api/me', auth, async (req, res) => {
     return res.status(400).json({ error: 'Запрещённый контент' });
   }
   try {
-    await pool.query(
-      'UPDATE users SET status=$1, avatar=$2, bio=$3 WHERE id=$4',
-      [status || '', avatar || '', bio || '', req.user.id]
-    );
+    await pool.query('UPDATE users SET status=$1, avatar=$2, bio=$3 WHERE id=$4',
+      [status || '', avatar || '', bio || '', req.user.id]);
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.get('/api/users/:id', auth, async (req, res) => {
   try {
-    const r = await pool.query(
-      'SELECT id, username, avatar, status, bio, created_at FROM users WHERE id=$1',
-      [req.params.id]
-    );
+    const r = await pool.query('SELECT id, username, avatar, status, bio, created_at FROM users WHERE id=$1', [req.params.id]);
     if (!r.rows[0]) return res.status(404).json({ error: 'Нет пользователя' });
-    const posts = await pool.query(
-      'SELECT * FROM posts WHERE user_id=$1 ORDER BY created_at DESC LIMIT 30',
-      [req.params.id]
-    );
-    const gallery = await pool.query(
-      'SELECT * FROM profile_gallery WHERE user_id=$1 ORDER BY created_at DESC',
-      [req.params.id]
-    );
+    const posts = await pool.query('SELECT * FROM posts WHERE user_id=$1 ORDER BY created_at DESC LIMIT 30', [req.params.id]);
+    const gallery = await pool.query('SELECT * FROM profile_gallery WHERE user_id=$1 ORDER BY created_at DESC', [req.params.id]);
     res.json({ user: r.rows[0], posts: posts.rows, gallery: gallery.rows });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.get('/api/users', auth, async (req, res) => {
   try {
-    const r = await pool.query(
-      'SELECT id, username, avatar, status FROM users WHERE id != $1 AND banned=FALSE LIMIT 100',
-      [req.user.id]
-    );
+    const r = await pool.query('SELECT id, username, avatar, status FROM users WHERE id != $1 AND banned=FALSE LIMIT 100', [req.user.id]);
     res.json(r.rows);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -424,10 +484,7 @@ app.get('/api/users', auth, async (req, res) => {
 // ============================================================
 app.get('/api/profile/gallery', auth, async (req, res) => {
   try {
-    const r = await pool.query(
-      'SELECT * FROM profile_gallery WHERE user_id=$1 ORDER BY created_at DESC',
-      [req.user.id]
-    );
+    const r = await pool.query('SELECT * FROM profile_gallery WHERE user_id=$1 ORDER BY created_at DESC', [req.user.id]);
     res.json(r.rows);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -440,10 +497,8 @@ app.post('/api/profile/gallery', auth, async (req, res) => {
     return res.status(400).json({ error: 'Запрещённый контент' });
   }
   try {
-    const r = await pool.query(
-      'INSERT INTO profile_gallery(user_id, url, media_type, title) VALUES($1,$2,$3,$4) RETURNING *',
-      [req.user.id, url, media_type || 'image', title || '']
-    );
+    const r = await pool.query('INSERT INTO profile_gallery(user_id, url, media_type, title) VALUES($1,$2,$3,$4) RETURNING *',
+      [req.user.id, url, media_type || 'image', title || '']);
     res.json(r.rows[0]);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -468,10 +523,8 @@ app.get('/api/stories', auth, async (req, res) => {
       SELECT s.*, u.username, u.avatar,
         (SELECT COUNT(*) FROM story_views WHERE story_id=s.id) AS views,
         EXISTS(SELECT 1 FROM story_views WHERE story_id=s.id AND user_id=$1) AS viewed
-      FROM stories s
-      JOIN users u ON u.id=s.user_id
-      WHERE s.expires_at > NOW()
-      ORDER BY s.created_at DESC
+      FROM stories s JOIN users u ON u.id=s.user_id
+      WHERE s.expires_at > NOW() ORDER BY s.created_at DESC
     `, [req.user.id]);
     res.json(r.rows);
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -479,9 +532,7 @@ app.get('/api/stories', auth, async (req, res) => {
 
 app.post('/api/stories', auth, async (req, res) => {
   const { content, image, video, background } = req.body;
-  if (!content?.trim() && !image && !video) {
-    return res.status(400).json({ error: 'Пустая история' });
-  }
+  if (!content?.trim() && !image && !video) return res.status(400).json({ error: 'Пустая история' });
   if (containsForbidden(content) || containsForbidden(image) || containsForbidden(video)) {
     await audit(req, 'FORBIDDEN_CONTENT_ATTEMPT', 'story');
     return res.status(400).json({ error: 'Запрещённый контент' });
@@ -491,10 +542,8 @@ app.post('/api/stories', auth, async (req, res) => {
     return res.status(400).json({ error: 'Недопустимый URL' });
   }
   try {
-    const r = await pool.query(
-      'INSERT INTO stories(user_id, content, image, video, background) VALUES($1,$2,$3,$4,$5) RETURNING *',
-      [req.user.id, content || '', image || '', video || '', background || '#3b5998']
-    );
+    const r = await pool.query('INSERT INTO stories(user_id, content, image, video, background) VALUES($1,$2,$3,$4,$5) RETURNING *',
+      [req.user.id, content || '', image || '', video || '', background || '#3b5998']);
     io.emit('new_story');
     res.json(r.rows[0]);
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -502,10 +551,7 @@ app.post('/api/stories', auth, async (req, res) => {
 
 app.post('/api/stories/:id/view', auth, async (req, res) => {
   try {
-    await pool.query(
-      'INSERT INTO story_views(story_id, user_id) VALUES($1,$2) ON CONFLICT DO NOTHING',
-      [req.params.id, req.user.id]
-    );
+    await pool.query('INSERT INTO story_views(story_id, user_id) VALUES($1,$2) ON CONFLICT DO NOTHING', [req.params.id, req.user.id]);
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -515,9 +561,7 @@ app.delete('/api/stories/:id', auth, async (req, res) => {
     const r = await pool.query('SELECT user_id FROM stories WHERE id=$1', [req.params.id]);
     if (!r.rows[0]) return res.status(404).json({ error: 'Нет' });
     const me = await pool.query('SELECT role FROM users WHERE id=$1', [req.user.id]);
-    if (r.rows[0].user_id !== req.user.id && me.rows[0]?.role !== 'admin') {
-      return res.status(403).json({ error: 'Не ваша' });
-    }
+    if (r.rows[0].user_id !== req.user.id && me.rows[0]?.role !== 'admin') return res.status(403).json({ error: 'Не ваша' });
     await pool.query('DELETE FROM stories WHERE id=$1', [req.params.id]);
     io.emit('new_story');
     res.json({ ok: true });
@@ -542,9 +586,7 @@ app.get('/api/posts', auth, async (req, res) => {
 
 app.post('/api/posts', auth, async (req, res) => {
   const { content, image, video, gif, sticker } = req.body;
-  if (!content?.trim() && !image && !video && !gif && !sticker) {
-    return res.status(400).json({ error: 'Пустой пост' });
-  }
+  if (!content?.trim() && !image && !video && !gif && !sticker) return res.status(400).json({ error: 'Пустой пост' });
   if (containsForbidden(content) || containsForbidden(image) || containsForbidden(video) || containsForbidden(gif)) {
     await audit(req, 'FORBIDDEN_CONTENT_ATTEMPT', 'post');
     return res.status(400).json({ error: 'Запрещённый контент' });
@@ -554,10 +596,8 @@ app.post('/api/posts', auth, async (req, res) => {
     return res.status(400).json({ error: 'Недопустимый URL' });
   }
   try {
-    const r = await pool.query(
-      'INSERT INTO posts(user_id, content, image, video, gif, sticker) VALUES($1,$2,$3,$4,$5,$6) RETURNING *',
-      [req.user.id, content || '', image || '', video || '', gif || '', sticker || '']
-    );
+    const r = await pool.query('INSERT INTO posts(user_id, content, image, video, gif, sticker) VALUES($1,$2,$3,$4,$5,$6) RETURNING *',
+      [req.user.id, content || '', image || '', video || '', gif || '', sticker || '']);
     io.emit('new_post');
     res.json(r.rows[0]);
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -568,9 +608,7 @@ app.delete('/api/posts/:id', auth, async (req, res) => {
     const p = await pool.query('SELECT user_id FROM posts WHERE id=$1', [req.params.id]);
     if (!p.rows[0]) return res.status(404).json({ error: 'Нет' });
     const me = await pool.query('SELECT role FROM users WHERE id=$1', [req.user.id]);
-    if (p.rows[0].user_id !== req.user.id && me.rows[0]?.role !== 'admin') {
-      return res.status(403).json({ error: 'Не ваш' });
-    }
+    if (p.rows[0].user_id !== req.user.id && me.rows[0]?.role !== 'admin') return res.status(403).json({ error: 'Не ваш' });
     await pool.query('DELETE FROM posts WHERE id=$1', [req.params.id]);
     io.emit('new_post');
     res.json({ ok: true });
@@ -596,9 +634,8 @@ app.post('/api/like/:id', auth, async (req, res) => {
 app.get('/api/messages/:userId', auth, async (req, res) => {
   try {
     const r = await pool.query(`
-      SELECT m.*,
-        COALESCE((SELECT json_agg(json_build_object('type', media_type, 'url', url, 'filename', filename))
-          FROM message_media WHERE message_id=m.id), '[]'::json) AS media
+      SELECT m.*, COALESCE((SELECT json_agg(json_build_object('type', media_type, 'url', url, 'filename', filename))
+        FROM message_media WHERE message_id=m.id), '[]'::json) AS media
       FROM messages m
       WHERE (m.from_id=$1 AND m.to_id=$2) OR (m.from_id=$2 AND m.to_id=$1)
       ORDER BY m.created_at ASC LIMIT 200
@@ -609,9 +646,7 @@ app.get('/api/messages/:userId', auth, async (req, res) => {
 
 app.post('/api/messages/:userId', auth, async (req, res) => {
   const { content, media, sticker } = req.body;
-  if (!content?.trim() && (!media || !media.length) && !sticker) {
-    return res.status(400).json({ error: 'Пусто' });
-  }
+  if (!content?.trim() && (!media || !media.length) && !sticker) return res.status(400).json({ error: 'Пусто' });
   if (containsForbidden(content)) {
     await audit(req, 'FORBIDDEN_CONTENT_ATTEMPT', 'message');
     return res.status(400).json({ error: 'Запрещённый контент' });
@@ -625,17 +660,13 @@ app.post('/api/messages/:userId', auth, async (req, res) => {
     }
   }
   try {
-    const r = await pool.query(
-      'INSERT INTO messages(from_id, to_id, content, sticker) VALUES($1,$2,$3,$4) RETURNING *',
-      [req.user.id, req.params.userId, content || '', sticker || '']
-    );
+    const r = await pool.query('INSERT INTO messages(from_id, to_id, content, sticker) VALUES($1,$2,$3,$4) RETURNING *',
+      [req.user.id, req.params.userId, content || '', sticker || '']);
     const msg = r.rows[0];
     if (media && media.length) {
       for (const m of media) {
-        await pool.query(
-          'INSERT INTO message_media(message_id, media_type, url, filename) VALUES($1,$2,$3,$4)',
-          [msg.id, m.type || 'image', m.url, m.filename || '']
-        );
+        await pool.query('INSERT INTO message_media(message_id, media_type, url, filename) VALUES($1,$2,$3,$4)',
+          [msg.id, m.type || 'image', m.url, m.filename || '']);
       }
     }
     const full = await pool.query(`
@@ -643,7 +674,6 @@ app.post('/api/messages/:userId', auth, async (req, res) => {
         FROM message_media WHERE message_id=m.id), '[]'::json) AS media
       FROM messages m WHERE m.id=$1
     `, [msg.id]);
-
     const payload = { ...full.rows[0], from_username: req.user.username };
     io.to('user_' + req.params.userId).emit('new_message', payload);
     res.json(full.rows[0]);
@@ -659,8 +689,7 @@ app.get('/api/forums', auth, async (req, res) => {
       SELECT f.*, u.username AS author,
         (SELECT COUNT(*) FROM forum_topics WHERE forum_id=f.id) AS topics_count,
         (SELECT COUNT(*) FROM forum_posts fp JOIN forum_topics ft ON ft.id=fp.topic_id WHERE ft.forum_id=f.id) AS posts_count
-      FROM forums f LEFT JOIN users u ON u.id=f.created_by
-      ORDER BY f.created_at DESC
+      FROM forums f LEFT JOIN users u ON u.id=f.created_by ORDER BY f.created_at DESC
     `);
     res.json(r.rows);
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -712,10 +741,8 @@ app.get('/api/topics/:id', auth, async (req, res) => {
   try {
     const t = await pool.query(`
       SELECT t.*, u.username AS author, f.title AS forum_title, f.id AS forum_id
-      FROM forum_topics t
-      LEFT JOIN users u ON u.id=t.user_id
-      LEFT JOIN forums f ON f.id=t.forum_id
-      WHERE t.id=$1
+      FROM forum_topics t LEFT JOIN users u ON u.id=t.user_id
+      LEFT JOIN forums f ON f.id=t.forum_id WHERE t.id=$1
     `, [req.params.id]);
     if (!t.rows[0]) return res.status(404).json({ error: 'Нет' });
     const posts = await pool.query(`
@@ -751,8 +778,7 @@ app.get('/api/groups', auth, async (req, res) => {
       SELECT g.*, u.username AS author,
         (SELECT COUNT(*) FROM group_members WHERE group_id=g.id) AS members_count,
         EXISTS(SELECT 1 FROM group_members WHERE group_id=g.id AND user_id=$1) AS is_member
-      FROM groups g LEFT JOIN users u ON u.id=g.created_by
-      ORDER BY g.created_at DESC
+      FROM groups g LEFT JOIN users u ON u.id=g.created_by ORDER BY g.created_at DESC
     `, [req.user.id]);
     res.json(r.rows);
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -830,8 +856,7 @@ app.post('/api/groups/:id/posts', auth, async (req, res) => {
     if (!member.rows[0]) return res.status(403).json({ error: 'Вы не в группе' });
     const r = await pool.query(
       'INSERT INTO group_posts(group_id, user_id, content, image, video, gif, sticker) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING *',
-      [req.params.id, req.user.id, content || '', image || '', video || '', gif || '', sticker || '']
-    );
+      [req.params.id, req.user.id, content || '', image || '', video || '', gif || '', sticker || '']);
     io.emit('new_group_post', { group_id: Number(req.params.id) });
     res.json(r.rows[0]);
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -936,7 +961,250 @@ app.post('/api/parties/vote/:id', auth, async (req, res) => {
 });
 
 // ============================================================
-// ПОИСК С ПОДСКАЗКАМИ
+// SCRATCH-ИГРЫ
+// ============================================================
+app.get('/api/scratch', auth, async (req, res) => {
+  try {
+    const r = await pool.query(`
+      SELECT g.*, u.username AS author,
+        (SELECT COUNT(*) FROM scratch_likes WHERE game_id=g.id) AS likes,
+        EXISTS(SELECT 1 FROM scratch_likes WHERE game_id=g.id AND user_id=$1) AS liked
+      FROM scratch_games g LEFT JOIN users u ON u.id=g.user_id
+      ORDER BY g.created_at DESC LIMIT 100
+    `, [req.user.id]);
+    res.json(r.rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/scratch', auth, async (req, res) => {
+  const { title, description, scratch_url, cover } = req.body;
+  if (!title?.trim()) return res.status(400).json({ error: 'Введите название' });
+  if (!scratch_url?.trim()) return res.status(400).json({ error: 'Введите ссылку' });
+  const m = scratch_url.match(/scratch\.mit\.edu\/projects\/(\d+)/);
+  if (!m) return res.status(400).json({ error: 'Формат: https://scratch.mit.edu/projects/123456' });
+  if (containsForbidden(title) || containsForbidden(description)) {
+    await audit(req, 'FORBIDDEN_CONTENT_ATTEMPT', 'scratch');
+    return res.status(400).json({ error: 'Запрещённый контент' });
+  }
+  try {
+    const r = await pool.query('INSERT INTO scratch_games(user_id, title, description, scratch_id, cover) VALUES($1,$2,$3,$4,$5) RETURNING *',
+      [req.user.id, title, description || '', m[1], cover || '']);
+    io.emit('new_game');
+    res.json(r.rows[0]);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/scratch/:id', auth, async (req, res) => {
+  try {
+    const r = await pool.query(`
+      SELECT g.*, u.username AS author,
+        (SELECT COUNT(*) FROM scratch_likes WHERE game_id=g.id) AS likes,
+        EXISTS(SELECT 1 FROM scratch_likes WHERE game_id=g.id AND user_id=$1) AS liked
+      FROM scratch_games g LEFT JOIN users u ON u.id=g.user_id WHERE g.id=$2
+    `, [req.user.id, req.params.id]);
+    if (!r.rows[0]) return res.status(404).json({ error: 'Не найдено' });
+    await pool.query('UPDATE scratch_games SET plays=plays+1 WHERE id=$1', [req.params.id]);
+    res.json(r.rows[0]);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/scratch/:id', auth, async (req, res) => {
+  try {
+    const g = await pool.query('SELECT user_id FROM scratch_games WHERE id=$1', [req.params.id]);
+    if (!g.rows[0]) return res.status(404).json({ error: 'Нет' });
+    const me = await pool.query('SELECT role FROM users WHERE id=$1', [req.user.id]);
+    if (g.rows[0].user_id !== req.user.id && me.rows[0]?.role !== 'admin') return res.status(403).json({ error: 'Не ваша' });
+    await pool.query('DELETE FROM scratch_games WHERE id=$1', [req.params.id]);
+    io.emit('new_game');
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/scratch/:id/like', auth, async (req, res) => {
+  try {
+    const exists = await pool.query('SELECT 1 FROM scratch_likes WHERE game_id=$1 AND user_id=$2', [req.params.id, req.user.id]);
+    if (exists.rows[0]) {
+      await pool.query('DELETE FROM scratch_likes WHERE game_id=$1 AND user_id=$2', [req.params.id, req.user.id]);
+      res.json({ liked: false });
+    } else {
+      await pool.query('INSERT INTO scratch_likes(game_id, user_id) VALUES($1,$2)', [req.params.id, req.user.id]);
+      res.json({ liked: true });
+    }
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ============================================================
+// FLASH-ИГРЫ
+// ============================================================
+app.get('/api/flash', auth, async (req, res) => {
+  try {
+    const r = await pool.query(`
+      SELECT g.*, u.username AS author,
+        (SELECT COUNT(*) FROM flash_likes WHERE game_id=g.id) AS likes,
+        EXISTS(SELECT 1 FROM flash_likes WHERE game_id=g.id AND user_id=$1) AS liked
+      FROM flash_games g LEFT JOIN users u ON u.id=g.user_id
+      ORDER BY g.created_at DESC LIMIT 100
+    `, [req.user.id]);
+    res.json(r.rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/flash', auth, async (req, res) => {
+  const { title, description, swf_url, cover } = req.body;
+  if (!title?.trim()) return res.status(400).json({ error: 'Введите название' });
+  if (!swf_url?.trim()) return res.status(400).json({ error: 'Введите URL .swf' });
+  if (!isValidUrl(swf_url)) return res.status(400).json({ error: 'Недопустимый URL' });
+  if (containsForbidden(title) || containsForbidden(description)) {
+    await audit(req, 'FORBIDDEN_CONTENT_ATTEMPT', 'flash');
+    return res.status(400).json({ error: 'Запрещённый контент' });
+  }
+  try {
+    const r = await pool.query('INSERT INTO flash_games(user_id, title, description, swf_url, cover) VALUES($1,$2,$3,$4,$5) RETURNING *',
+      [req.user.id, title, description || '', swf_url, cover || '']);
+    io.emit('new_game');
+    res.json(r.rows[0]);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/flash/:id', auth, async (req, res) => {
+  try {
+    const r = await pool.query(`
+      SELECT g.*, u.username AS author,
+        (SELECT COUNT(*) FROM flash_likes WHERE game_id=g.id) AS likes,
+        EXISTS(SELECT 1 FROM flash_likes WHERE game_id=g.id AND user_id=$1) AS liked
+      FROM flash_games g LEFT JOIN users u ON u.id=g.user_id WHERE g.id=$2
+    `, [req.user.id, req.params.id]);
+    if (!r.rows[0]) return res.status(404).json({ error: 'Не найдено' });
+    await pool.query('UPDATE flash_games SET plays=plays+1 WHERE id=$1', [req.params.id]);
+    res.json(r.rows[0]);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/flash/:id', auth, async (req, res) => {
+  try {
+    const g = await pool.query('SELECT user_id FROM flash_games WHERE id=$1', [req.params.id]);
+    if (!g.rows[0]) return res.status(404).json({ error: 'Нет' });
+    const me = await pool.query('SELECT role FROM users WHERE id=$1', [req.user.id]);
+    if (g.rows[0].user_id !== req.user.id && me.rows[0]?.role !== 'admin') return res.status(403).json({ error: 'Не ваша' });
+    await pool.query('DELETE FROM flash_games WHERE id=$1', [req.params.id]);
+    io.emit('new_game');
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/flash/:id/like', auth, async (req, res) => {
+  try {
+    const exists = await pool.query('SELECT 1 FROM flash_likes WHERE game_id=$1 AND user_id=$2', [req.params.id, req.user.id]);
+    if (exists.rows[0]) {
+      await pool.query('DELETE FROM flash_likes WHERE game_id=$1 AND user_id=$2', [req.params.id, req.user.id]);
+      res.json({ liked: false });
+    } else {
+      await pool.query('INSERT INTO flash_likes(game_id, user_id) VALUES($1,$2)', [req.params.id, req.user.id]);
+      res.json({ liked: true });
+    }
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ============================================================
+// HTML5-РЕДАКТОР ИГР
+// ============================================================
+app.get('/api/htmlgames', auth, async (req, res) => {
+  try {
+    const r = await pool.query(`
+      SELECT g.id, g.title, g.description, g.cover, g.plays, g.created_at, g.user_id, u.username AS author,
+        (SELECT COUNT(*) FROM html_likes WHERE game_id=g.id) AS likes,
+        EXISTS(SELECT 1 FROM html_likes WHERE game_id=g.id AND user_id=$1) AS liked
+      FROM html_games g LEFT JOIN users u ON u.id=g.user_id
+      ORDER BY g.created_at DESC LIMIT 100
+    `, [req.user.id]);
+    res.json(r.rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/htmlgames/:id/code', auth, async (req, res) => {
+  try {
+    const r = await pool.query(`
+      SELECT g.*, u.username AS author,
+        (SELECT COUNT(*) FROM html_likes WHERE game_id=g.id) AS likes,
+        EXISTS(SELECT 1 FROM html_likes WHERE game_id=g.id AND user_id=$1) AS liked
+      FROM html_games g LEFT JOIN users u ON u.id=g.user_id WHERE g.id=$2
+    `, [req.user.id, req.params.id]);
+    if (!r.rows[0]) return res.status(404).json({ error: 'Не найдено' });
+    res.json(r.rows[0]);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/htmlgames/:id', auth, async (req, res) => {
+  try {
+    const r = await pool.query(`
+      SELECT g.id, g.title, g.description, g.cover, g.plays, g.created_at, g.user_id, u.username AS author,
+        (SELECT COUNT(*) FROM html_likes WHERE game_id=g.id) AS likes,
+        EXISTS(SELECT 1 FROM html_likes WHERE game_id=g.id AND user_id=$1) AS liked
+      FROM html_games g LEFT JOIN users u ON u.id=g.user_id WHERE g.id=$2
+    `, [req.user.id, req.params.id]);
+    if (!r.rows[0]) return res.status(404).json({ error: 'Не найдено' });
+    await pool.query('UPDATE html_games SET plays=plays+1 WHERE id=$1', [req.params.id]);
+    res.json(r.rows[0]);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/htmlgames', auth, async (req, res) => {
+  const { title, description, code, cover } = req.body;
+  if (!title?.trim()) return res.status(400).json({ error: 'Введите название' });
+  if (!code?.trim()) return res.status(400).json({ error: 'Введите код игры' });
+  if (code.length > 200000) return res.status(400).json({ error: 'Код слишком большой (макс. 200 КБ)' });
+  if (containsForbidden(title) || containsForbidden(description)) {
+    await audit(req, 'FORBIDDEN_CONTENT_ATTEMPT', 'html_game');
+    return res.status(400).json({ error: 'Запрещённый контент' });
+  }
+  try {
+    const r = await pool.query('INSERT INTO html_games(user_id, title, description, code, cover) VALUES($1,$2,$3,$4,$5) RETURNING id, title, description, cover, plays, created_at, user_id',
+      [req.user.id, title, description || '', code, cover || '']);
+    io.emit('new_game');
+    res.json(r.rows[0]);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.put('/api/htmlgames/:id', auth, async (req, res) => {
+  const { title, description, code, cover } = req.body;
+  try {
+    const g = await pool.query('SELECT user_id FROM html_games WHERE id=$1', [req.params.id]);
+    if (!g.rows[0]) return res.status(404).json({ error: 'Нет' });
+    const me = await pool.query('SELECT role FROM users WHERE id=$1', [req.user.id]);
+    if (g.rows[0].user_id !== req.user.id && me.rows[0]?.role !== 'admin') return res.status(403).json({ error: 'Не ваша' });
+    await pool.query('UPDATE html_games SET title=$1, description=$2, code=$3, cover=$4 WHERE id=$5',
+      [title, description || '', code, cover || '', req.params.id]);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/htmlgames/:id', auth, async (req, res) => {
+  try {
+    const g = await pool.query('SELECT user_id FROM html_games WHERE id=$1', [req.params.id]);
+    if (!g.rows[0]) return res.status(404).json({ error: 'Нет' });
+    const me = await pool.query('SELECT role FROM users WHERE id=$1', [req.user.id]);
+    if (g.rows[0].user_id !== req.user.id && me.rows[0]?.role !== 'admin') return res.status(403).json({ error: 'Не ваша' });
+    await pool.query('DELETE FROM html_games WHERE id=$1', [req.params.id]);
+    io.emit('new_game');
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/htmlgames/:id/like', auth, async (req, res) => {
+  try {
+    const exists = await pool.query('SELECT 1 FROM html_likes WHERE game_id=$1 AND user_id=$2', [req.params.id, req.user.id]);
+    if (exists.rows[0]) {
+      await pool.query('DELETE FROM html_likes WHERE game_id=$1 AND user_id=$2', [req.params.id, req.user.id]);
+      res.json({ liked: false });
+    } else {
+      await pool.query('INSERT INTO html_likes(game_id, user_id) VALUES($1,$2)', [req.params.id, req.user.id]);
+      res.json({ liked: true });
+    }
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ============================================================
+// ПОИСК
 // ============================================================
 app.get('/api/search/suggest', auth, async (req, res) => {
   const q = (req.query.q || '').trim();
@@ -965,7 +1233,7 @@ app.get('/api/search', auth, async (req, res) => {
 });
 
 // ============================================================
-// БЕЗОПАСНОСТЬ — ЛОГ ПОПЫТОК
+// ЛОГ XSS-ПОПЫТОК
 // ============================================================
 app.post('/api/security/attempt', auth, async (req, res) => {
   const { reason } = req.body;
@@ -973,8 +1241,7 @@ app.post('/api/security/attempt', auth, async (req, res) => {
     const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || '';
     await pool.query(
       'INSERT INTO audit_log(user_id, username, action, details, ip) VALUES($1,$2,$3,$4,$5)',
-      [req.user.id, req.user.username, 'FORBIDDEN_CONTENT_ATTEMPT',
-       (reason || 'unknown').slice(0, 500), ip]
+      [req.user.id, req.user.username, 'FORBIDDEN_CONTENT_ATTEMPT', (reason || 'unknown').slice(0, 500), ip]
     );
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -1074,9 +1341,7 @@ io.on('connection', (socket) => {
     io.emit('online', Array.from(online));
   });
 
-  socket.on('call:start', ({ to, type }) => {
-    io.to('user_' + to).emit('call:incoming', { from: socket.user.id, fromName: socket.user.username, type });
-  });
+  socket.on('call:start', ({ to, type }) => io.to('user_' + to).emit('call:incoming', { from: socket.user.id, fromName: socket.user.username, type }));
   socket.on('call:accept', ({ to }) => io.to('user_' + to).emit('call:accepted', { from: socket.user.id }));
   socket.on('call:reject', ({ to }) => io.to('user_' + to).emit('call:rejected', { from: socket.user.id }));
   socket.on('call:end', ({ to }) => io.to('user_' + to).emit('call:ended', { from: socket.user.id }));
