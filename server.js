@@ -1,4 +1,4 @@
-// server.js — соцсеть + форумы + группы + игры + Retromusic + префиксы + звонки
+// server.js — соцсеть + форумы + группы + игры + Retromusic + префиксы + сброс пароля
 const express = require('express');
 const http = require('http');
 const path = require('path');
@@ -19,12 +19,9 @@ app.use((req, res, next) => {
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.setHeader('Referrer-Policy', 'no-referrer');
   res.setHeader('Content-Security-Policy',
-    "default-src 'self'; " +
-    "img-src 'self' data: https: http: blob:; " +
-    "media-src 'self' data: https: http: blob:; " +
+    "default-src 'self'; img-src 'self' data: https: http: blob:; media-src 'self' data: https: http: blob:; " +
     "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://cdn.socket.io https://scratch.mit.edu; " +
-    "style-src 'self' 'unsafe-inline'; " +
-    "connect-src 'self' ws: wss:; " +
+    "style-src 'self' 'unsafe-inline'; connect-src 'self' ws: wss:; " +
     "frame-src https://www.youtube.com https://vk.com https://scratch.mit.edu; " +
     "object-src 'self'; base-uri 'self'; form-action 'self';"
   );
@@ -32,15 +29,12 @@ app.use((req, res, next) => {
 });
 
 // ============================================================
-// ВСТАВЬТЕ СВОЮ СТРОКУ ИЗ NEON НИЖЕ (без ?sslmode=require)
-// ============================================================
-const HARDCODED_DB_URL = 'postgresql://neondb_owner:npg_yOQcIwub8V6N@ep-solitary-rain-a5orxtnv-pooler.us-east-2.aws.neon.tech/neondb';
+const HARDCODED_DB_URL = 'postgresql://neondb_owner:npg_XXXXXX@ep-xxx-xxx.neon.tech/neondb';
 const HARDCODED_JWT_SECRET = 'retro2010secret123';
 const OWNER_USERNAME = 'lol';
 // ============================================================
 
 const JWT_SECRET = process.env.JWT_SECRET || HARDCODED_JWT_SECRET || 'retro-2010-secret';
-
 let dbUrl = process.env.DATABASE_URL || HARDCODED_DB_URL || '';
 dbUrl = dbUrl.replace(/[?&]sslmode=[^&]*/g, '').replace(/[?&]channel_binding=[^&]*/g, '').replace(/\?$/, '').trim();
 
@@ -81,9 +75,6 @@ function isValidUrl(url) {
   return true;
 }
 
-// ============================================================
-// ПРЕФИКСЫ
-// ============================================================
 function getPrefix(username) {
   if (username === 'qwyrta') return 'Любитель ретро';
   return null;
@@ -245,9 +236,7 @@ async function initDB() {
   ];
   for (const q of alterQueries) { try { await pool.query(q); } catch (e) {} }
 
-  try {
-    await pool.query(`UPDATE users SET role='admin' WHERE username=$1`, [OWNER_USERNAME]);
-  } catch (e) {}
+  try { await pool.query(`UPDATE users SET role='admin' WHERE username=$1`, [OWNER_USERNAME]); } catch (e) {}
 
   console.log('Таблицы готовы');
 }
@@ -312,7 +301,7 @@ app.post('/api/login', async (req, res) => {
   } catch (e) { res.status(500).json({ error: 'Ошибка: ' + e.message }); }
 });
 
-// СМЕНА ПАРОЛЯ
+// СМЕНА ПАРОЛЯ (своя)
 app.put('/api/me/password', auth, async (req, res) => {
   const { oldPassword, newPassword } = req.body;
   if (!oldPassword || !newPassword) return res.status(400).json({ error: 'Заполните поля' });
@@ -346,8 +335,7 @@ app.put('/api/me', auth, async (req, res) => {
     return res.status(400).json({ error: 'Запрещённый контент' });
   }
   try {
-    await pool.query('UPDATE users SET status=$1, avatar=$2, bio=$3 WHERE id=$4',
-      [status || '', avatar || '', bio || '', req.user.id]);
+    await pool.query('UPDATE users SET status=$1, avatar=$2, bio=$3 WHERE id=$4', [status || '', avatar || '', bio || '', req.user.id]);
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -382,11 +370,8 @@ app.post('/api/profile/gallery', auth, async (req, res) => {
   const { url, media_type, title } = req.body;
   if (!url) return res.status(400).json({ error: 'Нет ссылки' });
   if (containsForbidden(url) || !isValidUrl(url)) { await audit(req, 'FORBIDDEN_CONTENT_ATTEMPT', 'gallery'); return res.status(400).json({ error: 'Запрещённый контент' }); }
-  try {
-    const r = await pool.query('INSERT INTO profile_gallery(user_id, url, media_type, title) VALUES($1,$2,$3,$4) RETURNING *',
-      [req.user.id, url, media_type || 'image', title || '']);
-    res.json(r.rows[0]);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  try { const r = await pool.query('INSERT INTO profile_gallery(user_id, url, media_type, title) VALUES($1,$2,$3,$4) RETURNING *', [req.user.id, url, media_type || 'image', title || '']); res.json(r.rows[0]); }
+  catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.delete('/api/profile/gallery/:id', auth, async (req, res) => {
@@ -418,17 +403,10 @@ app.get('/api/stories', auth, async (req, res) => {
 app.post('/api/stories', auth, async (req, res) => {
   const { content, image, video, background } = req.body;
   if (!content?.trim() && !image && !video) return res.status(400).json({ error: 'Пустая история' });
-  if (containsForbidden(content) || containsForbidden(image) || containsForbidden(video)) {
-    await audit(req, 'FORBIDDEN_CONTENT_ATTEMPT', 'story');
-    return res.status(400).json({ error: 'Запрещённый контент' });
-  }
+  if (containsForbidden(content) || containsForbidden(image) || containsForbidden(video)) { await audit(req, 'FORBIDDEN_CONTENT_ATTEMPT', 'story'); return res.status(400).json({ error: 'Запрещённый контент' }); }
   if ((image && !isValidUrl(image)) || (video && !isValidUrl(video))) { await audit(req, 'FORBIDDEN_CONTENT_ATTEMPT', 'story_url'); return res.status(400).json({ error: 'Недопустимый URL' }); }
-  try {
-    const r = await pool.query('INSERT INTO stories(user_id, content, image, video, background) VALUES($1,$2,$3,$4,$5) RETURNING *',
-      [req.user.id, content || '', image || '', video || '', background || '#3b5998']);
-    io.emit('new_story');
-    res.json(r.rows[0]);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  try { const r = await pool.query('INSERT INTO stories(user_id, content, image, video, background) VALUES($1,$2,$3,$4,$5) RETURNING *', [req.user.id, content || '', image || '', video || '', background || '#3b5998']); io.emit('new_story'); res.json(r.rows[0]); }
+  catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.post('/api/stories/:id/view', auth, async (req, res) => {
@@ -466,17 +444,10 @@ app.get('/api/posts', auth, async (req, res) => {
 app.post('/api/posts', auth, async (req, res) => {
   const { content, image, video, gif, sticker } = req.body;
   if (!content?.trim() && !image && !video && !gif && !sticker) return res.status(400).json({ error: 'Пустой пост' });
-  if (containsForbidden(content) || containsForbidden(image) || containsForbidden(video) || containsForbidden(gif)) {
-    await audit(req, 'FORBIDDEN_CONTENT_ATTEMPT', 'post');
-    return res.status(400).json({ error: 'Запрещённый контент' });
-  }
+  if (containsForbidden(content) || containsForbidden(image) || containsForbidden(video) || containsForbidden(gif)) { await audit(req, 'FORBIDDEN_CONTENT_ATTEMPT', 'post'); return res.status(400).json({ error: 'Запрещённый контент' }); }
   if ((image && !isValidUrl(image)) || (video && !isValidUrl(video)) || (gif && !isValidUrl(gif))) { await audit(req, 'FORBIDDEN_CONTENT_ATTEMPT', 'post_url'); return res.status(400).json({ error: 'Недопустимый URL' }); }
-  try {
-    const r = await pool.query('INSERT INTO posts(user_id, content, image, video, gif, sticker) VALUES($1,$2,$3,$4,$5,$6) RETURNING *',
-      [req.user.id, content || '', image || '', video || '', gif || '', sticker || '']);
-    io.emit('new_post');
-    res.json(r.rows[0]);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  try { const r = await pool.query('INSERT INTO posts(user_id, content, image, video, gif, sticker) VALUES($1,$2,$3,$4,$5,$6) RETURNING *', [req.user.id, content || '', image || '', video || '', gif || '', sticker || '']); io.emit('new_post'); res.json(r.rows[0]); }
+  catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.delete('/api/posts/:id', auth, async (req, res) => {
@@ -517,16 +488,11 @@ app.post('/api/messages/:userId', auth, async (req, res) => {
   const { content, media, sticker } = req.body;
   if (!content?.trim() && (!media || !media.length) && !sticker) return res.status(400).json({ error: 'Пусто' });
   if (containsForbidden(content)) { await audit(req, 'FORBIDDEN_CONTENT_ATTEMPT', 'message'); return res.status(400).json({ error: 'Запрещённый контент' }); }
-  if (media && media.length) {
-    for (const m of media) { if (containsForbidden(m.url?.slice(0, 500) || '')) { await audit(req, 'FORBIDDEN_CONTENT_ATTEMPT', 'message_media'); return res.status(400).json({ error: 'Запрещённое вложение' }); } }
-  }
+  if (media && media.length) { for (const m of media) { if (containsForbidden(m.url?.slice(0, 500) || '')) { await audit(req, 'FORBIDDEN_CONTENT_ATTEMPT', 'message_media'); return res.status(400).json({ error: 'Запрещённое вложение' }); } } }
   try {
-    const r = await pool.query('INSERT INTO messages(from_id, to_id, content, sticker) VALUES($1,$2,$3,$4) RETURNING *',
-      [req.user.id, req.params.userId, content || '', sticker || '']);
+    const r = await pool.query('INSERT INTO messages(from_id, to_id, content, sticker) VALUES($1,$2,$3,$4) RETURNING *', [req.user.id, req.params.userId, content || '', sticker || '']);
     const msg = r.rows[0];
-    if (media && media.length) {
-      for (const m of media) { await pool.query('INSERT INTO message_media(message_id, media_type, url, filename) VALUES($1,$2,$3,$4)', [msg.id, m.type || 'image', m.url, m.filename || '']); }
-    }
+    if (media && media.length) { for (const m of media) { await pool.query('INSERT INTO message_media(message_id, media_type, url, filename) VALUES($1,$2,$3,$4)', [msg.id, m.type || 'image', m.url, m.filename || '']); } }
     const full = await pool.query(`
       SELECT m.*, COALESCE((SELECT json_agg(json_build_object('type', media_type, 'url', url, 'filename', filename))
         FROM message_media WHERE message_id=m.id), '[]'::json) AS media
@@ -540,15 +506,8 @@ app.post('/api/messages/:userId', auth, async (req, res) => {
 
 // ФОРУМЫ
 app.get('/api/forums', auth, async (req, res) => {
-  try {
-    const r = await pool.query(`
-      SELECT f.*, u.username AS author,
-        (SELECT COUNT(*) FROM forum_topics WHERE forum_id=f.id) AS topics_count,
-        (SELECT COUNT(*) FROM forum_posts fp JOIN forum_topics ft ON ft.id=fp.topic_id WHERE ft.forum_id=f.id) AS posts_count
-      FROM forums f LEFT JOIN users u ON u.id=f.created_by ORDER BY f.created_at DESC
-    `);
-    res.json(r.rows);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  try { res.json((await pool.query(`SELECT f.*, u.username AS author, (SELECT COUNT(*) FROM forum_topics WHERE forum_id=f.id) AS topics_count, (SELECT COUNT(*) FROM forum_posts fp JOIN forum_topics ft ON ft.id=fp.topic_id WHERE ft.forum_id=f.id) AS posts_count FROM forums f LEFT JOIN users u ON u.id=f.created_by ORDER BY f.created_at DESC`)).rows); }
+  catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.post('/api/forums', auth, async (req, res) => {
@@ -563,12 +522,7 @@ app.get('/api/forums/:id', auth, async (req, res) => {
   try {
     const f = await pool.query('SELECT f.*, u.username AS author FROM forums f LEFT JOIN users u ON u.id=f.created_by WHERE f.id=$1', [req.params.id]);
     if (!f.rows[0]) return res.status(404).json({ error: 'Нет' });
-    const topics = await pool.query(`
-      SELECT t.*, u.username AS author,
-        (SELECT COUNT(*) FROM forum_posts WHERE topic_id=t.id) AS posts_count
-      FROM forum_topics t LEFT JOIN users u ON u.id=t.user_id
-      WHERE t.forum_id=$1 ORDER BY t.created_at DESC
-    `, [req.params.id]);
+    const topics = await pool.query(`SELECT t.*, u.username AS author, (SELECT COUNT(*) FROM forum_posts WHERE topic_id=t.id) AS posts_count FROM forum_topics t LEFT JOIN users u ON u.id=t.user_id WHERE t.forum_id=$1 ORDER BY t.created_at DESC`, [req.params.id]);
     res.json({ forum: f.rows[0], topics: topics.rows });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -583,16 +537,9 @@ app.post('/api/forums/:id/topics', auth, async (req, res) => {
 
 app.get('/api/topics/:id', auth, async (req, res) => {
   try {
-    const t = await pool.query(`
-      SELECT t.*, u.username AS author, f.title AS forum_title, f.id AS forum_id
-      FROM forum_topics t LEFT JOIN users u ON u.id=t.user_id
-      LEFT JOIN forums f ON f.id=t.forum_id WHERE t.id=$1
-    `, [req.params.id]);
+    const t = await pool.query(`SELECT t.*, u.username AS author, f.title AS forum_title, f.id AS forum_id FROM forum_topics t LEFT JOIN users u ON u.id=t.user_id LEFT JOIN forums f ON f.id=t.forum_id WHERE t.id=$1`, [req.params.id]);
     if (!t.rows[0]) return res.status(404).json({ error: 'Нет' });
-    const posts = await pool.query(`
-      SELECT fp.*, u.username, u.avatar FROM forum_posts fp
-      LEFT JOIN users u ON u.id=fp.user_id WHERE fp.topic_id=$1 ORDER BY fp.created_at ASC
-    `, [req.params.id]);
+    const posts = await pool.query(`SELECT fp.*, u.username, u.avatar FROM forum_posts fp LEFT JOIN users u ON u.id=fp.user_id WHERE fp.topic_id=$1 ORDER BY fp.created_at ASC`, [req.params.id]);
     const postsWithPrefix = posts.rows.map(p => ({ ...p, prefix: getPrefix(p.username) }));
     res.json({ topic: t.rows[0], posts: postsWithPrefix });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -612,15 +559,8 @@ app.post('/api/topics/:id/posts', auth, async (req, res) => {
 
 // ГРУППЫ
 app.get('/api/groups', auth, async (req, res) => {
-  try {
-    const r = await pool.query(`
-      SELECT g.*, u.username AS author,
-        (SELECT COUNT(*) FROM group_members WHERE group_id=g.id) AS members_count,
-        EXISTS(SELECT 1 FROM group_members WHERE group_id=g.id AND user_id=$1) AS is_member
-      FROM groups g LEFT JOIN users u ON u.id=g.created_by ORDER BY g.created_at DESC
-    `, [req.user.id]);
-    res.json(r.rows);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  try { res.json((await pool.query(`SELECT g.*, u.username AS author, (SELECT COUNT(*) FROM group_members WHERE group_id=g.id) AS members_count, EXISTS(SELECT 1 FROM group_members WHERE group_id=g.id AND user_id=$1) AS is_member FROM groups g LEFT JOIN users u ON u.id=g.created_by ORDER BY g.created_at DESC`, [req.user.id])).rows); }
+  catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.post('/api/groups', auth, async (req, res) => {
@@ -636,13 +576,7 @@ app.post('/api/groups', auth, async (req, res) => {
 
 app.get('/api/groups/:id', auth, async (req, res) => {
   try {
-    const g = await pool.query(`
-      SELECT g.*, u.username AS author,
-        (SELECT COUNT(*) FROM group_members WHERE group_id=g.id) AS members_count,
-        EXISTS(SELECT 1 FROM group_members WHERE group_id=g.id AND user_id=$1) AS is_member,
-        (SELECT role FROM group_members WHERE group_id=g.id AND user_id=$1) AS my_role
-      FROM groups g LEFT JOIN users u ON u.id=g.created_by WHERE g.id=$2
-    `, [req.user.id, req.params.id]);
+    const g = await pool.query(`SELECT g.*, u.username AS author, (SELECT COUNT(*) FROM group_members WHERE group_id=g.id) AS members_count, EXISTS(SELECT 1 FROM group_members WHERE group_id=g.id AND user_id=$1) AS is_member, (SELECT role FROM group_members WHERE group_id=g.id AND user_id=$1) AS my_role FROM groups g LEFT JOIN users u ON u.id=g.created_by WHERE g.id=$2`, [req.user.id, req.params.id]);
     if (!g.rows[0]) return res.status(404).json({ error: 'Нет' });
     res.json(g.rows[0]);
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -658,13 +592,7 @@ app.post('/api/groups/:id/join', auth, async (req, res) => {
 
 app.get('/api/groups/:id/posts', auth, async (req, res) => {
   try {
-    const r = await pool.query(`
-      SELECT gp.*, u.username, u.avatar,
-        (SELECT COUNT(*) FROM group_post_likes WHERE post_id=gp.id) AS likes,
-        EXISTS(SELECT 1 FROM group_post_likes WHERE post_id=gp.id AND user_id=$1) AS liked
-      FROM group_posts gp JOIN users u ON u.id=gp.user_id
-      WHERE gp.group_id=$2 ORDER BY gp.created_at DESC LIMIT 50
-    `, [req.user.id, req.params.id]);
+    const r = await pool.query(`SELECT gp.*, u.username, u.avatar, (SELECT COUNT(*) FROM group_post_likes WHERE post_id=gp.id) AS likes, EXISTS(SELECT 1 FROM group_post_likes WHERE post_id=gp.id AND user_id=$1) AS liked FROM group_posts gp JOIN users u ON u.id=gp.user_id WHERE gp.group_id=$2 ORDER BY gp.created_at DESC LIMIT 50`, [req.user.id, req.params.id]);
     const posts = r.rows.map(p => ({ ...p, prefix: getPrefix(p.username) }));
     res.json(posts);
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -678,8 +606,7 @@ app.post('/api/groups/:id/posts', auth, async (req, res) => {
   try {
     const member = await pool.query('SELECT 1 FROM group_members WHERE group_id=$1 AND user_id=$2', [req.params.id, req.user.id]);
     if (!member.rows[0]) return res.status(403).json({ error: 'Вы не в группе' });
-    const r = await pool.query('INSERT INTO group_posts(group_id, user_id, content, image, video, gif, sticker) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING *',
-      [req.params.id, req.user.id, content || '', image || '', video || '', gif || '', sticker || '']);
+    const r = await pool.query('INSERT INTO group_posts(group_id, user_id, content, image, video, gif, sticker) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING *', [req.params.id, req.user.id, content || '', image || '', video || '', gif || '', sticker || '']);
     io.emit('new_group_post', { group_id: Number(req.params.id) });
     res.json(r.rows[0]);
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -695,10 +622,7 @@ app.post('/api/group-like/:id', auth, async (req, res) => {
 
 app.get('/api/groups/:id/members', auth, async (req, res) => {
   try {
-    const r = await pool.query(`
-      SELECT u.id, u.username, u.avatar, gm.role FROM group_members gm
-      JOIN users u ON u.id=gm.user_id WHERE gm.group_id=$1 ORDER BY gm.joined_at ASC
-    `, [req.params.id]);
+    const r = await pool.query(`SELECT u.id, u.username, u.avatar, gm.role FROM group_members gm JOIN users u ON u.id=gm.user_id WHERE gm.group_id=$1 ORDER BY gm.joined_at ASC`, [req.params.id]);
     const members = r.rows.map(m => ({ ...m, prefix: getPrefix(m.username) }));
     res.json(members);
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -758,15 +682,8 @@ app.post('/api/parties/vote/:id', auth, async (req, res) => {
 
 // SCRATCH
 app.get('/api/scratch', auth, async (req, res) => {
-  try {
-    const r = await pool.query(`
-      SELECT g.*, u.username AS author,
-        (SELECT COUNT(*) FROM scratch_likes WHERE game_id=g.id) AS likes,
-        EXISTS(SELECT 1 FROM scratch_likes WHERE game_id=g.id AND user_id=$1) AS liked
-      FROM scratch_games g LEFT JOIN users u ON u.id=g.user_id ORDER BY g.created_at DESC LIMIT 100
-    `, [req.user.id]);
-    res.json(r.rows);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  try { res.json((await pool.query(`SELECT g.*, u.username AS author, (SELECT COUNT(*) FROM scratch_likes WHERE game_id=g.id) AS likes, EXISTS(SELECT 1 FROM scratch_likes WHERE game_id=g.id AND user_id=$1) AS liked FROM scratch_games g LEFT JOIN users u ON u.id=g.user_id ORDER BY g.created_at DESC LIMIT 100`, [req.user.id])).rows); }
+  catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.post('/api/scratch', auth, async (req, res) => {
@@ -782,12 +699,7 @@ app.post('/api/scratch', auth, async (req, res) => {
 
 app.get('/api/scratch/:id', auth, async (req, res) => {
   try {
-    const r = await pool.query(`
-      SELECT g.*, u.username AS author,
-        (SELECT COUNT(*) FROM scratch_likes WHERE game_id=g.id) AS likes,
-        EXISTS(SELECT 1 FROM scratch_likes WHERE game_id=g.id AND user_id=$1) AS liked
-      FROM scratch_games g LEFT JOIN users u ON u.id=g.user_id WHERE g.id=$2
-    `, [req.user.id, req.params.id]);
+    const r = await pool.query(`SELECT g.*, u.username AS author, (SELECT COUNT(*) FROM scratch_likes WHERE game_id=g.id) AS likes, EXISTS(SELECT 1 FROM scratch_likes WHERE game_id=g.id AND user_id=$1) AS liked FROM scratch_games g LEFT JOIN users u ON u.id=g.user_id WHERE g.id=$2`, [req.user.id, req.params.id]);
     if (!r.rows[0]) return res.status(404).json({ error: 'Не найдено' });
     await pool.query('UPDATE scratch_games SET plays=plays+1 WHERE id=$1', [req.params.id]);
     res.json(r.rows[0]);
@@ -816,15 +728,8 @@ app.post('/api/scratch/:id/like', auth, async (req, res) => {
 
 // FLASH
 app.get('/api/flash', auth, async (req, res) => {
-  try {
-    const r = await pool.query(`
-      SELECT g.*, u.username AS author,
-        (SELECT COUNT(*) FROM flash_likes WHERE game_id=g.id) AS likes,
-        EXISTS(SELECT 1 FROM flash_likes WHERE game_id=g.id AND user_id=$1) AS liked
-      FROM flash_games g LEFT JOIN users u ON u.id=g.user_id ORDER BY g.created_at DESC LIMIT 100
-    `, [req.user.id]);
-    res.json(r.rows);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  try { res.json((await pool.query(`SELECT g.*, u.username AS author, (SELECT COUNT(*) FROM flash_likes WHERE game_id=g.id) AS likes, EXISTS(SELECT 1 FROM flash_likes WHERE game_id=g.id AND user_id=$1) AS liked FROM flash_games g LEFT JOIN users u ON u.id=g.user_id ORDER BY g.created_at DESC LIMIT 100`, [req.user.id])).rows); }
+  catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.post('/api/flash', auth, async (req, res) => {
@@ -839,12 +744,7 @@ app.post('/api/flash', auth, async (req, res) => {
 
 app.get('/api/flash/:id', auth, async (req, res) => {
   try {
-    const r = await pool.query(`
-      SELECT g.*, u.username AS author,
-        (SELECT COUNT(*) FROM flash_likes WHERE game_id=g.id) AS likes,
-        EXISTS(SELECT 1 FROM flash_likes WHERE game_id=g.id AND user_id=$1) AS liked
-      FROM flash_games g LEFT JOIN users u ON u.id=g.user_id WHERE g.id=$2
-    `, [req.user.id, req.params.id]);
+    const r = await pool.query(`SELECT g.*, u.username AS author, (SELECT COUNT(*) FROM flash_likes WHERE game_id=g.id) AS likes, EXISTS(SELECT 1 FROM flash_likes WHERE game_id=g.id AND user_id=$1) AS liked FROM flash_games g LEFT JOIN users u ON u.id=g.user_id WHERE g.id=$2`, [req.user.id, req.params.id]);
     if (!r.rows[0]) return res.status(404).json({ error: 'Не найдено' });
     await pool.query('UPDATE flash_games SET plays=plays+1 WHERE id=$1', [req.params.id]);
     res.json(r.rows[0]);
@@ -873,25 +773,13 @@ app.post('/api/flash/:id/like', auth, async (req, res) => {
 
 // HTML5
 app.get('/api/htmlgames', auth, async (req, res) => {
-  try {
-    const r = await pool.query(`
-      SELECT g.id, g.title, g.description, g.cover, g.plays, g.created_at, g.user_id, u.username AS author,
-        (SELECT COUNT(*) FROM html_likes WHERE game_id=g.id) AS likes,
-        EXISTS(SELECT 1 FROM html_likes WHERE game_id=g.id AND user_id=$1) AS liked
-      FROM html_games g LEFT JOIN users u ON u.id=g.user_id ORDER BY g.created_at DESC LIMIT 100
-    `, [req.user.id]);
-    res.json(r.rows);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  try { res.json((await pool.query(`SELECT g.id, g.title, g.description, g.cover, g.plays, g.created_at, g.user_id, u.username AS author, (SELECT COUNT(*) FROM html_likes WHERE game_id=g.id) AS likes, EXISTS(SELECT 1 FROM html_likes WHERE game_id=g.id AND user_id=$1) AS liked FROM html_games g LEFT JOIN users u ON u.id=g.user_id ORDER BY g.created_at DESC LIMIT 100`, [req.user.id])).rows); }
+  catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.get('/api/htmlgames/:id/code', auth, async (req, res) => {
   try {
-    const r = await pool.query(`
-      SELECT g.*, u.username AS author,
-        (SELECT COUNT(*) FROM html_likes WHERE game_id=g.id) AS likes,
-        EXISTS(SELECT 1 FROM html_likes WHERE game_id=g.id AND user_id=$1) AS liked
-      FROM html_games g LEFT JOIN users u ON u.id=g.user_id WHERE g.id=$2
-    `, [req.user.id, req.params.id]);
+    const r = await pool.query(`SELECT g.*, u.username AS author, (SELECT COUNT(*) FROM html_likes WHERE game_id=g.id) AS likes, EXISTS(SELECT 1 FROM html_likes WHERE game_id=g.id AND user_id=$1) AS liked FROM html_games g LEFT JOIN users u ON u.id=g.user_id WHERE g.id=$2`, [req.user.id, req.params.id]);
     if (!r.rows[0]) return res.status(404).json({ error: 'Не найдено' });
     res.json(r.rows[0]);
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -899,12 +787,7 @@ app.get('/api/htmlgames/:id/code', auth, async (req, res) => {
 
 app.get('/api/htmlgames/:id', auth, async (req, res) => {
   try {
-    const r = await pool.query(`
-      SELECT g.id, g.title, g.description, g.cover, g.plays, g.created_at, g.user_id, u.username AS author,
-        (SELECT COUNT(*) FROM html_likes WHERE game_id=g.id) AS likes,
-        EXISTS(SELECT 1 FROM html_likes WHERE game_id=g.id AND user_id=$1) AS liked
-      FROM html_games g LEFT JOIN users u ON u.id=g.user_id WHERE g.id=$2
-    `, [req.user.id, req.params.id]);
+    const r = await pool.query(`SELECT g.id, g.title, g.description, g.cover, g.plays, g.created_at, g.user_id, u.username AS author, (SELECT COUNT(*) FROM html_likes WHERE game_id=g.id) AS likes, EXISTS(SELECT 1 FROM html_likes WHERE game_id=g.id AND user_id=$1) AS liked FROM html_games g LEFT JOIN users u ON u.id=g.user_id WHERE g.id=$2`, [req.user.id, req.params.id]);
     if (!r.rows[0]) return res.status(404).json({ error: 'Не найдено' });
     await pool.query('UPDATE html_games SET plays=plays+1 WHERE id=$1', [req.params.id]);
     res.json(r.rows[0]);
@@ -918,8 +801,7 @@ app.post('/api/htmlgames', auth, async (req, res) => {
   if (code.length > 200000) return res.status(400).json({ error: 'Код слишком большой' });
   if (containsForbidden(title) || containsForbidden(description)) { await audit(req, 'FORBIDDEN_CONTENT_ATTEMPT', 'html_game'); return res.status(400).json({ error: 'Запрещённый контент' }); }
   try {
-    const r = await pool.query('INSERT INTO html_games(user_id, title, description, code, cover) VALUES($1,$2,$3,$4,$5) RETURNING id, title, description, cover, plays, created_at, user_id',
-      [req.user.id, title, description || '', code, cover || '']);
+    const r = await pool.query('INSERT INTO html_games(user_id, title, description, code, cover) VALUES($1,$2,$3,$4,$5) RETURNING id, title, description, cover, plays, created_at, user_id', [req.user.id, title, description || '', code, cover || '']);
     io.emit('new_game');
     res.json(r.rows[0]);
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -932,8 +814,7 @@ app.put('/api/htmlgames/:id', auth, async (req, res) => {
     if (!g.rows[0]) return res.status(404).json({ error: 'Нет' });
     const me = await pool.query('SELECT role FROM users WHERE id=$1', [req.user.id]);
     if (g.rows[0].user_id !== req.user.id && me.rows[0]?.role !== 'admin') return res.status(403).json({ error: 'Не ваша' });
-    await pool.query('UPDATE html_games SET title=$1, description=$2, code=$3, cover=$4 WHERE id=$5',
-      [title, description || '', code, cover || '', req.params.id]);
+    await pool.query('UPDATE html_games SET title=$1, description=$2, code=$3, cover=$4 WHERE id=$5', [title, description || '', code, cover || '', req.params.id]);
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -958,49 +839,28 @@ app.post('/api/htmlgames/:id/like', auth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// ============================================================
 // RETROMUSIC
-// ============================================================
 app.get('/api/tracks', auth, async (req, res) => {
   try {
-    const r = await pool.query(`
-      SELECT t.*, u.username AS author,
-        (SELECT COUNT(*) FROM track_likes WHERE track_id=t.id) AS likes,
-        EXISTS(SELECT 1 FROM track_likes WHERE track_id=t.id AND user_id=$1) AS liked
-      FROM tracks t LEFT JOIN users u ON u.id=t.user_id ORDER BY t.created_at DESC LIMIT 200
-    `, [req.user.id]);
+    const r = await pool.query(`SELECT t.*, u.username AS author, (SELECT COUNT(*) FROM track_likes WHERE track_id=t.id) AS likes, EXISTS(SELECT 1 FROM track_likes WHERE track_id=t.id AND user_id=$1) AS liked FROM tracks t LEFT JOIN users u ON u.id=t.user_id ORDER BY t.created_at DESC LIMIT 200`, [req.user.id]);
     const tracks = r.rows.map(t => ({ ...t, prefix: getPrefix(t.author) }));
     res.json(tracks);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.get('/api/tracks/my', auth, async (req, res) => {
-  try {
-    const r = await pool.query(`
-      SELECT t.*, u.username AS author,
-        (SELECT COUNT(*) FROM track_likes WHERE track_id=t.id) AS likes,
-        EXISTS(SELECT 1 FROM track_likes WHERE track_id=t.id AND user_id=$1) AS liked
-      FROM tracks t LEFT JOIN users u ON u.id=t.user_id WHERE t.user_id=$1 ORDER BY t.created_at DESC
-    `, [req.user.id]);
-    res.json(r.rows);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  try { res.json((await pool.query(`SELECT t.*, u.username AS author, (SELECT COUNT(*) FROM track_likes WHERE track_id=t.id) AS likes, EXISTS(SELECT 1 FROM track_likes WHERE track_id=t.id AND user_id=$1) AS liked FROM tracks t LEFT JOIN users u ON u.id=t.user_id WHERE t.user_id=$1 ORDER BY t.created_at DESC`, [req.user.id])).rows); }
+  catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.get('/api/tracks/liked', auth, async (req, res) => {
-  try {
-    const r = await pool.query(`
-      SELECT t.*, u.username AS author,
-        (SELECT COUNT(*) FROM track_likes WHERE track_id=t.id) AS likes, true AS liked
-      FROM tracks t JOIN track_likes tl ON tl.track_id = t.id
-      LEFT JOIN users u ON u.id=t.user_id WHERE tl.user_id=$1 ORDER BY tl.id DESC
-    `, [req.user.id]);
-    res.json(r.rows);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  try { res.json((await pool.query(`SELECT t.*, u.username AS author, (SELECT COUNT(*) FROM track_likes WHERE track_id=t.id) AS likes, true AS liked FROM tracks t JOIN track_likes tl ON tl.track_id = t.id LEFT JOIN users u ON u.id=t.user_id WHERE tl.user_id=$1 ORDER BY tl.id DESC`, [req.user.id])).rows); }
+  catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.post('/api/tracks', auth, async (req, res) => {
   const { title, artist, url, cover, genre } = req.body;
-  if (!title?.trim() || !artist?.trim() || !url?.trim()) return res.status(400).json({ error: 'Заполните название, исполнителя и ссылку' });
+  if (!title?.trim() || !artist?.trim() || !url?.trim()) return res.status(400).json({ error: 'Заполните поля' });
   if (!isValidUrl(url)) return res.status(400).json({ error: 'Недопустимый URL' });
   if (containsForbidden(title) || containsForbidden(artist)) { await audit(req, 'FORBIDDEN_CONTENT_ATTEMPT', 'track'); return res.status(400).json({ error: 'Запрещённый контент' }); }
   try { const r = await pool.query('INSERT INTO tracks(user_id, title, artist, url, cover, genre) VALUES($1,$2,$3,$4,$5,$6) RETURNING *', [req.user.id, title, artist, url, cover || '', genre || 'Retro']); io.emit('new_track'); res.json(r.rows[0]); }
@@ -1009,12 +869,7 @@ app.post('/api/tracks', auth, async (req, res) => {
 
 app.get('/api/tracks/:id', auth, async (req, res) => {
   try {
-    const r = await pool.query(`
-      SELECT t.*, u.username AS author,
-        (SELECT COUNT(*) FROM track_likes WHERE track_id=t.id) AS likes,
-        EXISTS(SELECT 1 FROM track_likes WHERE track_id=t.id AND user_id=$1) AS liked
-      FROM tracks t LEFT JOIN users u ON u.id=t.user_id WHERE t.id=$2
-    `, [req.user.id, req.params.id]);
+    const r = await pool.query(`SELECT t.*, u.username AS author, (SELECT COUNT(*) FROM track_likes WHERE track_id=t.id) AS likes, EXISTS(SELECT 1 FROM track_likes WHERE track_id=t.id AND user_id=$1) AS liked FROM tracks t LEFT JOIN users u ON u.id=t.user_id WHERE t.id=$2`, [req.user.id, req.params.id]);
     if (!r.rows[0]) return res.status(404).json({ error: 'Не найдено' });
     res.json(r.rows[0]);
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -1049,29 +904,13 @@ app.get('/api/tracks-search', auth, async (req, res) => {
   const q = (req.query.q || '').trim();
   if (!q) return res.json([]);
   const pattern = '%' + q.toLowerCase() + '%';
-  try {
-    const r = await pool.query(`
-      SELECT t.*, u.username AS author,
-        (SELECT COUNT(*) FROM track_likes WHERE track_id=t.id) AS likes,
-        EXISTS(SELECT 1 FROM track_likes WHERE track_id=t.id AND user_id=$1) AS liked
-      FROM tracks t LEFT JOIN users u ON u.id=t.user_id
-      WHERE LOWER(t.title) LIKE $2 OR LOWER(t.artist) LIKE $2
-      ORDER BY t.plays DESC LIMIT 50
-    `, [req.user.id, pattern]);
-    res.json(r.rows);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  try { res.json((await pool.query(`SELECT t.*, u.username AS author, (SELECT COUNT(*) FROM track_likes WHERE track_id=t.id) AS likes, EXISTS(SELECT 1 FROM track_likes WHERE track_id=t.id AND user_id=$1) AS liked FROM tracks t LEFT JOIN users u ON u.id=t.user_id WHERE LOWER(t.title) LIKE $2 OR LOWER(t.artist) LIKE $2 ORDER BY t.plays DESC LIMIT 50`, [req.user.id, pattern])).rows); }
+  catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// Плейлисты
 app.get('/api/playlists', auth, async (req, res) => {
-  try {
-    const r = await pool.query(`
-      SELECT p.*, u.username AS author,
-        (SELECT COUNT(*) FROM playlist_tracks WHERE playlist_id=p.id) AS tracks_count
-      FROM playlists p LEFT JOIN users u ON u.id=p.user_id ORDER BY p.created_at DESC LIMIT 100
-    `);
-    res.json(r.rows);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  try { res.json((await pool.query(`SELECT p.*, u.username AS author, (SELECT COUNT(*) FROM playlist_tracks WHERE playlist_id=p.id) AS tracks_count FROM playlists p LEFT JOIN users u ON u.id=p.user_id ORDER BY p.created_at DESC LIMIT 100`)).rows); }
+  catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.post('/api/playlists', auth, async (req, res) => {
@@ -1086,14 +925,7 @@ app.get('/api/playlists/:id', auth, async (req, res) => {
   try {
     const p = await pool.query('SELECT p.*, u.username AS author FROM playlists p LEFT JOIN users u ON u.id=p.user_id WHERE p.id=$1', [req.params.id]);
     if (!p.rows[0]) return res.status(404).json({ error: 'Нет' });
-    const tracks = await pool.query(`
-      SELECT t.*, u.username AS author,
-        (SELECT COUNT(*) FROM track_likes WHERE track_id=t.id) AS likes,
-        EXISTS(SELECT 1 FROM track_likes WHERE track_id=t.id AND user_id=$1) AS liked
-      FROM tracks t JOIN playlist_tracks pt ON pt.track_id = t.id
-      LEFT JOIN users u ON u.id=t.user_id
-      WHERE pt.playlist_id=$2 ORDER BY pt.position ASC
-    `, [req.user.id, req.params.id]);
+    const tracks = await pool.query(`SELECT t.*, u.username AS author, (SELECT COUNT(*) FROM track_likes WHERE track_id=t.id) AS likes, EXISTS(SELECT 1 FROM track_likes WHERE track_id=t.id AND user_id=$1) AS liked FROM tracks t JOIN playlist_tracks pt ON pt.track_id = t.id LEFT JOIN users u ON u.id=t.user_id WHERE pt.playlist_id=$2 ORDER BY pt.position ASC`, [req.user.id, req.params.id]);
     res.json({ playlist: p.rows[0], tracks: tracks.rows });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -1117,26 +949,12 @@ app.post('/api/playlists/:id/add', auth, async (req, res) => {
     if (!p.rows[0]) return res.status(404).json({ error: 'Нет' });
     if (p.rows[0].user_id !== req.user.id) return res.status(403).json({ error: 'Не ваш' });
     const maxPos = await pool.query('SELECT COALESCE(MAX(position), 0) AS m FROM playlist_tracks WHERE playlist_id=$1', [req.params.id]);
-    await pool.query('INSERT INTO playlist_tracks(playlist_id, track_id, position) VALUES($1,$2,$3) ON CONFLICT DO NOTHING',
-      [req.params.id, track_id, Number(maxPos.rows[0].m) + 1]);
+    await pool.query('INSERT INTO playlist_tracks(playlist_id, track_id, position) VALUES($1,$2,$3) ON CONFLICT DO NOTHING', [req.params.id, track_id, Number(maxPos.rows[0].m) + 1]);
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.post('/api/playlists/:id/remove', auth, async (req, res) => {
-  const { track_id } = req.body;
-  try {
-    const p = await pool.query('SELECT user_id FROM playlists WHERE id=$1', [req.params.id]);
-    if (!p.rows[0]) return res.status(404).json({ error: 'Нет' });
-    if (p.rows[0].user_id !== req.user.id) return res.status(403).json({ error: 'Не ваш' });
-    await pool.query('DELETE FROM playlist_tracks WHERE playlist_id=$1 AND track_id=$2', [req.params.id, track_id]);
-    res.json({ ok: true });
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-// ============================================================
 // ПОИСК
-// ============================================================
 app.get('/api/search/suggest', auth, async (req, res) => {
   const q = (req.query.q || '').trim();
   if (!q || q.length < 2) return res.json({ users: [], groups: [], forums: [], posts: [] });
@@ -1167,13 +985,54 @@ app.post('/api/security/attempt', auth, async (req, res) => {
   const { reason } = req.body;
   try {
     const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || '';
-    await pool.query('INSERT INTO audit_log(user_id, username, action, details, ip) VALUES($1,$2,$3,$4,$5)',
-      [req.user.id, req.user.username, 'FORBIDDEN_CONTENT_ATTEMPT', (reason || 'unknown').slice(0, 500), ip]);
+    await pool.query('INSERT INTO audit_log(user_id, username, action, details, ip) VALUES($1,$2,$3,$4,$5)', [req.user.id, req.user.username, 'FORBIDDEN_CONTENT_ATTEMPT', (reason || 'unknown').slice(0, 500), ip]);
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ============================================================
+// СБРОС ПАРОЛЯ АДМИНОМ
+// ============================================================
+app.post('/api/admin/reset-password/:id', auth, adminOnly, async (req, res) => {
+  const { newPassword } = req.body;
+  const targetId = Number(req.params.id);
+
+  if (targetId === req.user.id) return res.status(400).json({ error: 'Себе сбросить нельзя — используйте смену пароля в профиле' });
+  if (!newPassword || newPassword.length < 6) return res.status(400).json({ error: 'Пароль минимум 6 символов' });
+  if (newPassword.length > 100) return res.status(400).json({ error: 'Пароль слишком длинный' });
+
+  try {
+    const target = await pool.query('SELECT id, username FROM users WHERE id=$1', [targetId]);
+    if (!target.rows[0]) return res.status(404).json({ error: 'Пользователь не найден' });
+
+    const hash = await bcrypt.hash(newPassword, 10);
+    await pool.query('UPDATE users SET password=$1 WHERE id=$2', [hash, targetId]);
+
+    await audit(req, 'PASSWORD_RESET', 'target=' + target.rows[0].username + ' (id=' + targetId + ')');
+
+    try {
+      const msgContent = 'Администратор сбросил ваш пароль.\n\nНовый пароль: ' + newPassword + '\n\nСрочно смените его в профиле → «Сменить пароль».';
+      const msg = await pool.query('INSERT INTO messages(from_id, to_id, content) VALUES($1,$2,$3) RETURNING *', [req.user.id, targetId, msgContent]);
+      io.to('user_' + targetId).emit('new_message', { ...msg.rows[0], from_username: req.user.username, from_prefix: getPrefix(req.user.username) });
+    } catch (e) { console.error('Не удалось отправить сообщение:', e.message); }
+
+    res.json({ ok: true, username: target.rows[0].username });
+  } catch (e) {
+    console.error('PASSWORD_RESET ERROR:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/admin/generate-password', auth, adminOnly, async (req, res) => {
+  const chars = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let password = '';
+  for (let i = 0; i < 10; i++) password += chars.charAt(Math.floor(Math.random() * chars.length));
+  res.json({ password });
+});
+
+// ============================================================
 // АДМИНКА
+// ============================================================
 app.get('/api/admin/stats', auth, adminOnly, async (req, res) => {
   try {
     const [u, p, g, f, t, m, n] = await Promise.all([
@@ -1182,19 +1041,13 @@ app.get('/api/admin/stats', auth, adminOnly, async (req, res) => {
       pool.query('SELECT COUNT(*) FROM forum_topics'), pool.query('SELECT COUNT(*) FROM messages'),
       pool.query('SELECT COUNT(*) FROM news')
     ]);
-    res.json({
-      users: Number(u.rows[0].count), posts: Number(p.rows[0].count), groups: Number(g.rows[0].count),
-      forums: Number(f.rows[0].count), topics: Number(t.rows[0].count), messages: Number(m.rows[0].count),
-      news: Number(n.rows[0].count)
-    });
+    res.json({ users: Number(u.rows[0].count), posts: Number(p.rows[0].count), groups: Number(g.rows[0].count), forums: Number(f.rows[0].count), topics: Number(t.rows[0].count), messages: Number(m.rows[0].count), news: Number(n.rows[0].count) });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.get('/api/admin/users', auth, adminOnly, async (req, res) => {
-  try {
-    const r = await pool.query('SELECT id, username, role, banned, created_at, (SELECT COUNT(*) FROM posts WHERE user_id=users.id) AS posts_count FROM users ORDER BY created_at DESC');
-    res.json(r.rows);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  try { res.json((await pool.query('SELECT id, username, role, banned, created_at, (SELECT COUNT(*) FROM posts WHERE user_id=users.id) AS posts_count FROM users ORDER BY created_at DESC')).rows); }
+  catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.post('/api/admin/ban/:id', auth, adminOnly, async (req, res) => {
@@ -1210,11 +1063,8 @@ app.post('/api/admin/ban/:id', auth, adminOnly, async (req, res) => {
 
 app.delete('/api/admin/users/:id', auth, adminOnly, async (req, res) => {
   if (Number(req.params.id) === req.user.id) return res.status(400).json({ error: 'Себя нельзя' });
-  try {
-    await pool.query('DELETE FROM users WHERE id=$1', [req.params.id]);
-    await audit(req, 'delete_user', 'target=' + req.params.id);
-    res.json({ ok: true });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  try { await pool.query('DELETE FROM users WHERE id=$1', [req.params.id]); await audit(req, 'delete_user', 'target=' + req.params.id); res.json({ ok: true }); }
+  catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.delete('/api/admin/groups/:id', auth, adminOnly, async (req, res) => {
@@ -1233,23 +1083,14 @@ app.get('/api/admin/audit', auth, adminOnly, async (req, res) => {
 });
 
 // SOCKET
-io.use((socket, next) => {
-  try { socket.user = jwt.verify(socket.handshake.auth.token, JWT_SECRET); next(); }
-  catch { next(new Error('unauthorized')); }
-});
+io.use((socket, next) => { try { socket.user = jwt.verify(socket.handshake.auth.token, JWT_SECRET); next(); } catch { next(new Error('unauthorized')); } });
 
 const online = new Set();
-
 io.on('connection', (socket) => {
   online.add(socket.user.id);
   socket.join('user_' + socket.user.id);
   io.emit('online', Array.from(online));
-
-  socket.on('disconnect', () => {
-    online.delete(socket.user.id);
-    io.emit('online', Array.from(online));
-  });
-
+  socket.on('disconnect', () => { online.delete(socket.user.id); io.emit('online', Array.from(online)); });
   socket.on('call:start', ({ to, type }) => io.to('user_' + to).emit('call:incoming', { from: socket.user.id, fromName: socket.user.username, type }));
   socket.on('call:accept', ({ to }) => io.to('user_' + to).emit('call:accepted', { from: socket.user.id }));
   socket.on('call:reject', ({ to }) => io.to('user_' + to).emit('call:rejected', { from: socket.user.id }));
@@ -1260,11 +1101,7 @@ io.on('connection', (socket) => {
   socket.on('music:play', ({ trackId }) => io.emit('music:now_playing', { trackId, username: socket.user.username }));
 });
 
-// ЗАПУСК
 const PORT = process.env.PORT || 3000;
 initDB()
   .then(() => server.listen(PORT, () => console.log(`Сервер на порту ${PORT}`)))
-  .catch((err) => {
-    console.error('FATAL:', err);
-    server.listen(PORT, () => console.log(`Без БД на порту ${PORT}`));
-  });
+  .catch((err) => { console.error('FATAL:', err); server.listen(PORT, () => console.log(`Без БД на порту ${PORT}`)); });
