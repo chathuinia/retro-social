@@ -9,6 +9,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <script src="/socket.io/socket.io.js"></script>
 <script src="https://unpkg.com/@ruffle-rs/ruffle"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/nsfwjs@2.4.2/dist/nsfwjs.min.js"></script>
 <style>
 :root { --bg-top:#87CEEB; --bg-mid:#E0F6FF; --bg-bot:#98FB98; --header-top:#73c8f8; --header-mid:#1583d7; --header-bot:#0361a3; --header-hi:#299eef; --border:#024b7f; --btn-top:#73c8f8; --btn-mid:#1583d7; --btn-low:#0361a3; --btn-bot:#299eef; --text-shadow:0 -1px 1px rgba(0,0,0,0.5); --panel:rgba(255,255,255,0.45); --panel-border:rgba(255,255,255,0.9); --accent:#0361a3; --accent-light:#299eef; }
 [data-theme="nature"] { --bg-top:#87CEEB; --bg-mid:#E0FFE8; --bg-bot:#7CCD7C; --header-top:#a8e88a; --header-mid:#4ca64c; --header-bot:#2e7d32; --header-hi:#6bcf6b; --border:#1b5e20; --btn-top:#a8e88a; --btn-mid:#4ca64c; --btn-low:#2e7d32; --btn-bot:#6bcf6b; --accent:#2e7d32; --accent-light:#6bcf6b; }
@@ -272,19 +274,6 @@ textarea { resize: vertical; min-height: 50px; }
 .mp-bar-fill { height: 100%; width: 0%; background: linear-gradient(to bottom, #ffffff, #a8e0ff); transition: width 0.1s linear; }
 .mp-close { background: transparent; border: none; color: white; font-size: 18px; cursor: pointer; padding: 4px 8px; }
 
-/* AI-АРТ */
-.ai-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
-.ai-history-item { position: relative; cursor: pointer; }
-.ai-history-item img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 10px; border: 2px solid rgba(255,255,255,0.8); }
-.ai-history-item .ai-prompt { position: absolute; bottom: 4px; left: 4px; right: 4px; background: rgba(0,0,0,0.65); color: white; font-size: 9px; padding: 3px 6px; border-radius: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ai-result-img { max-width: 100%; border-radius: 12px; border: 3px solid rgba(255,255,255,0.9); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
-.ai-actions { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 12px; }
-.loader { display: inline-block; width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.3); border-top-color: var(--accent-light); border-radius: 50%; animation: spin 0.8s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
-.ai-loading { text-align: center; padding: 40px 20px; }
-.ai-loading-text { color: var(--accent); margin-top: 14px; font-size: 13px; }
-.ai-loading-prompt { color: #5a8ab0; margin-top: 6px; font-size: 11px; font-style: italic; }
-
 .warn-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.92); display: none; align-items: center; justify-content: center; z-index: 9999; flex-direction: column; color: white; text-align: center; padding: 20px; }
 .warn-overlay.open { display: flex; }
 .warn-icon { font-size: 120px; margin-bottom: 20px; }
@@ -304,6 +293,11 @@ textarea { resize: vertical; min-height: 50px; }
 .theme-preview.dark { background: linear-gradient(to bottom, #1a2634, #2c3e50, #0d1b2a); }
 .theme-label { font-weight: bold; color: var(--accent); font-size: 12px; }
 
+.donate-card { padding: 14px; background: rgba(255,255,255,0.5); border-radius: 12px; border: 2px solid rgba(255,255,255,0.8); margin-bottom: 10px; }
+.donate-title { font-weight: bold; color: var(--accent); font-size: 14px; margin-bottom: 6px; }
+.donate-value { font-family: 'Courier New', monospace; font-size: 14px; background: #fff; padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.1); margin-top: 6px; cursor: pointer; word-break: break-all; }
+.donate-value:hover { background: #f0f8ff; }
+
 @media (max-width: 700px) {
   .grid { grid-template-columns: 1fr; }
   .chat-box { width: calc(100% - 20px); right: 10px; }
@@ -314,7 +308,6 @@ textarea { resize: vertical; min-height: 50px; }
   .music-player { flex-wrap: wrap; padding: 8px; gap: 8px; }
   .mp-info { flex: 1; min-width: 100px; max-width: none; }
   .mp-progress { width: 100%; order: 5; }
-  .ai-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
 }
 </style>
 </head>
@@ -351,7 +344,6 @@ textarea { resize: vertical; min-height: 50px; }
       <button id="navForums" onclick="showPage('forums')">Форумы</button>
       <button id="navGames" onclick="showPage('games')">🎮 Игры</button>
       <button id="navMusic" onclick="showPage('music')">🎵 Retromusic</button>
-      <button id="navAi" onclick="showPage('ai')">🎨 AI-Арт</button>
       <button id="navVote" onclick="showPage('vote')">Голосование</button>
       <button id="navAdmin" style="display:none;" onclick="showPage('admin')">Админка</button>
     </div>
@@ -363,6 +355,7 @@ textarea { resize: vertical; min-height: 50px; }
       <div id="searchSuggest" class="search-suggest"></div>
     </div>
     <div style="display:flex; gap:6px; align-items:center;">
+      <button onclick="openDonate()" title="Поддержать создателя" style="padding:6px 12px;">❤️</button>
       <button onclick="openSettings()" title="Настройки" style="padding:6px 12px;">⚙️</button>
       <span id="meName" style="margin-right:4px; cursor:pointer; font-weight:bold;" onclick="openMyProfile()"></span>
       <button onclick="logout()">Выйти</button>
@@ -383,6 +376,7 @@ textarea { resize: vertical; min-height: 50px; }
           <button style="width:100%; margin-top:6px;" onclick="saveStatus()">Сохранить</button>
           <button style="width:100%; margin-top:6px;" onclick="openAddStory()">+ Добавить историю</button>
           <button style="width:100%; margin-top:6px;" onclick="openChangePassword()">Сменить пароль</button>
+          <button style="width:100%; margin-top:6px;" onclick="openDonate()">❤️ Поддержать</button>
           <button style="width:100%; margin-top:6px;" onclick="openSettings()">⚙️ Настройки</button>
         </div>
         <div class="card">
@@ -649,48 +643,6 @@ textarea { resize: vertical; min-height: 50px; }
     </div>
   </div>
 
-  <!-- AI-АРТ -->
-  <div id="pageAi" style="display:none;">
-    <div class="card">
-      <h3>🎨 AI-Арт</h3>
-      <div class="info-box">
-        Напиши, что хочешь нарисовать. Нейросеть сгенерирует картинку. <b>Бесплатно, без регистрации.</b>
-      </div>
-      <textarea id="aiPrompt" placeholder="Например: кот в неоновом городе, ретро 80-е, синтвейв" style="min-height:70px; margin-bottom:10px;"></textarea>
-      <div class="row">
-        <select id="aiModel" style="flex:1;">
-          <option value="flux">Flux (универсальная)</option>
-          <option value="flux-realism">Flux Realism (фотореализм)</option>
-          <option value="flux-anime">Flux Anime (аниме)</option>
-          <option value="flux-3d">Flux 3D (3D)</option>
-          <option value="turbo">Turbo (быстрая)</option>
-        </select>
-        <select id="aiSize" style="flex:1;">
-          <option value="1024x1024">1024×1024 (квадрат)</option>
-          <option value="1024x768">1024×768 (альбом)</option>
-          <option value="768x1024">768×1024 (портрет)</option>
-          <option value="1920x1080">1920×1080 (Full HD)</option>
-          <option value="512x512">512×512 (маленькая)</option>
-        </select>
-      </div>
-      <div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
-        <button class="btn-primary" onclick="generateAiArt()">🎨 Сгенерировать</button>
-        <button onclick="randomAiPrompt()">🎲 Случайная идея</button>
-        <button onclick="clearAiArt()">Очистить</button>
-      </div>
-    </div>
-    <div class="card">
-      <h3>Результат</h3>
-      <div id="aiResult" style="min-height:200px; display:flex; align-items:center; justify-content:center; color:#5a8ab0; text-align:center;">
-        Здесь появится твоя картинка
-      </div>
-    </div>
-    <div class="card">
-      <h3>Мои работы</h3>
-      <div id="aiHistory" class="ai-grid"></div>
-    </div>
-  </div>
-
   <div id="pageAdmin" style="display:none;">
     <div class="card"><h3>Статистика</h3><div class="admin-stats" id="adminStats"></div></div>
     <div class="card"><h3>Пользователи</h3><div style="overflow-x:auto;"><table class="admin-table" id="adminUsersTable"></table></div></div>
@@ -802,9 +754,43 @@ textarea { resize: vertical; min-height: 50px; }
   </div>
 </div>
 
+<div id="donateModal" class="story-viewer">
+  <span class="story-close" onclick="closeDonate()">✕</span>
+  <div style="background:white; padding:24px; border-radius:16px; max-width:480px; width:90%; color:#2a2a2a; border:3px solid rgba(255,255,255,0.9); max-height:90vh; overflow-y:auto;">
+    <h3 style="color:#0361a3; margin-bottom:14px; text-align:center;">❤️ Поддержать создателя</h3>
+    <div class="info-box" style="margin-bottom:16px;">
+      РетроСеть — независимый проект. Здесь нет рекламы, трекеров и слежки. Всё делается на энтузиазме. Если хочешь помочь — вот способы.
+    </div>
+    <div id="donateContent">Загрузка...</div>
+    <div style="margin-top:16px; padding-top:16px; border-top:1px solid #e0e4ea;">
+      <button onclick="shareLink()" class="btn-primary" style="width:100%; padding:10px;">📤 Поделиться ссылкой</button>
+      <button onclick="closeDonate(); showPage('forums');" style="width:100%; padding:10px; margin-top:8px;">💡 Идеи и баги — на форум</button>
+    </div>
+    <div style="color:#5a8ab0; font-size:11px; text-align:center; margin-top:12px;">Спасибо, что ты с нами</div>
+  </div>
+</div>
+
 <div id="mediaViewer" class="media-viewer" onclick="closeMediaViewer()"><img id="mediaViewerImg" src=""></div>
 <div class="toast-container" id="toastContainer"></div>
-<div id="warnOverlay" class="warn-overlay"><div class="warn-icon">🚫</div><div class="warn-title">АЙ-ЯЙ-ЯЙ! ТАК ДЕЛАТЬ НЕЛЬЗЯ!</div><div class="warn-text">Тебе грозит бан на год.</div><div class="warn-subtext">Попытка зафиксирована. Логин, IP и время записаны.</div><div class="warn-timer" id="warnTimer">5</div></div>
+
+<div id="warnOverlay" class="warn-overlay">
+  <div class="warn-icon">🚫</div>
+  <div class="warn-title">АЙ-ЯЙ-ЯЙ! ТАК ДЕЛАТЬ НЕЛЬЗЯ!</div>
+  <div class="warn-text">Тебе грозит бан на год.</div>
+  <div class="warn-subtext">Попытка зафиксирована. Логин, IP и время записаны.</div>
+  <div class="warn-timer" id="warnTimer">5</div>
+</div>
+
+<div id="nsfwOverlay" class="warn-overlay">
+  <div class="warn-icon">🔞</div>
+  <div class="warn-title">КОНТЕНТ 18+ ЗАПРЕЩЁН!</div>
+  <div class="warn-text">Это сообщество для всех возрастов.</div>
+  <div class="warn-subtext">
+    Обнажённые фото, рисованный сексуальный контент и NSFW запрещены.<br><br>
+    <b>Повторная попытка = бан аккаунта навсегда.</b>
+  </div>
+  <div class="warn-timer" id="nsfwTimer">5</div>
+</div>
 
 <div id="musicPlayer" class="music-player" style="display:none;">
   <div class="mp-cover" id="mpCover">🎵</div>
@@ -852,24 +838,27 @@ let mpQueue = [];
 let mpIndex = -1;
 let resetTargetId = null;
 let resetTargetUsername = null;
-let aiHistory = JSON.parse(localStorage.getItem('ai_history') || '[]');
+
+// NSFW-модель
+let nsfwModel = null;
+let nsfwLoading = false;
+const NSFW_THRESHOLD = 0.5;
+const NSFW_CLASSES = ['Porn', 'Hentai', 'Sexy'];
+
+async function loadNsfwModel() {
+  if (nsfwModel || nsfwLoading) return;
+  nsfwLoading = true;
+  try {
+    nsfwModel = await nsfwjs.load();
+    console.log('✅ NSFW модель загружена');
+  } catch (e) {
+    console.error('❌ Ошибка загрузки NSFW:', e);
+  }
+  nsfwLoading = false;
+}
+loadNsfwModel();
 
 const STICKERS = ['😀','😂','🥰','😎','🤔','😴','🥳','😭','😡','🤯','👍','👎','👋','🙏','💪','🤝','✌️','🤘','👌','🫡','❤️','💔','💯','🔥','⭐','✨','🎉','🎁','🏆','🎯','🐱','🐶','🦊','🐼','🐧','🦄','🐉','🦋','🐸','🐵','🍕','🍔','🍩','🍭','☕','🍺','🍎','🍉','🌮','🍿','🌈','☀️','🌙','⚡','❄️','💧','🌊','🌋','🌸','🍀'];
-
-const RANDOM_PROMPTS = [
-  'кот в неоновом городе, синтвейв, ретро 80-е',
-  'закат над океаном, пиксель-арт, 8-бит',
-  'робот в стиле vaporwave, розовые тона',
-  'старый компьютер в комнате 90-х, тёплый свет',
-  'космонавт на дискотеке, зеркальный шар',
-  'дракон из стекла, светящийся, фэнтези',
-  'ретро-машина на шоссе, закат, плёночный эффект',
-  'киберпанк-город, дождь, неон, ночь',
-  'лес с светящимися грибами, магия',
-  'пляж, пальмы, VHS-эффект, 1985 год',
-  'здание в стиле Frutiger Aero, голубое небо',
-  'пингвин в космосе, мультяшный стиль'
-];
 
 function renderPrefix(prefix) { return prefix ? `<span class="prefix-retro">${esc(prefix)}</span>` : ''; }
 function getPrefixFromCache(username) { return username === 'qwyrta' ? 'Любитель ретро' : null; }
@@ -895,6 +884,69 @@ function isForbiddenFile(file) { if (!file) return false; const t = (file.type||
 function isValidUrl(url) { if (!url) return false; const s = String(url).trim().toLowerCase(); if (s.startsWith('data:')) return s.startsWith('data:image/png')||s.startsWith('data:image/jpeg')||s.startsWith('data:image/jpg')||s.startsWith('data:image/gif')||s.startsWith('data:image/webp')||s.startsWith('data:video/mp4')||s.startsWith('data:video/webm')||s.startsWith('data:audio/'); if (s.startsWith('javascript:')||s.startsWith('vbscript:')||s.startsWith('file:')) return false; return true; }
 function checkContent(...f) { for (const x of f) if (containsForbidden(x)) return true; return false; }
 
+async function isNsfwImage(file) {
+  if (!nsfwModel) {
+    let waited = 0;
+    while (!nsfwModel && waited < 8000) {
+      await new Promise(r => setTimeout(r, 500));
+      waited += 500;
+    }
+    if (!nsfwModel) return false;
+  }
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = async () => {
+      try {
+        const predictions = await nsfwModel.classify(img, 5);
+        const score = predictions.filter(p => NSFW_CLASSES.includes(p.className)).reduce((s, p) => s + p.probability, 0);
+        console.log('🔍 NSFW:', score.toFixed(3));
+        resolve(score > NSFW_THRESHOLD);
+      } catch (e) { resolve(false); }
+      finally { URL.revokeObjectURL(img.src); }
+    };
+    img.onerror = () => { URL.revokeObjectURL(img.src); resolve(false); };
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+async function isNsfwUrl(url) {
+  if (!url || !isValidUrl(url)) return false;
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    const timeout = setTimeout(() => { img.src = ''; resolve(false); }, 10000);
+    img.onload = async () => {
+      clearTimeout(timeout);
+      if (!nsfwModel) { resolve(false); return; }
+      try {
+        const predictions = await nsfwModel.classify(img, 5);
+        const score = predictions.filter(p => NSFW_CLASSES.includes(p.className)).reduce((s, p) => s + p.probability, 0);
+        console.log('🔍 NSFW URL:', score.toFixed(3));
+        resolve(score > NSFW_THRESHOLD);
+      } catch (e) { resolve(false); }
+    };
+    img.onerror = () => { clearTimeout(timeout); resolve(false); };
+    img.src = url;
+  });
+}
+
+let nsfwTimerInterval = null;
+function showNsfwWarning() {
+  const o = document.getElementById('nsfwOverlay');
+  const t = document.getElementById('nsfwTimer');
+  if (!o) return;
+  o.classList.add('open');
+  let c = 5; t.textContent = c;
+  if (nsfwTimerInterval) clearInterval(nsfwTimerInterval);
+  nsfwTimerInterval = setInterval(() => {
+    c--;
+    if (c <= 0) { clearInterval(nsfwTimerInterval); nsfwTimerInterval = null; o.classList.remove('open'); }
+    else t.textContent = c;
+  }, 1000);
+  api('/security/attempt', 'POST', { reason: 'NSFW_IMAGE_ATTEMPT' }).catch(() => {});
+}
+
 let warnTimerInterval = null;
 function showForbiddenWarning(reason) {
   const o = document.getElementById('warnOverlay'), t = document.getElementById('warnTimer');
@@ -911,6 +963,45 @@ function openSettings() { document.getElementById('settingsModal').classList.add
 function closeSettings() { document.getElementById('settingsModal').classList.remove('open'); }
 function toggleSounds() { soundsEnabled = !soundsEnabled; localStorage.setItem('sounds', soundsEnabled ? 'on' : 'off'); updateSoundsBtn(); if (soundsEnabled) playNotificationSound(); }
 function updateSoundsBtn() { const b = document.getElementById('soundsBtn'); if (b) b.textContent = soundsEnabled ? '🔊 Звуки: ВКЛ' : '🔇 Звуки: ВЫКЛ'; }
+
+// ДОНАТЫ
+async function openDonate() {
+  document.getElementById('donateModal').classList.add('open');
+  const content = document.getElementById('donateContent');
+  content.innerHTML = 'Загрузка...';
+  try {
+    const info = await api('/donate');
+    let html = '';
+    if (info.card) html += `<div class="donate-card"><div class="donate-title">💳 Карта</div><div class="donate-value" onclick="copyText('${esc(info.card)}')">${esc(info.card)}</div></div>`;
+    if (info.sberbank) html += `<div class="donate-card"><div class="donate-title">🟢 Сбербанк</div><div class="donate-value" onclick="copyText('${esc(info.sberbank)}')">${esc(info.sberbank)}</div></div>`;
+    if (info.yoomoney) html += `<div class="donate-card"><div class="donate-title">💛 ЮMoney</div><div class="donate-value" onclick="copyText('${esc(info.yoomoney)}')">${esc(info.yoomoney)}</div></div>`;
+    if (info.qiwi) html += `<div class="donate-card"><div class="donate-title">🥝 QIWI</div><div class="donate-value" onclick="copyText('${esc(info.qiwi)}')">${esc(info.qiwi)}</div></div>`;
+    if (info.message) html += `<div style="text-align:center; color:#5a8ab0; font-size:11px; margin-top:10px;">${esc(info.message)}</div>`;
+    html += `<div style="text-align:center; color:#888; font-size:10px; margin-top:8px;">Нажми на реквизиты, чтобы скопировать</div>`;
+    content.innerHTML = html;
+  } catch (e) {
+    content.innerHTML = '<div style="color:#e53935;">Ошибка загрузки реквизитов</div>';
+  }
+}
+function closeDonate() { document.getElementById('donateModal').classList.remove('open'); }
+function copyText(text) {
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(() => {
+      showToast({ username: 'Поддержка', text: '✅ Скопировано: ' + text, onClick: () => {} });
+    }).catch(() => { prompt('Скопируй:', text); });
+  } else { prompt('Скопируй:', text); }
+}
+async function shareLink() {
+  const url = window.location.origin;
+  const text = 'РетроСеть 2010 — соцсеть в стиле 2010-х. Без рекламы и слежки. Заходи!';
+  if (navigator.share) {
+    try { await navigator.share({ title: 'РетроСеть 2010', text, url }); return; } catch (e) {}
+  }
+  if (navigator.clipboard) {
+    try { await navigator.clipboard.writeText(url + '\n' + text); showToast({ username: 'Поддержка', text: '✅ Ссылка скопирована', onClick: () => {} }); }
+    catch (e) { prompt('Скопируй:', url); }
+  } else { prompt('Скопируй:', url); }
+}
 
 function switchTab(t) {
   document.getElementById('tabLogin').classList.toggle('active', t === 'login');
@@ -934,21 +1025,20 @@ async function startApp() {
   if (me.role === 'admin') { document.getElementById('navAdmin').style.display = 'inline-block'; document.getElementById('newsAdmin').style.display = 'block'; document.getElementById('voteAdmin').style.display = 'block'; }
   initSocket(); initStickerPanels(); initBgColors();
   loadPosts(); loadFriends(); loadNews(); loadGroups(); loadForums(); loadStories();
-  renderAiHistory();
   requestNotificationPermission();
 }
 function showAuth() { document.getElementById('auth').style.display = 'block'; document.getElementById('main').style.display = 'none'; }
 
 function showPage(page) {
   currentPage = page;
-  const pages = ['feed','profile','news','groups','forums','games','music','ai','vote','admin','search'];
+  const pages = ['feed','profile','news','groups','forums','games','music','vote','admin','search'];
   pages.forEach(p => {
     const nav = document.getElementById('nav' + p.charAt(0).toUpperCase() + p.slice(1));
     if (nav) nav.classList.toggle('active', p === page);
     const el = document.getElementById('page' + p.charAt(0).toUpperCase() + p.slice(1));
     if (el) el.style.display = 'none';
   });
-  const map = { feed:'pageFeed', profile:'pageProfile', news:'pageNews', groups:'pageGroups', forums:'pageForums', games:'pageGames', music:'pageMusic', ai:'pageAi', vote:'pageVote', admin:'pageAdmin', search:'pageSearch' };
+  const map = { feed:'pageFeed', profile:'pageProfile', news:'pageNews', groups:'pageGroups', forums:'pageForums', games:'pageGames', music:'pageMusic', vote:'pageVote', admin:'pageAdmin', search:'pageSearch' };
   const el = document.getElementById(map[page]);
   if (el) el.style.display = 'block';
   if (page === 'news') loadNews();
@@ -957,7 +1047,6 @@ function showPage(page) {
   if (page === 'forums') { document.getElementById('forumsList').style.display = 'block'; document.getElementById('forumView').style.display = 'none'; document.getElementById('topicView').style.display = 'none'; loadForums(); }
   if (page === 'games') { showGamesHome(); showGamesTab(currentGamesTab); }
   if (page === 'music') showMusicTab(currentMusicTab);
-  if (page === 'ai') renderAiHistory();
   if (page === 'admin') loadAdmin();
   if (page === 'feed') loadStories();
 }
@@ -1015,10 +1104,26 @@ async function createPost() {
   if (!content && !image && !video && !gif && !sticker) return;
   if (checkContent(content, image, video, gif)) { showForbiddenWarning('В посте запрещённый контент'); return; }
   if ((image && !isValidUrl(image)) || (video && !isValidUrl(video)) || (gif && !isValidUrl(gif))) { showForbiddenWarning('Недопустимый URL'); return; }
-  await api('/posts', 'POST', { content, image, video, gif, sticker });
-  ['postContent','postImage','postVideo','postGif'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('postStickerPreview').textContent = '';
-  loadPosts();
+  
+  // NSFW-проверка картинок по URL
+  if (image) {
+    const isNsfw = await isNsfwUrl(image);
+    if (isNsfw) { showNsfwWarning(); return; }
+  }
+  if (gif) {
+    const isNsfw = await isNsfwUrl(gif);
+    if (isNsfw) { showNsfwWarning(); return; }
+  }
+  
+  try {
+    await api('/posts', 'POST', { content, image, video, gif, sticker });
+    ['postContent','postImage','postVideo','postGif'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('postStickerPreview').textContent = '';
+    loadPosts();
+  } catch (e) {
+    if (e.message.includes('18+')) showNsfwWarning();
+    else alert(e.message);
+  }
 }
 async function toggleLike(id) { await api('/like/' + id, 'POST'); loadPosts(); }
 async function deletePost(id) { if (!confirm('Удалить?')) return; await api('/posts/' + id, 'DELETE'); loadPosts(); }
@@ -1035,7 +1140,7 @@ function renderFriends() {
   el.querySelectorAll('.friend').forEach(node => { node.addEventListener('click', () => { const uid = Number(node.dataset.uid); const u = users.find(x => x.id === uid); if (u) openFriendChat(uid, u.username); }); });
 }
 function openFriendChat(id, username) { clearUnread(id); openChat(id, username); }
-async function saveStatus() { const status = document.getElementById('myStatus').value; if (containsForbidden(status)) { showForbiddenWarning('В статусе запрещённый контент'); return; } await api('/me', 'PUT', { status, avatar: me.avatar || '', bio: me.bio || '' }); alert('Сохранено'); }
+async function saveStatus() { const status = document.getElementById('myStatus').value; if (containsForbidden(status)) { showForbiddenWarning('В статусе запрещённый контент'); return; } try { await api('/me', 'PUT', { status, avatar: me.avatar || '', bio: me.bio || '' }); alert('Сохранено'); } catch (e) { if (e.message.includes('18+')) showNsfwWarning(); else alert(e.message); } }
 
 function openChangePassword() { document.getElementById('changePasswordModal').classList.add('open'); document.getElementById('oldPassword').value = ''; document.getElementById('newPassword').value = ''; document.getElementById('newPassword2').value = ''; document.getElementById('pwdErr').style.display = 'none'; }
 function closeChangePassword() { document.getElementById('changePasswordModal').classList.remove('open'); }
@@ -1079,7 +1184,18 @@ function showProfileTab(tab) {
   document.getElementById('profilePostsView').style.display = tab === 'posts' ? 'block' : 'none';
   document.getElementById('profileGalleryView').style.display = tab === 'gallery' ? 'block' : 'none';
 }
-async function addToGallery() { const url = document.getElementById('galleryUrl').value.trim(); const media_type = document.getElementById('galleryType').value; if (!url) return alert('Введите ссылку'); if (containsForbidden(url) || !isValidUrl(url)) { showForbiddenWarning('Недопустимый URL'); return; } await api('/profile/gallery', 'POST', { url, media_type }); document.getElementById('galleryUrl').value = ''; openProfile(me.id); }
+async function addToGallery() {
+  const url = document.getElementById('galleryUrl').value.trim();
+  const media_type = document.getElementById('galleryType').value;
+  if (!url) return alert('Введите ссылку');
+  if (containsForbidden(url) || !isValidUrl(url)) { showForbiddenWarning('Недопустимый URL'); return; }
+  if (media_type === 'image' || media_type === 'gif') {
+    const isNsfw = await isNsfwUrl(url);
+    if (isNsfw) { showNsfwWarning(); return; }
+  }
+  try { await api('/profile/gallery', 'POST', { url, media_type }); document.getElementById('galleryUrl').value = ''; openProfile(me.id); }
+  catch (e) { if (e.message.includes('18+')) showNsfwWarning(); else alert(e.message); }
+}
 async function removeFromGallery(id) { if (!confirm('Удалить?')) return; await api('/profile/gallery/' + id, 'DELETE'); openProfile(me.id); }
 
 let allStories = [];
@@ -1116,9 +1232,12 @@ async function publishStory() {
   if (!content && !image && !video) return alert('Заполните хоть что-то');
   if (checkContent(content, image, video)) { showForbiddenWarning('В истории запрещённый контент'); return; }
   if ((image && !isValidUrl(image)) || (video && !isValidUrl(video))) { showForbiddenWarning('Недопустимый URL'); return; }
-  await api('/stories', 'POST', { content, image, video, background: selectedBg });
-  ['storyText','storyImage','storyVideo'].forEach(id => document.getElementById(id).value = '');
-  closeAddStory(); loadStories();
+  if (image) { const isNsfw = await isNsfwUrl(image); if (isNsfw) { showNsfwWarning(); return; } }
+  try {
+    await api('/stories', 'POST', { content, image, video, background: selectedBg });
+    ['storyText','storyImage','storyVideo'].forEach(id => document.getElementById(id).value = '');
+    closeAddStory(); loadStories();
+  } catch (e) { if (e.message.includes('18+')) showNsfwWarning(); else alert(e.message); }
 }
 function openStoryViewer(userId) { currentStoryGroup = allStories.filter(s => s.user_id === userId); if (!currentStoryGroup.length) return; currentStoryIndex = 0; renderStory(); document.getElementById('storyViewer').classList.add('open'); }
 function renderStory() {
@@ -1233,7 +1352,7 @@ function renderMsgMedia(media) {
 }
 
 function openAttach() { document.getElementById('fileInput').click(); }
-document.getElementById('fileInput').addEventListener('change', (e) => {
+document.getElementById('fileInput').addEventListener('change', async (e) => {
   const file = e.target.files[0];
   if (!file) return;
   if (isForbiddenFile(file)) { showForbiddenWarning('Запрещённый файл: ' + file.name); e.target.value = ''; return; }
@@ -1243,12 +1362,38 @@ document.getElementById('fileInput').addEventListener('change', (e) => {
   else if (file.type.startsWith('video/')) type = 'video';
   else if (file.type.startsWith('audio/')) type = 'audio';
   else { showForbiddenWarning('Недопустимый формат'); e.target.value = ''; return; }
-  if (file.size > 25 * 1024 * 1024) return alert('Файл больше 25 МБ');
+  if (file.size > 25 * 1024 * 1024) { alert('Файл больше 25 МБ'); e.target.value = ''; return; }
+  
+  // NSFW-проверка картинок
+  if (type === 'image' || type === 'gif') {
+    const preview = document.getElementById('attachPreview');
+    preview.style.display = 'flex';
+    preview.innerHTML = '<div style="padding:8px; color:#5a8ab0;">🔍 Проверяю картинку...</div>';
+    const isNsfw = await isNsfwImage(file);
+    if (isNsfw) {
+      preview.style.display = 'none';
+      preview.innerHTML = '';
+      showNsfwWarning();
+      e.target.value = '';
+      return;
+    }
+    preview.style.display = 'none';
+    preview.innerHTML = '';
+  }
+  
   const reader = new FileReader();
-  reader.onload = () => { if (typeof reader.result === 'string' && (reader.result.startsWith('data:image/svg') || containsForbidden(reader.result.slice(0, 500)))) { showForbiddenWarning('В файле запрещённый контент'); return; } pendingAttach.push({ type, url: reader.result, filename: file.name }); renderAttachPreview(); };
+  reader.onload = () => {
+    if (typeof reader.result === 'string' && (reader.result.startsWith('data:image/svg') || containsForbidden(reader.result.slice(0, 500)))) {
+      showForbiddenWarning('В файле запрещённый контент');
+      return;
+    }
+    pendingAttach.push({ type, url: reader.result, filename: file.name });
+    renderAttachPreview();
+  };
   reader.readAsDataURL(file);
   e.target.value = '';
 });
+
 function renderAttachPreview() {
   const el = document.getElementById('attachPreview');
   if (!pendingAttach.length) { el.style.display = 'none'; el.innerHTML = ''; return; }
@@ -1265,8 +1410,10 @@ async function sendMsg() {
   for (const a of pendingAttach) { if (containsForbidden(a.url?.slice(0, 500) || '')) { showForbiddenWarning('Запрещённое вложение'); return; } }
   const media = pendingAttach.map(a => ({ type: a.type, url: a.url, filename: a.filename }));
   input.value = ''; pendingAttach = []; renderAttachPreview();
-  const m = await api('/messages/' + currentChat.id, 'POST', { content, media });
-  addChatMsg({ ...m, from_username: me.username, from_prefix: me.prefix }, true);
+  try {
+    const m = await api('/messages/' + currentChat.id, 'POST', { content, media });
+    addChatMsg({ ...m, from_username: me.username, from_prefix: me.prefix }, true);
+  } catch (e) { if (e.message.includes('18+')) showNsfwWarning(); else alert(e.message); }
 }
 
 function handleIncomingMessage(msg) {
@@ -1455,7 +1602,9 @@ async function createGroupPost() {
   if (!content && !image && !video && !gif && !sticker) return;
   if (checkContent(content, image, video, gif)) { showForbiddenWarning('Запрещённый контент'); return; }
   if ((image && !isValidUrl(image)) || (video && !isValidUrl(video)) || (gif && !isValidUrl(gif))) { showForbiddenWarning('Недопустимый URL'); return; }
-  try { await api('/groups/' + currentGroupId + '/posts', 'POST', { content, image, video, gif, sticker }); ['gPostContent','gPostImage','gPostVideo','gPostGif'].forEach(id => document.getElementById(id).value = ''); document.getElementById('groupStickerPreview').textContent = ''; loadGroupPosts(); } catch (e) { alert(e.message); }
+  if (image) { const isNsfw = await isNsfwUrl(image); if (isNsfw) { showNsfwWarning(); return; } }
+  if (gif) { const isNsfw = await isNsfwUrl(gif); if (isNsfw) { showNsfwWarning(); return; } }
+  try { await api('/groups/' + currentGroupId + '/posts', 'POST', { content, image, video, gif, sticker }); ['gPostContent','gPostImage','gPostVideo','gPostGif'].forEach(id => document.getElementById(id).value = ''); document.getElementById('groupStickerPreview').textContent = ''; loadGroupPosts(); } catch (e) { if (e.message.includes('18+')) showNsfwWarning(); else alert(e.message); }
 }
 async function toggleGroupLike(id) { await api('/group-like/' + id, 'POST'); loadGroupPosts(); }
 
@@ -1478,7 +1627,7 @@ async function loadForumView() {
   el.innerHTML = data.topics.map(t => `<div class="topic-item" data-tid="${t.id}"><div><div class="topic-title">${esc(t.title)}</div><div class="topic-meta">Автор: ${esc(t.author || '—')} · ${fmtDate(t.created_at)}</div></div><div class="topic-meta">${t.posts_count} сообщ.</div></div>`).join('');
   el.querySelectorAll('[data-tid]').forEach(n => n.addEventListener('click', () => openTopic(Number(n.dataset.tid))));
 }
-async function createTopic() { const title = document.getElementById('topicTitle').value.trim(); if (!title) return alert('Введите название'); if (containsForbidden(title)) { showForbiddenWarning('Запрещённый контент'); return; } await api('/forums/' + currentForumId + '/topics', 'POST', { title }); document.getElementById('topicTitle').value = ''; loadForumView(); }
+async function createTopic() { const title = document.getElementById('topicTitle').value.trim(); if (!title) return alert('Введите название'); if (containsForbidden(title)) { showForbiddenWarning('Запрещённый контент'); return; } try { await api('/forums/' + currentForumId + '/topics', 'POST', { title }); document.getElementById('topicTitle').value = ''; loadForumView(); } catch (e) { if (e.message.includes('18+')) showNsfwWarning(); else alert(e.message); } }
 async function openTopic(id) { currentTopicId = id; document.getElementById('forumsList').style.display = 'none'; document.getElementById('forumView').style.display = 'none'; document.getElementById('topicView').style.display = 'block'; await loadTopic(id); }
 async function loadTopic(id) {
   const data = await api('/topics/' + id);
@@ -1490,7 +1639,7 @@ async function loadTopic(id) {
   if (!data.posts.length) { el.innerHTML = '<div style="color:#5a8ab0; text-align:center; padding:15px;">Сообщений нет</div>'; return; }
   el.innerHTML = data.posts.map(p => `<div class="forum-post"><div class="avatar">${p.avatar ? `<img src="${esc(p.avatar)}">` : esc(p.username[0].toUpperCase())}</div><div class="body"><div><span class="post-author">${esc(p.username)}${renderPrefix(p.prefix)}</span> <span class="post-date">${fmtDate(p.created_at)}</span></div><div style="margin-top:6px;">${esc(p.content)}</div></div></div>`).join('');
 }
-async function replyTopic() { const content = document.getElementById('topicReply').value.trim(); if (!content) return; if (containsForbidden(content)) { showForbiddenWarning('Запрещённый контент'); return; } await api('/topics/' + currentTopicId + '/posts', 'POST', { content }); document.getElementById('topicReply').value = ''; loadTopic(currentTopicId); }
+async function replyTopic() { const content = document.getElementById('topicReply').value.trim(); if (!content) return; if (containsForbidden(content)) { showForbiddenWarning('Запрещённый контент'); return; } try { await api('/topics/' + currentTopicId + '/posts', 'POST', { content }); document.getElementById('topicReply').value = ''; loadTopic(currentTopicId); } catch (e) { if (e.message.includes('18+')) showNsfwWarning(); else alert(e.message); } }
 
 function showGamesHome() { document.getElementById('gamesHome').style.display = 'block'; document.getElementById('gameView').style.display = 'none'; }
 function showGamesTab(tab) {
@@ -1650,135 +1799,6 @@ document.getElementById('mpAudio').addEventListener('timeupdate', (e) => { const
 document.getElementById('mpAudio').addEventListener('ended', () => { mpNext(); });
 function formatTime(s) { if (!s || isNaN(s)) return '0:00'; const m = Math.floor(s / 60); const sec = Math.floor(s % 60); return m + ':' + String(sec).padStart(2, '0'); }
 
-// ============================================================
-// AI-АРТ
-// ============================================================
-async function generateAiArt() {
-  const prompt = document.getElementById('aiPrompt').value.trim();
-  if (!prompt) return alert('Введи текст');
-
-  const model = document.getElementById('aiModel').value;
-  const sizeValue = document.getElementById('aiSize').value;
-  const [width, height] = sizeValue.split('x').map(Number);
-
-  const result = document.getElementById('aiResult');
-  result.innerHTML = `
-    <div class="ai-loading">
-      <div class="loader"></div>
-      <div class="ai-loading-text">Генерирую картинку...</div>
-      <div class="ai-loading-prompt">«${esc(prompt)}»</div>
-      <div style="color:#5a8ab0; font-size:10px; margin-top:6px;">Обычно 5–15 секунд</div>
-    </div>
-  `;
-
-  try {
-    const data = await api('/ai/art?prompt=' + encodeURIComponent(prompt) + '&model=' + model + '&width=' + width + '&height=' + height);
-    const img = new Image();
-    img.onload = () => {
-      result.innerHTML = `
-        <div style="text-align:center; width:100%;">
-          <img src="${data.url}" class="ai-result-img">
-          <div class="ai-actions">
-            <button class="btn-primary" onclick="saveAiToPost('${esc(data.url)}', '${esc(prompt).replace(/'/g, "\\'")}')">📝 Опубликовать</button>
-            <button onclick="downloadAiImage('${esc(data.url)}')">💾 Скачать</button>
-            <button onclick="copyAiUrl('${esc(data.url)}')">🔗 Ссылка</button>
-            <button onclick="generateAiArt()">🔄 Ещё</button>
-          </div>
-        </div>
-      `;
-      addToAiHistory(data.url, prompt);
-    };
-    img.onerror = () => {
-      result.innerHTML = '<div style="color:#e53935; text-align:center; padding:20px;">Ошибка загрузки. Попробуй ещё раз или измени текст.</div>';
-    };
-    img.src = data.url;
-    setTimeout(() => { if (!img.complete) img.onerror(); }, 90000);
-  } catch (e) {
-    result.innerHTML = '<div style="color:#e53935; text-align:center; padding:20px;">Ошибка: ' + esc(e.message) + '</div>';
-  }
-}
-
-function clearAiArt() {
-  document.getElementById('aiPrompt').value = '';
-  document.getElementById('aiResult').innerHTML = '<div style="color:#5a8ab0;">Здесь появится твоя картинка</div>';
-}
-
-function randomAiPrompt() {
-  const p = RANDOM_PROMPTS[Math.floor(Math.random() * RANDOM_PROMPTS.length)];
-  document.getElementById('aiPrompt').value = p;
-}
-
-function addToAiHistory(url, prompt) {
-  aiHistory.unshift({ url, prompt, date: Date.now() });
-  if (aiHistory.length > 30) aiHistory = aiHistory.slice(0, 30);
-  localStorage.setItem('ai_history', JSON.stringify(aiHistory));
-  renderAiHistory();
-}
-
-function renderAiHistory() {
-  const el = document.getElementById('aiHistory');
-  if (!el) return;
-  if (!aiHistory.length) {
-    el.innerHTML = '<div style="color:#5a8ab0; font-size:11px; grid-column:1/-1; text-align:center; padding:20px;">Пока ничего не сгенерировано</div>';
-    return;
-  }
-  el.innerHTML = aiHistory.map((h, i) => `
-    <div class="ai-history-item" data-ai-history="${i}">
-      <img src="${esc(h.url)}" loading="lazy">
-      <div class="ai-prompt">${esc(h.prompt.slice(0, 30))}</div>
-    </div>
-  `).join('');
-
-  el.querySelectorAll('[data-ai-history]').forEach(n => {
-    n.addEventListener('click', () => {
-      const item = aiHistory[Number(n.dataset.aiHistory)];
-      document.getElementById('aiPrompt').value = item.prompt;
-      document.getElementById('aiResult').innerHTML = `
-        <div style="text-align:center; width:100%;">
-          <img src="${esc(item.url)}" class="ai-result-img">
-          <div class="ai-actions">
-            <button class="btn-primary" onclick="saveAiToPost('${esc(item.url)}', '${esc(item.prompt).replace(/'/g, "\\'")}')">📝 Опубликовать</button>
-            <button onclick="downloadAiImage('${esc(item.url)}')">💾 Скачать</button>
-            <button onclick="copyAiUrl('${esc(item.url)}')">🔗 Ссылка</button>
-          </div>
-        </div>
-      `;
-    });
-  });
-}
-
-function downloadAiImage(url) {
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'ai-art-' + Date.now() + '.jpg';
-  a.target = '_blank';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-}
-
-function copyAiUrl(url) {
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(url).then(() => {
-      showToast({ username: 'AI-Арт', text: '✅ Ссылка скопирована', onClick: () => {} });
-    }).catch(() => {
-      prompt('Скопируй ссылку:', url);
-    });
-  } else {
-    prompt('Скопируй ссылку:', url);
-  }
-}
-
-function saveAiToPost(url, promptText) {
-  document.getElementById('postContent').value = 'Сгенерировано AI: ' + promptText;
-  document.getElementById('postImage').value = url;
-  showPage('feed');
-  setTimeout(() => {
-    document.getElementById('postContent').scrollIntoView({ behavior: 'smooth' });
-    document.getElementById('postContent').focus();
-  }, 300);
-}
-
 // АДМИНКА
 async function loadAdmin() {
   const stats = await api('/admin/stats');
@@ -1798,7 +1818,7 @@ async function loadAdmin() {
   table.querySelectorAll('[data-admin-reset]').forEach(n => n.addEventListener('click', () => openResetPassword(Number(n.dataset.adminReset), n.dataset.username)));
 
   const audit = await api('/admin/audit');
-  document.getElementById('adminAuditTable').innerHTML = `<tr><th>Время</th><th>Юзер</th><th>Действие</th><th>Детали</th><th>IP</th></tr>${audit.map(a => { const danger = a.action === 'FORBIDDEN_CONTENT_ATTEMPT'; return `<tr class="${danger ? 'audit-danger' : ''}"><td>${fmtDate(a.created_at)}</td><td>${esc(a.username || '—')}</td><td>${danger ? '⚠ ' : ''}${esc(a.action)}</td><td>${esc(a.details || '')}</td><td style="font-size:10px; color:#5a8ab0;">${esc(a.ip || '')}</td></tr>`; }).join('')}`;
+  document.getElementById('adminAuditTable').innerHTML = `<tr><th>Время</th><th>Юзер</th><th>Действие</th><th>Детали</th><th>IP</th></tr>${audit.map(a => { const danger = a.action === 'FORBIDDEN_CONTENT_ATTEMPT' || a.action === 'NSFW_ATTEMPT' || a.action === 'NSFW_TEXT_ATTEMPT'; return `<tr class="${danger ? 'audit-danger' : ''}"><td>${fmtDate(a.created_at)}</td><td>${esc(a.username || '—')}</td><td>${danger ? '⚠ ' : ''}${esc(a.action)}</td><td>${esc(a.details || '')}</td><td style="font-size:10px; color:#5a8ab0;">${esc(a.ip || '')}</td></tr>`; }).join('')}`;
 
   const groups = await api('/groups');
   const forums = await api('/forums');
@@ -1862,4 +1882,4 @@ initTheme();
 if (token) startApp(); else showAuth();
 </script>
 </body>
-</html>
+        </html>
