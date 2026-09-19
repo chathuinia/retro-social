@@ -1,4 +1,4 @@
-// server.js — соцсеть + форумы + группы + игры + Retromusic + AI-Арт + 2 владельца
+// server.js — соцсеть + форумы + группы + игры + Retromusic + NSFW-фильтр + донаты
 const express = require('express');
 const http = require('http');
 const path = require('path');
@@ -20,8 +20,8 @@ app.use((req, res, next) => {
   res.setHeader('Referrer-Policy', 'no-referrer');
   res.setHeader('Content-Security-Policy',
     "default-src 'self'; img-src 'self' data: https: http: blob:; media-src 'self' data: https: http: blob:; " +
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://cdn.socket.io https://scratch.mit.edu; " +
-    "style-src 'self' 'unsafe-inline'; connect-src 'self' ws: wss:; " +
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://cdn.socket.io https://cdn.jsdelivr.net https://scratch.mit.edu; " +
+    "style-src 'self' 'unsafe-inline'; connect-src 'self' ws: wss: https://cdn.jsdelivr.net; " +
     "frame-src https://www.youtube.com https://vk.com https://scratch.mit.edu; " +
     "object-src 'self'; base-uri 'self'; form-action 'self';"
   );
@@ -31,12 +31,21 @@ app.use((req, res, next) => {
 // ============================================================
 // ВСТАВЬТЕ СВОЮ СТРОКУ ИЗ NEON НИЖЕ (без ?sslmode=require)
 // ============================================================
-const HARDCODED_DB_URL = 'postgresql://neondb_owner:npg_yOQcIwub8V6N@ep-solitary-rain-a5orxtnv-pooler.us-east-2.aws.neon.tech/neondb';
+const HARDCODED_DB_URL ='postgresql://neondb_owner:npg_yOQcIwub8V6N@ep-solitary-rain-a5orxtnv-pooler.us-east-2.aws.neon.tech/neondb';
 const HARDCODED_JWT_SECRET = 'retro2010secret123';
 
 // ВЛАДЕЛЬЦЫ
 const OWNER_USERNAMES = ['lol', 'qwyrta'];
 const OWNER_USERNAME = OWNER_USERNAMES[0];
+
+// РЕКВИЗИТЫ ДЛЯ ДОНАТОВ (впиши свои)
+const DONATION_INFO = {
+  card: '2200 0000 0000 0000',
+  sberbank: '+7 900 000-00-00',
+  yoomoney: '410011234567890',
+  qiwi: '+7 900 000-00-00',
+  message: 'Спасибо за поддержку проекта!'
+};
 // ============================================================
 
 const JWT_SECRET = process.env.JWT_SECRET || HARDCODED_JWT_SECRET || 'retro-2010-secret';
@@ -78,6 +87,19 @@ function isValidUrl(url) {
   }
   if (s.startsWith('javascript:') || s.startsWith('vbscript:') || s.startsWith('file:')) return false;
   return true;
+}
+
+// NSFW-фильтр по тексту (промпт, описание, названия)
+const NSFW_TEXT_PATTERNS = [
+  /\b(porn|nsfw|nude|naked|boob|tits|pussy|dick|cock|hentai|horny|orgasm|sexual|erotic|onlyfans|xxx|18\+|bikini|lingerie|underwear)\b/i,
+  /\b(порн|порнух|секс|эрот|хорни|нюд|нюдс|голая|голый|обнаж|разде[вт]|сиськ|груд|вагин|пенис|член|письк|трах|ебл|минет|анальн|оральн|конч|оргазм|возбуд|пошл|грязн)\b/i,
+  /\b(гол[аоы]|гол[аоы]е|без\s+одежды|без\s+ничего|раздет)\b/i
+];
+
+function containsNSFWText(str) {
+  if (!str) return false;
+  const s = String(str);
+  return NSFW_TEXT_PATTERNS.some(p => p.test(s));
 }
 
 function getPrefix(username) {
@@ -225,11 +247,6 @@ async function initDB() {
       track_id INTEGER REFERENCES tracks(id) ON DELETE CASCADE, position INTEGER DEFAULT 0,
       UNIQUE(playlist_id, track_id)
     );
-    CREATE TABLE IF NOT EXISTS ai_creations (
-      id SERIAL PRIMARY KEY, user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-      prompt TEXT NOT NULL, url TEXT NOT NULL, model VARCHAR(50) DEFAULT 'flux',
-      created_at TIMESTAMP DEFAULT NOW()
-    );
     CREATE INDEX IF NOT EXISTS idx_audit_user_date ON audit_log(user_id, created_at DESC);
     CREATE INDEX IF NOT EXISTS idx_stories_expires ON stories(expires_at);
   `);
@@ -348,6 +365,10 @@ app.put('/api/me', auth, async (req, res) => {
     await audit(req, 'FORBIDDEN_CONTENT_ATTEMPT', 'profile');
     return res.status(400).json({ error: 'Запрещённый контент' });
   }
+  if (containsNSFWText(status) || containsNSFWText(bio)) {
+    await audit(req, 'NSFW_TEXT_ATTEMPT', 'profile');
+    return res.status(400).json({ error: 'Контент 18+ запрещён' });
+  }
   try {
     await pool.query('UPDATE users SET status=$1, avatar=$2, bio=$3 WHERE id=$4', [status || '', avatar || '', bio || '', req.user.id]);
     res.json({ ok: true });
@@ -374,6 +395,11 @@ app.get('/api/users', auth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ДОНАТЫ
+app.get('/api/donate', auth, (req, res) => {
+  res.json(DONATION_INFO);
+});
+
 // ГАЛЕРЕЯ
 app.get('/api/profile/gallery', auth, async (req, res) => {
   try { res.json((await pool.query('SELECT * FROM profile_gallery WHERE user_id=$1 ORDER BY created_at DESC', [req.user.id])).rows); }
@@ -384,6 +410,7 @@ app.post('/api/profile/gallery', auth, async (req, res) => {
   const { url, media_type, title } = req.body;
   if (!url) return res.status(400).json({ error: 'Нет ссылки' });
   if (containsForbidden(url) || !isValidUrl(url)) { await audit(req, 'FORBIDDEN_CONTENT_ATTEMPT', 'gallery'); return res.status(400).json({ error: 'Запрещённый контент' }); }
+  if (containsNSFWText(title)) { await audit(req, 'NSFW_TEXT_ATTEMPT', 'gallery'); return res.status(400).json({ error: 'Контент 18+ запрещён' }); }
   try { const r = await pool.query('INSERT INTO profile_gallery(user_id, url, media_type, title) VALUES($1,$2,$3,$4) RETURNING *', [req.user.id, url, media_type || 'image', title || '']); res.json(r.rows[0]); }
   catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -418,6 +445,7 @@ app.post('/api/stories', auth, async (req, res) => {
   const { content, image, video, background } = req.body;
   if (!content?.trim() && !image && !video) return res.status(400).json({ error: 'Пустая история' });
   if (containsForbidden(content) || containsForbidden(image) || containsForbidden(video)) { await audit(req, 'FORBIDDEN_CONTENT_ATTEMPT', 'story'); return res.status(400).json({ error: 'Запрещённый контент' }); }
+  if (containsNSFWText(content)) { await audit(req, 'NSFW_TEXT_ATTEMPT', 'story'); return res.status(400).json({ error: 'Контент 18+ запрещён' }); }
   if ((image && !isValidUrl(image)) || (video && !isValidUrl(video))) { await audit(req, 'FORBIDDEN_CONTENT_ATTEMPT', 'story_url'); return res.status(400).json({ error: 'Недопустимый URL' }); }
   try { const r = await pool.query('INSERT INTO stories(user_id, content, image, video, background) VALUES($1,$2,$3,$4,$5) RETURNING *', [req.user.id, content || '', image || '', video || '', background || '#3b5998']); io.emit('new_story'); res.json(r.rows[0]); }
   catch (e) { res.status(500).json({ error: e.message }); }
@@ -459,6 +487,7 @@ app.post('/api/posts', auth, async (req, res) => {
   const { content, image, video, gif, sticker } = req.body;
   if (!content?.trim() && !image && !video && !gif && !sticker) return res.status(400).json({ error: 'Пустой пост' });
   if (containsForbidden(content) || containsForbidden(image) || containsForbidden(video) || containsForbidden(gif)) { await audit(req, 'FORBIDDEN_CONTENT_ATTEMPT', 'post'); return res.status(400).json({ error: 'Запрещённый контент' }); }
+  if (containsNSFWText(content)) { await audit(req, 'NSFW_TEXT_ATTEMPT', 'post'); return res.status(400).json({ error: 'Контент 18+ запрещён. Попытка зафиксирована.' }); }
   if ((image && !isValidUrl(image)) || (video && !isValidUrl(video)) || (gif && !isValidUrl(gif))) { await audit(req, 'FORBIDDEN_CONTENT_ATTEMPT', 'post_url'); return res.status(400).json({ error: 'Недопустимый URL' }); }
   try { const r = await pool.query('INSERT INTO posts(user_id, content, image, video, gif, sticker) VALUES($1,$2,$3,$4,$5,$6) RETURNING *', [req.user.id, content || '', image || '', video || '', gif || '', sticker || '']); io.emit('new_post'); res.json(r.rows[0]); }
   catch (e) { res.status(500).json({ error: e.message }); }
@@ -502,6 +531,7 @@ app.post('/api/messages/:userId', auth, async (req, res) => {
   const { content, media, sticker } = req.body;
   if (!content?.trim() && (!media || !media.length) && !sticker) return res.status(400).json({ error: 'Пусто' });
   if (containsForbidden(content)) { await audit(req, 'FORBIDDEN_CONTENT_ATTEMPT', 'message'); return res.status(400).json({ error: 'Запрещённый контент' }); }
+  if (containsNSFWText(content)) { await audit(req, 'NSFW_TEXT_ATTEMPT', 'message'); return res.status(400).json({ error: 'Контент 18+ запрещён' }); }
   if (media && media.length) { for (const m of media) { if (containsForbidden(m.url?.slice(0, 500) || '')) { await audit(req, 'FORBIDDEN_CONTENT_ATTEMPT', 'message_media'); return res.status(400).json({ error: 'Запрещённое вложение' }); } } }
   try {
     const r = await pool.query('INSERT INTO messages(from_id, to_id, content, sticker) VALUES($1,$2,$3,$4) RETURNING *', [req.user.id, req.params.userId, content || '', sticker || '']);
@@ -528,6 +558,7 @@ app.post('/api/forums', auth, async (req, res) => {
   const { title, description } = req.body;
   if (!title?.trim()) return res.status(400).json({ error: 'Введите название' });
   if (containsForbidden(title) || containsForbidden(description)) { await audit(req, 'FORBIDDEN_CONTENT_ATTEMPT', 'forum'); return res.status(400).json({ error: 'Запрещённый контент' }); }
+  if (containsNSFWText(title) || containsNSFWText(description)) { await audit(req, 'NSFW_TEXT_ATTEMPT', 'forum'); return res.status(400).json({ error: 'Контент 18+ запрещён' }); }
   try { const r = await pool.query('INSERT INTO forums(title, description, created_by) VALUES($1,$2,$3) RETURNING *', [title, description || '', req.user.id]); res.json(r.rows[0]); }
   catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -545,6 +576,7 @@ app.post('/api/forums/:id/topics', auth, async (req, res) => {
   const { title } = req.body;
   if (!title?.trim()) return res.status(400).json({ error: 'Введите название' });
   if (containsForbidden(title)) { await audit(req, 'FORBIDDEN_CONTENT_ATTEMPT', 'topic'); return res.status(400).json({ error: 'Запрещённый контент' }); }
+  if (containsNSFWText(title)) { await audit(req, 'NSFW_TEXT_ATTEMPT', 'topic'); return res.status(400).json({ error: 'Контент 18+ запрещён' }); }
   try { const r = await pool.query('INSERT INTO forum_topics(forum_id, user_id, title) VALUES($1,$2,$3) RETURNING *', [req.params.id, req.user.id, title]); res.json(r.rows[0]); }
   catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -563,6 +595,7 @@ app.post('/api/topics/:id/posts', auth, async (req, res) => {
   const { content } = req.body;
   if (!content?.trim()) return res.status(400).json({ error: 'Пусто' });
   if (containsForbidden(content)) { await audit(req, 'FORBIDDEN_CONTENT_ATTEMPT', 'forum_post'); return res.status(400).json({ error: 'Запрещённый контент' }); }
+  if (containsNSFWText(content)) { await audit(req, 'NSFW_TEXT_ATTEMPT', 'forum_post'); return res.status(400).json({ error: 'Контент 18+ запрещён' }); }
   try {
     const r = await pool.query('INSERT INTO forum_posts(topic_id, user_id, content) VALUES($1,$2,$3) RETURNING *', [req.params.id, req.user.id, content]);
     const full = await pool.query('SELECT fp.*, u.username, u.avatar FROM forum_posts fp LEFT JOIN users u ON u.id=fp.user_id WHERE fp.id=$1', [r.rows[0].id]);
@@ -581,6 +614,7 @@ app.post('/api/groups', auth, async (req, res) => {
   const { name, description, avatar } = req.body;
   if (!name?.trim()) return res.status(400).json({ error: 'Введите название' });
   if (containsForbidden(name) || containsForbidden(description) || containsForbidden(avatar)) { await audit(req, 'FORBIDDEN_CONTENT_ATTEMPT', 'group'); return res.status(400).json({ error: 'Запрещённый контент' }); }
+  if (containsNSFWText(name) || containsNSFWText(description)) { await audit(req, 'NSFW_TEXT_ATTEMPT', 'group'); return res.status(400).json({ error: 'Контент 18+ запрещён' }); }
   try {
     const r = await pool.query('INSERT INTO groups(name, description, avatar, created_by) VALUES($1,$2,$3,$4) RETURNING *', [name, description || '', avatar || '', req.user.id]);
     await pool.query('INSERT INTO group_members(group_id, user_id, role) VALUES($1,$2,$3)', [r.rows[0].id, req.user.id, 'admin']);
@@ -616,6 +650,7 @@ app.post('/api/groups/:id/posts', auth, async (req, res) => {
   const { content, image, video, gif, sticker } = req.body;
   if (!content?.trim() && !image && !video && !gif && !sticker) return res.status(400).json({ error: 'Пусто' });
   if (containsForbidden(content) || containsForbidden(image) || containsForbidden(video) || containsForbidden(gif)) { await audit(req, 'FORBIDDEN_CONTENT_ATTEMPT', 'group_post'); return res.status(400).json({ error: 'Запрещённый контент' }); }
+  if (containsNSFWText(content)) { await audit(req, 'NSFW_TEXT_ATTEMPT', 'group_post'); return res.status(400).json({ error: 'Контент 18+ запрещён' }); }
   if ((image && !isValidUrl(image)) || (video && !isValidUrl(video)) || (gif && !isValidUrl(gif))) { await audit(req, 'FORBIDDEN_CONTENT_ATTEMPT', 'group_post_url'); return res.status(400).json({ error: 'Недопустимый URL' }); }
   try {
     const member = await pool.query('SELECT 1 FROM group_members WHERE group_id=$1 AND user_id=$2', [req.params.id, req.user.id]);
@@ -707,6 +742,7 @@ app.post('/api/scratch', auth, async (req, res) => {
   const m = scratch_url.match(/scratch\.mit\.edu\/projects\/(\d+)/);
   if (!m) return res.status(400).json({ error: 'Формат: https://scratch.mit.edu/projects/123456' });
   if (containsForbidden(title) || containsForbidden(description)) { await audit(req, 'FORBIDDEN_CONTENT_ATTEMPT', 'scratch'); return res.status(400).json({ error: 'Запрещённый контент' }); }
+  if (containsNSFWText(title) || containsNSFWText(description)) { await audit(req, 'NSFW_TEXT_ATTEMPT', 'scratch'); return res.status(400).json({ error: 'Контент 18+ запрещён' }); }
   try { const r = await pool.query('INSERT INTO scratch_games(user_id, title, description, scratch_id, cover) VALUES($1,$2,$3,$4,$5) RETURNING *', [req.user.id, title, description || '', m[1], cover || '']); io.emit('new_game'); res.json(r.rows[0]); }
   catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -752,6 +788,7 @@ app.post('/api/flash', auth, async (req, res) => {
   if (!swf_url?.trim()) return res.status(400).json({ error: 'Введите URL .swf' });
   if (!isValidUrl(swf_url)) return res.status(400).json({ error: 'Недопустимый URL' });
   if (containsForbidden(title) || containsForbidden(description)) { await audit(req, 'FORBIDDEN_CONTENT_ATTEMPT', 'flash'); return res.status(400).json({ error: 'Запрещённый контент' }); }
+  if (containsNSFWText(title) || containsNSFWText(description)) { await audit(req, 'NSFW_TEXT_ATTEMPT', 'flash'); return res.status(400).json({ error: 'Контент 18+ запрещён' }); }
   try { const r = await pool.query('INSERT INTO flash_games(user_id, title, description, swf_url, cover) VALUES($1,$2,$3,$4,$5) RETURNING *', [req.user.id, title, description || '', swf_url, cover || '']); io.emit('new_game'); res.json(r.rows[0]); }
   catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -814,6 +851,7 @@ app.post('/api/htmlgames', auth, async (req, res) => {
   if (!code?.trim()) return res.status(400).json({ error: 'Введите код игры' });
   if (code.length > 200000) return res.status(400).json({ error: 'Код слишком большой' });
   if (containsForbidden(title) || containsForbidden(description)) { await audit(req, 'FORBIDDEN_CONTENT_ATTEMPT', 'html_game'); return res.status(400).json({ error: 'Запрещённый контент' }); }
+  if (containsNSFWText(title) || containsNSFWText(description)) { await audit(req, 'NSFW_TEXT_ATTEMPT', 'html_game'); return res.status(400).json({ error: 'Контент 18+ запрещён' }); }
   try {
     const r = await pool.query('INSERT INTO html_games(user_id, title, description, code, cover) VALUES($1,$2,$3,$4,$5) RETURNING id, title, description, cover, plays, created_at, user_id', [req.user.id, title, description || '', code, cover || '']);
     io.emit('new_game');
@@ -877,6 +915,7 @@ app.post('/api/tracks', auth, async (req, res) => {
   if (!title?.trim() || !artist?.trim() || !url?.trim()) return res.status(400).json({ error: 'Заполните поля' });
   if (!isValidUrl(url)) return res.status(400).json({ error: 'Недопустимый URL' });
   if (containsForbidden(title) || containsForbidden(artist)) { await audit(req, 'FORBIDDEN_CONTENT_ATTEMPT', 'track'); return res.status(400).json({ error: 'Запрещённый контент' }); }
+  if (containsNSFWText(title) || containsNSFWText(artist)) { await audit(req, 'NSFW_TEXT_ATTEMPT', 'track'); return res.status(400).json({ error: 'Контент 18+ запрещён' }); }
   try { const r = await pool.query('INSERT INTO tracks(user_id, title, artist, url, cover, genre) VALUES($1,$2,$3,$4,$5,$6) RETURNING *', [req.user.id, title, artist, url, cover || '', genre || 'Retro']); io.emit('new_track'); res.json(r.rows[0]); }
   catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -931,6 +970,7 @@ app.post('/api/playlists', auth, async (req, res) => {
   const { name, description, cover } = req.body;
   if (!name?.trim()) return res.status(400).json({ error: 'Введите название' });
   if (containsForbidden(name) || containsForbidden(description)) { await audit(req, 'FORBIDDEN_CONTENT_ATTEMPT', 'playlist'); return res.status(400).json({ error: 'Запрещённый контент' }); }
+  if (containsNSFWText(name) || containsNSFWText(description)) { await audit(req, 'NSFW_TEXT_ATTEMPT', 'playlist'); return res.status(400).json({ error: 'Контент 18+ запрещён' }); }
   try { const r = await pool.query('INSERT INTO playlists(user_id, name, description, cover) VALUES($1,$2,$3,$4) RETURNING *', [req.user.id, name, description || '', cover || '']); res.json(r.rows[0]); }
   catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -968,38 +1008,6 @@ app.post('/api/playlists/:id/add', auth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// ============================================================
-// AI-АРТ (Pollinations, без API-ключей)
-// ============================================================
-app.get('/api/ai/art', auth, (req, res) => {
-  const prompt = (req.query.prompt || '').trim();
-  if (!prompt) return res.status(400).json({ error: 'Введи текст' });
-  if (prompt.length > 500) return res.status(400).json({ error: 'Текст слишком длинный (макс. 500)' });
-  if (containsForbidden(prompt)) return res.status(400).json({ error: 'Запрещённый текст' });
-
-  const width = Math.min(2048, Math.max(256, Number(req.query.width) || 1024));
-  const height = Math.min(2048, Math.max(256, Number(req.query.height) || 1024));
-  const model = req.query.model || 'flux';
-  const seed = req.query.seed || Math.floor(Math.random() * 1000000);
-
-  const encoded = encodeURIComponent(prompt);
-  const imageUrl = `https://image.pollinations.ai/prompt/${encoded}?width=${width}&height=${height}&model=${model}&seed=${seed}&nologo=true`;
-
-  audit(req, 'AI_ART', 'prompt=' + prompt.slice(0, 100)).catch(() => {});
-
-  pool.query('INSERT INTO ai_creations(user_id, prompt, url, model) VALUES($1,$2,$3,$4)',
-    [req.user.id, prompt.slice(0, 500), imageUrl, model]).catch(() => {});
-
-  res.json({ url: imageUrl, prompt, width, height, model, seed });
-});
-
-app.get('/api/ai/history', auth, async (req, res) => {
-  try {
-    const r = await pool.query('SELECT * FROM ai_creations WHERE user_id=$1 ORDER BY created_at DESC LIMIT 50', [req.user.id]);
-    res.json(r.rows);
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
 // ПОИСК
 app.get('/api/search/suggest', auth, async (req, res) => {
   const q = (req.query.q || '').trim();
@@ -1031,7 +1039,7 @@ app.post('/api/security/attempt', auth, async (req, res) => {
   const { reason } = req.body;
   try {
     const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || '';
-    await pool.query('INSERT INTO audit_log(user_id, username, action, details, ip) VALUES($1,$2,$3,$4,$5)', [req.user.id, req.user.username, 'FORBIDDEN_CONTENT_ATTEMPT', (reason || 'unknown').slice(0, 500), ip]);
+    await pool.query('INSERT INTO audit_log(user_id, username, action, details, ip) VALUES($1,$2,$3,$4,$5)', [req.user.id, req.user.username, 'NSFW_ATTEMPT', (reason || 'unknown').slice(0, 500), ip]);
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
