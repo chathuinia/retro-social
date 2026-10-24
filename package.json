@@ -1,7 +1,30 @@
 {
   "name": "ЗАМОРОЗКА ПРОЕКТА РЕТРО СЕТЬ",
   "short_name": "ЗАМОРОЗКА ПРОЕКТА РЕТРО СЕТЬ",
-  "description": "ЗАМОРОЗКА ПРОЕКТА РЕТРО СЕТЬ",
+  "description": "ЗАМОРОЗКА ПРОЕКТА РЕТРО СЕТЬ",{
+  "name": "retro-social-2010",
+  "version": "1.0.0",
+  "description": "РетроСеть 2010 — социальная сеть в стиле Frutiger Aero",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "pg": "^8.12.0",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "socket.io": "^4.7.5",
+    "multer": "^1.4.5-lts.1",
+    "@supabase/supabase-js": "^2.45.0",
+    "dotenv": "^16.4.5",
+    "express-rate-limit": "^7.4.0",
+    "cors": "^2.8.5"
+  }
+}
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
