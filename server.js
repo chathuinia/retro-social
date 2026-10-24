@@ -1,5 +1,5 @@
 // ============================================================
-// РетроСеть 2010 — server.js (финальная версия)
+// РетроСеть 2010 — server.js (с авто-миграцией)
 // Node.js + Express + PostgreSQL + Socket.io
 // ============================================================
 
@@ -19,7 +19,7 @@ const { createClient } = require('@supabase/supabase-js');
 const { Server } = require('socket.io');
 
 // ============================================================
-// ГЛОБАЛЬНЫЕ ОБРАБОТЧИКИ (чтобы процесс не падал молча)
+// ГЛОБАЛЬНЫЕ ОБРАБОТЧИКИ
 // ============================================================
 process.on('unhandledRejection', (reason) => {
   console.error('Unhandled rejection:', reason);
@@ -404,6 +404,59 @@ async function initDb() {
   await pool.query(sql);
   console.log('initDb: схема создана');
 
+  // ============================================================
+  // АВТО-МИГРАЦИЯ (безопасная): добавляем недостающие колонки
+  // ============================================================
+  const userColumns = [
+    ['password_hash', 'TEXT'],
+    ['role', "VARCHAR(16) DEFAULT 'user'"],
+    ['avatar', "TEXT DEFAULT ''"],
+    ['status', "TEXT DEFAULT ''"],
+    ['bio', "TEXT DEFAULT ''"],
+    ['coins', 'INTEGER DEFAULT 0'],
+    ['banned', 'BOOLEAN DEFAULT FALSE'],
+    ['prefix', "TEXT DEFAULT ''"],
+    ['nick_color', "TEXT DEFAULT ''"],
+    ['theme', "VARCHAR(16) DEFAULT 'aero'"],
+    ['friends_slots', 'INTEGER DEFAULT 100'],
+    ['last_daily', 'TIMESTAMP'],
+    ['daily_posts', 'INT DEFAULT 0'],
+    ['daily_forum', 'INT DEFAULT 0'],
+    ['daily_likes', 'INT DEFAULT 0'],
+    ['daily_reset', 'DATE'],
+    ['last_seen', 'TIMESTAMP DEFAULT NOW()'],
+    ['created_at', 'TIMESTAMP DEFAULT NOW()']
+  ];
+  for (const [col, type] of userColumns) {
+    try {
+      await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS ${col} ${type}`);
+    } catch (e) {
+      console.warn(`initDb: не удалось добавить колонку ${col}:`, e.message);
+    }
+  }
+  console.log('initDb: колонки users проверены (миграция)');
+
+  const postColumns = [
+    ['text', "TEXT DEFAULT ''"],
+    ['image', "TEXT DEFAULT ''"],
+    ['video', "TEXT DEFAULT ''"],
+    ['gif', "TEXT DEFAULT ''"],
+    ['sticker', "TEXT DEFAULT ''"],
+    ['promoted_until', 'TIMESTAMP'],
+    ['created_at', 'TIMESTAMP DEFAULT NOW()']
+  ];
+  for (const [col, type] of postColumns) {
+    try {
+      await pool.query(`ALTER TABLE posts ADD COLUMN IF NOT EXISTS ${col} ${type}`);
+    } catch (e) {
+      console.warn(`initDb: не удалось добавить колонку posts.${col}:`, e.message);
+    }
+  }
+  console.log('initDb: колонки posts проверены (миграция)');
+
+  // ============================================================
+  // SEED ДАННЫХ
+  // ============================================================
   const { rows } = await pool.query('SELECT COUNT(*)::int AS c FROM prefixes');
   if (rows[0].c === 0) {
     await pool.query(
@@ -436,7 +489,7 @@ async function initDb() {
         [uname]
       );
       const row = u.rows[0];
-      if (!row.password_hash || row.password_hash.length < 30) {
+      if (!row.password_hash || typeof row.password_hash !== 'string' || row.password_hash.length < 30) {
         const hash = await bcrypt.hash('owner' + uname, 10);
         await pool.query(
           'UPDATE users SET password_hash = $1, role = $2 WHERE id = $3',
@@ -621,7 +674,6 @@ const apiLimiter = rateLimit({
 });
 app.use('/api/', apiLimiter);
 
-// Логин/регистрация — отдельный лимит
 const authLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 20,
@@ -629,7 +681,7 @@ const authLimiter = rateLimit({
 });
 
 // ============================================================
-// API: АУТЕНТИФИКАЦИЯ (усиленная версия)
+// API: АУТЕНТИФИКАЦИЯ
 // ============================================================
 app.post('/api/register', authLimiter, async (req, res) => {
   try {
@@ -665,7 +717,6 @@ app.post('/api/login', authLimiter, async (req, res) => {
   try {
     const { username, password } = req.body || {};
 
-    // 1. Валидация
     if (!username || typeof username !== 'string' || !username.trim()) {
       return res.status(400).json({ error: 'Введите логин' });
     }
@@ -674,7 +725,6 @@ app.post('/api/login', authLimiter, async (req, res) => {
     }
     const uname = username.trim();
 
-    // 2. Поиск пользователя
     let user;
     try {
       const { rows } = await query('SELECT * FROM users WHERE username = $1', [uname]);
@@ -687,12 +737,10 @@ app.post('/api/login', authLimiter, async (req, res) => {
       return res.status(500).json({ error: 'Ошибка БД: ' + dbErr.message });
     }
 
-    // 3. Проверка бана
     if (user.banned) {
       return res.status(403).json({ error: 'Вы забанены' });
     }
 
-    // 4. Проверка хеша
     if (!user.password_hash || typeof user.password_hash !== 'string') {
       console.error('login: password_hash пустой для', uname);
       return res.status(401).json({ error: 'Пароль не задан. Обратитесь к администратору' });
@@ -702,7 +750,6 @@ app.post('/api/login', authLimiter, async (req, res) => {
       return res.status(401).json({ error: 'Пароль повреждён. Обратитесь к администратору' });
     }
 
-    // 5. Сравнение bcrypt
     let ok = false;
     try {
       ok = await bcrypt.compare(password, user.password_hash);
@@ -714,7 +761,6 @@ app.post('/api/login', authLimiter, async (req, res) => {
       return res.status(401).json({ error: 'Неверный логин или пароль' });
     }
 
-    // 6. Ежедневный вход
     try {
       await resetDailyIfNeeded(user.id);
       const today = new Date().toISOString().slice(0, 10);
@@ -725,10 +771,8 @@ app.post('/api/login', authLimiter, async (req, res) => {
       }
     } catch (dailyErr) {
       console.error('login daily error (не критично):', dailyErr.message);
-      // не падаем, вход всё равно разрешаем
     }
 
-    // 7. Токен и ответ
     const token = signToken(user);
     let fresh;
     try {
@@ -2011,14 +2055,14 @@ io.on('connection', (socket) => {
 });
 
 // ============================================================
-// HEALTH, 404, ERROR
+// HEALTH, DEBUG, 404, ERROR
 // ============================================================
 app.get('/health', (req, res) => {
   res.json({ ok: true, time: new Date().toISOString() });
 });
 
+// Временный диагностический endpoint — удалить после отладки
 app.get('/api/debug/user/:username', async (req, res) => {
-  // ВРЕМЕННЫЙ endpoint для диагностики (удалить после)
   try {
     const { rows } = await query(
       `SELECT id, username, role, banned,
