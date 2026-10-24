@@ -5,6 +5,7 @@
 
 require('dotenv').config();
 
+const fs = require('fs');
 const express = require('express');
 const http = require('http');
 const path = require('path');
@@ -16,6 +17,24 @@ const rateLimit = require('express-rate-limit');
 const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
 const { Server } = require('socket.io');
+
+// ============================================================
+// ГЛОБАЛЬНЫЕ ОБРАБОТЧИКИ (чтобы процесс не падал молча)
+// ============================================================
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled rejection:', reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught exception:', err);
+});
+process.on('SIGTERM', () => {
+  console.log('SIGTERM получен, завершаемся');
+  process.exit(0);
+});
+process.on('SIGINT', () => {
+  console.log('SIGINT получен, завершаемся');
+  process.exit(0);
+});
 
 // ============================================================
 // КОНФИГ
@@ -36,11 +55,14 @@ if (SUPABASE_URL && SUPABASE_KEY) {
 // ============================================================
 // БАЗА ДАННЫХ
 // ============================================================
-// ВНИМАНИЕ: строка подключения вписана прямо в код (по просьбе).
-// Перед публикацией в GitHub замените на process.env.DATABASE_URL.
 const pool = new Pool({
   connectionString: 'postgresql://neondb_owner:npg_yOQcIwub8V6N@ep-solitary-rain-a5orxtnv-pooler.us-east-2.aws.neon.tech/neondb?sslmode=require&uselibpqcompat=true',
   ssl: { rejectUnauthorized: false }
+});
+
+// Не даём процессу упасть при обрыве соединения
+pool.on('error', (err) => {
+  console.error('Pool error:', err.message);
 });
 
 async function query(text, params) {
@@ -50,8 +72,6 @@ async function query(text, params) {
 // ============================================================
 // ХЕЛПЕРЫ
 // ============================================================
-
-// XSS-экранирование (на случай если фронт забудет)
 function esc(str) {
   if (str === null || str === undefined) return '';
   return String(str)
@@ -62,7 +82,6 @@ function esc(str) {
     .replace(/'/g, '&#39;');
 }
 
-// Валидация URL: запрещаем javascript:, data:image/svg
 function isValidUrl(url) {
   if (!url || typeof url !== 'string') return false;
   const trimmed = url.trim();
@@ -75,7 +94,6 @@ function isValidUrl(url) {
   return true;
 }
 
-// NSFW-фильтр (базовый список)
 const NSFW_WORDS = ['порно', 'секс', 'хуй', 'пизда', 'ебать', 'блядь', 'сука', 'нахуй'];
 function nsfwFilter(text) {
   if (!text) return '';
@@ -87,7 +105,6 @@ function nsfwFilter(text) {
   return out;
 }
 
-// Простая проверка префикса
 function validatePrefix(text) {
   if (!text || text.length > 20) return false;
   return !NSFW_WORDS.some(w => text.toLowerCase().includes(w));
@@ -97,6 +114,7 @@ function validatePrefix(text) {
 // ИНИЦИАЛИЗАЦИЯ СХЕМЫ БД
 // ============================================================
 async function initDb() {
+  console.log('initDb: начало');
   const sql = `
   CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
@@ -386,8 +404,8 @@ async function initDb() {
   );
   `;
   await pool.query(sql);
+  console.log('initDb: схема создана');
 
-  // Seed префиксы (если пусто)
   const { rows } = await pool.query('SELECT COUNT(*)::int AS c FROM prefixes');
   if (rows[0].c === 0) {
     await pool.query(
@@ -401,9 +419,9 @@ async function initDb() {
        ('Легенда', 5000, 'standard'),
        ('Свой префикс', 2000, 'custom')`
     );
+    console.log('initDb: префиксы добавлены');
   }
 
-  // Seed владельцев
   for (const uname of OWNER_USERNAMES) {
     const exists = await pool.query('SELECT id FROM users WHERE username = $1', [uname]);
     if (exists.rows.length === 0) {
@@ -415,7 +433,6 @@ async function initDb() {
       );
       console.log('Создан владелец:', uname, '(пароль: owner' + uname + ')');
     } else {
-      // Если пользователь есть, но пароль NULL/битый — чиним
       const u = await pool.query(
         'SELECT id, password_hash FROM users WHERE username = $1',
         [uname]
@@ -432,6 +449,7 @@ async function initDb() {
     }
   }
 
+  console.log('initDb: владельцы проверены');
   console.log('База данных инициализирована');
 }
 
@@ -458,12 +476,17 @@ function auth(req, res, next) {
 }
 
 async function loadUser(req, res, next) {
-  if (!req.user) return next();
-  const { rows } = await query('SELECT * FROM users WHERE id = $1', [req.user.id]);
-  if (rows.length === 0) return res.status(401).json({ error: 'Пользователь не найден' });
-  if (rows[0].banned) return res.status(403).json({ error: 'Вы забанены' });
-  req.dbUser = rows[0];
-  next();
+  try {
+    if (!req.user) return next();
+    const { rows } = await query('SELECT * FROM users WHERE id = $1', [req.user.id]);
+    if (rows.length === 0) return res.status(401).json({ error: 'Пользователь не найден' });
+    if (rows[0].banned) return res.status(403).json({ error: 'Вы забанены' });
+    req.dbUser = rows[0];
+    next();
+  } catch (e) {
+    console.error('loadUser error:', e);
+    res.status(500).json({ error: 'Ошибка загрузки пользователя' });
+  }
 }
 
 function adminOnly(req, res, next) {
@@ -474,10 +497,14 @@ function adminOnly(req, res, next) {
 }
 
 async function audit(adminId, action, details) {
-  await query(
-    'INSERT INTO audit_log (admin_id, action, details) VALUES ($1, $2, $3)',
-    [adminId, action, details || '']
-  );
+  try {
+    await query(
+      'INSERT INTO audit_log (admin_id, action, details) VALUES ($1, $2, $3)',
+      [adminId, action, details || '']
+    );
+  } catch (e) {
+    console.error('audit error:', e.message);
+  }
 }
 
 function getBalance(user) {
@@ -486,7 +513,6 @@ function getBalance(user) {
   return user.coins;
 }
 
-// Начисление/списание монет (в одной транзакции)
 async function addCoins(userId, amount, reason) {
   const client = await pool.connect();
   try {
@@ -498,7 +524,6 @@ async function addCoins(userId, amount, reason) {
     }
     const user = rows[0];
     if (user.role === 'admin' || user.role === 'owner') {
-      // Админам монеты не меняем, но транзакцию пишем
       await client.query(
         `INSERT INTO coin_transactions (user_id, amount, reason, balance_after)
          VALUES ($1, $2, $3, $4)`,
@@ -529,7 +554,6 @@ async function addCoins(userId, amount, reason) {
   }
 }
 
-// Сброс дневных счётчиков
 async function resetDailyIfNeeded(userId) {
   const { rows } = await query('SELECT daily_reset FROM users WHERE id = $1', [userId]);
   if (rows.length === 0) return;
@@ -544,7 +568,6 @@ async function resetDailyIfNeeded(userId) {
   }
 }
 
-// Счётчик дневной активности
 async function incDaily(userId, field, max) {
   await resetDailyIfNeeded(userId);
   const { rows } = await query(`SELECT ${field} AS v FROM users WHERE id = $1`, [userId]);
@@ -561,7 +584,6 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 25 
 
 async function uploadToSupabase(file, prefix) {
   if (!supabase) {
-    // fallback: сохраняем как data URL (не рекомендуется для продакшена)
     if (file.size > 2 * 1024 * 1024) throw new Error('Файл слишком большой для fallback');
     return `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
   }
@@ -583,7 +605,6 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });
 
-// Render работает за прокси — доверяем одному слою
 app.set('trust proxy', 1);
 
 app.use(cors());
@@ -591,7 +612,6 @@ app.use(express.json({ limit: '25mb' }));
 app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Rate limiting (на API)
 const apiLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 200,
@@ -599,7 +619,6 @@ const apiLimiter = rateLimit({
 });
 app.use('/api/', apiLimiter);
 
-// Специальный лимит на логин/регистрацию
 const authLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 10,
@@ -634,7 +653,7 @@ app.post('/api/register', authLimiter, async (req, res) => {
     const token = signToken(user);
     res.json({ token, user });
   } catch (e) {
-    console.error(e);
+    console.error('register error:', e);
     res.status(500).json({ error: 'Ошибка регистрации' });
   }
 });
@@ -647,14 +666,12 @@ app.post('/api/login', authLimiter, async (req, res) => {
     if (rows.length === 0) return res.status(401).json({ error: 'Неверный логин или пароль' });
     const user = rows[0];
     if (user.banned) return res.status(403).json({ error: 'Вы забанены' });
-    // Защита от NULL/битого password_hash
     if (!user.password_hash || typeof user.password_hash !== 'string' || user.password_hash.length < 30) {
       return res.status(401).json({ error: 'Пароль не задан. Обратитесь к администратору' });
     }
     const ok = await bcrypt.compare(password, user.password_hash);
     if (!ok) return res.status(401).json({ error: 'Неверный логин или пароль' });
 
-    // Ежедневный вход
     await resetDailyIfNeeded(user.id);
     const today = new Date().toISOString().slice(0, 10);
     const lastDaily = user.last_daily ? new Date(user.last_daily).toISOString().slice(0, 10) : null;
@@ -719,10 +736,7 @@ app.get('/api/users/:username', auth, loadUser, async (req, res) => {
     );
     const isAdmin = req.dbUser.role === 'admin' || req.dbUser.role === 'owner';
     res.json({
-      user: {
-        ...u,
-        coins: isAdmin ? 'Infinity' : u.coins
-      },
+      user: { ...u, coins: isAdmin ? 'Infinity' : u.coins },
       gallery: gallery.rows,
       posts: posts.rows
     });
@@ -841,7 +855,6 @@ app.post('/api/posts', auth, loadUser, async (req, res) => {
         sticker || ''
       ]
     );
-    // Монеты за пост (макс 5/день)
     if (await incDaily(req.dbUser.id, 'daily_posts', 5)) {
       await addCoins(req.dbUser.id, 1, 'Пост на стене');
     }
@@ -879,7 +892,6 @@ app.post('/api/posts/:id/like', auth, loadUser, async (req, res) => {
       res.json({ liked: false });
     } else {
       await query('INSERT INTO likes (user_id, post_id) VALUES ($1, $2)', [req.dbUser.id, postId]);
-      // 0.5 RC за лайк чужому (макс 5/день) — округление вниз: 1 RC за 2 лайка
       if (await incDaily(req.dbUser.id, 'daily_likes', 10)) {
         const cnt = await query('SELECT daily_likes FROM users WHERE id = $1', [req.dbUser.id]);
         if (cnt.rows[0].daily_likes % 2 === 0) {
@@ -969,12 +981,10 @@ app.get('/api/messages/:userId', auth, loadUser, async (req, res) => {
        ORDER BY id ASC LIMIT 500`,
       [req.dbUser.id, otherId]
     );
-    // отметить прочитанными
     await query(
       `UPDATE messages SET read = TRUE WHERE from_id = $1 AND to_id = $2 AND read = FALSE`,
       [otherId, req.dbUser.id]
     );
-    // media
     const result = [];
     for (const m of rows) {
       const media = await query('SELECT * FROM message_media WHERE message_id = $1', [m.id]);
@@ -1009,7 +1019,6 @@ app.post('/api/messages/:userId', auth, loadUser, async (req, res) => {
         }
       }
     }
-    // socket: уведомить получателя
     const socketId = onlineUsers.get(otherId);
     if (socketId) {
       io.to(socketId).emit('new_message', {
@@ -1613,14 +1622,12 @@ app.post('/api/shop/buy', auth, loadUser, async (req, res) => {
     let price = 0;
     let itemName = '';
 
-    // Префиксы
     if (String(item_id).startsWith('prefix_')) {
       const pid = parseInt(item_id.replace('prefix_', ''));
       const p = await query('SELECT * FROM prefixes WHERE id = $1 AND is_active = TRUE', [pid]);
       if (p.rows.length === 0) return res.status(404).json({ error: 'Префикс не найден' });
       price = p.rows[0].price_coins;
       itemName = p.rows[0].name;
-      // Проверка: уже куплен?
       const owned = await query(
         'SELECT id FROM user_prefixes WHERE user_id = $1 AND prefix_id = $2',
         [req.dbUser.id, pid]
@@ -1631,7 +1638,6 @@ app.post('/api/shop/buy', auth, loadUser, async (req, res) => {
           return res.status(400).json({ error: 'Свой префикс: до 20 символов, без NSFW' });
         }
       }
-      // Покупка
       const result = await addCoins(req.dbUser.id, -price, `Покупка префикса: ${itemName}`);
       if (!result.ok) {
         await client.query('ROLLBACK');
@@ -1646,7 +1652,6 @@ app.post('/api/shop/buy', auth, loadUser, async (req, res) => {
       return res.json({ ok: true, item: itemName, price });
     }
 
-    // Украшения и реклама
     const catalog = {
       nick_color: { name: 'Цветной ник', price: 800 },
       animated_avatar: { name: 'Анимированная аватарка', price: 1500 },
@@ -1668,7 +1673,6 @@ app.post('/api/shop/buy', auth, loadUser, async (req, res) => {
       return res.status(400).json({ error: result.error });
     }
 
-    // Выдача товара
     if (item_id === 'friends_slots') {
       await query('UPDATE users SET friends_slots = friends_slots + 50 WHERE id = $1', [req.dbUser.id]);
     } else if (item_id === 'ad_post_1d' && post_id) {
@@ -1911,7 +1915,7 @@ app.post('/api/admin/give-coins/:id', auth, loadUser, adminOnly, async (req, res
 // ============================================================
 // SOCKET.IO: онлайн, чат, звонки
 // ============================================================
-const onlineUsers = new Map(); // userId -> socketId
+const onlineUsers = new Map();
 
 io.use((socket, next) => {
   try {
@@ -1926,46 +1930,53 @@ io.use((socket, next) => {
 });
 
 io.on('connection', (socket) => {
-  const userId = socket.user.id;
-  onlineUsers.set(userId, socket.id);
-  io.emit('online', Array.from(onlineUsers.keys()));
-
-  socket.on('typing', ({ toId }) => {
-    const sid = onlineUsers.get(toId);
-    if (sid) io.to(sid).emit('typing', { fromId: userId });
-  });
-
-  // WebRTC signaling
-  socket.on('call:offer', ({ toId, offer, isVideo }) => {
-    const sid = onlineUsers.get(toId);
-    if (sid) io.to(sid).emit('call:offer', { fromId: userId, offer, isVideo });
-  });
-  socket.on('call:answer', ({ toId, answer }) => {
-    const sid = onlineUsers.get(toId);
-    if (sid) io.to(sid).emit('call:answer', { fromId: userId, answer });
-  });
-  socket.on('call:ice', ({ toId, candidate }) => {
-    const sid = onlineUsers.get(toId);
-    if (sid) io.to(sid).emit('call:ice', { fromId: userId, candidate });
-  });
-  socket.on('call:end', ({ toId }) => {
-    const sid = onlineUsers.get(toId);
-    if (sid) io.to(sid).emit('call:end', { fromId: userId });
-  });
-  socket.on('call:reject', ({ toId }) => {
-    const sid = onlineUsers.get(toId);
-    if (sid) io.to(sid).emit('call:reject', { fromId: userId });
-  });
-
-  socket.on('disconnect', () => {
-    onlineUsers.delete(userId);
+  try {
+    const userId = socket.user.id;
+    onlineUsers.set(userId, socket.id);
     io.emit('online', Array.from(onlineUsers.keys()));
-  });
+
+    socket.on('typing', ({ toId }) => {
+      const sid = onlineUsers.get(toId);
+      if (sid) io.to(sid).emit('typing', { fromId: userId });
+    });
+
+    socket.on('call:offer', ({ toId, offer, isVideo }) => {
+      const sid = onlineUsers.get(toId);
+      if (sid) io.to(sid).emit('call:offer', { fromId: userId, offer, isVideo });
+    });
+    socket.on('call:answer', ({ toId, answer }) => {
+      const sid = onlineUsers.get(toId);
+      if (sid) io.to(sid).emit('call:answer', { fromId: userId, answer });
+    });
+    socket.on('call:ice', ({ toId, candidate }) => {
+      const sid = onlineUsers.get(toId);
+      if (sid) io.to(sid).emit('call:ice', { fromId: userId, candidate });
+    });
+    socket.on('call:end', ({ toId }) => {
+      const sid = onlineUsers.get(toId);
+      if (sid) io.to(sid).emit('call:end', { fromId: userId });
+    });
+    socket.on('call:reject', ({ toId }) => {
+      const sid = onlineUsers.get(toId);
+      if (sid) io.to(sid).emit('call:reject', { fromId: userId });
+    });
+
+    socket.on('disconnect', () => {
+      onlineUsers.delete(userId);
+      io.emit('online', Array.from(onlineUsers.keys()));
+    });
+  } catch (e) {
+    console.error('socket connection error:', e);
+  }
 });
 
 // ============================================================
-// 404 + ERROR
+// 404 + ERROR + HEALTH
 // ============================================================
+app.get('/health', (req, res) => {
+  res.json({ ok: true, time: new Date().toISOString() });
+});
+
 app.use('/api/', (req, res) => {
   res.status(404).json({ error: 'API не найден' });
 });
@@ -1974,16 +1985,37 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+// Глобальный обработчик ошибок Express
+app.use((err, req, res, next) => {
+  console.error('Express error:', err);
+  if (res.headersSent) return next(err);
+  res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+});
+
 // ============================================================
 // ЗАПУСК
 // ============================================================
-initDb()
-  .then(() => {
-    server.listen(PORT, () => {
+(async () => {
+  try {
+    console.log('=== Запуск РетроСети 2010 ===');
+    console.log('PORT:', PORT);
+    console.log('Node:', process.version);
+
+    // Проверка public/index.html
+    const indexPath = path.join(__dirname, 'public', 'index.html');
+    if (!fs.existsSync(indexPath)) {
+      console.warn('ВНИМАНИЕ: public/index.html не найден!');
+    } else {
+      console.log('public/index.html: найден');
+    }
+
+    await initDb();
+
+    server.listen(PORT, '0.0.0.0', () => {
       console.log(`РетроСеть 2010 запущена на порту ${PORT}`);
     });
-  })
-  .catch((err) => {
-    console.error('Ошибка инициализации БД:', err);
+  } catch (err) {
+    console.error('Ошибка запуска:', err);
     process.exit(1);
-  });
+  }
+})();
