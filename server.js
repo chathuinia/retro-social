@@ -39,7 +39,7 @@ if (SUPABASE_URL && SUPABASE_KEY) {
 // ВНИМАНИЕ: строка подключения вписана прямо в код (по просьбе).
 // Перед публикацией в GitHub замените на process.env.DATABASE_URL.
 const pool = new Pool({
-  connectionString: 'postgresql://neondb_owner:npg_yOQcIwub8V6N@ep-solitary-rain-a5orxtnv-pooler.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require',
+  connectionString: 'postgresql://neondb_owner:npg_yOQcIwub8V6N@ep-solitary-rain-a5orxtnv-pooler.us-east-2.aws.neon.tech/neondb?sslmode=require&uselibpqcompat=true',
   ssl: { rejectUnauthorized: false }
 });
 
@@ -414,6 +414,21 @@ async function initDb() {
         [uname, hash]
       );
       console.log('Создан владелец:', uname, '(пароль: owner' + uname + ')');
+    } else {
+      // Если пользователь есть, но пароль NULL/битый — чиним
+      const u = await pool.query(
+        'SELECT id, password_hash FROM users WHERE username = $1',
+        [uname]
+      );
+      const row = u.rows[0];
+      if (!row.password_hash || row.password_hash.length < 30) {
+        const hash = await bcrypt.hash('owner' + uname, 10);
+        await pool.query(
+          'UPDATE users SET password_hash = $1, role = $2 WHERE id = $3',
+          [hash, 'owner', row.id]
+        );
+        console.log('Починен пароль владельца:', uname, '(пароль: owner' + uname + ')');
+      }
     }
   }
 
@@ -568,6 +583,9 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });
 
+// Render работает за прокси — доверяем одному слою
+app.set('trust proxy', 1);
+
 app.use(cors());
 app.use(express.json({ limit: '25mb' }));
 app.use(express.urlencoded({ extended: true, limit: '25mb' }));
@@ -629,6 +647,10 @@ app.post('/api/login', authLimiter, async (req, res) => {
     if (rows.length === 0) return res.status(401).json({ error: 'Неверный логин или пароль' });
     const user = rows[0];
     if (user.banned) return res.status(403).json({ error: 'Вы забанены' });
+    // Защита от NULL/битого password_hash
+    if (!user.password_hash || typeof user.password_hash !== 'string' || user.password_hash.length < 30) {
+      return res.status(401).json({ error: 'Пароль не задан. Обратитесь к администратору' });
+    }
     const ok = await bcrypt.compare(password, user.password_hash);
     if (!ok) return res.status(401).json({ error: 'Неверный логин или пароль' });
 
@@ -645,7 +667,7 @@ app.post('/api/login', authLimiter, async (req, res) => {
     const fresh = await query('SELECT id, username, role, coins FROM users WHERE id = $1', [user.id]);
     res.json({ token, user: fresh.rows[0] });
   } catch (e) {
-    console.error(e);
+    console.error('login error:', e);
     res.status(500).json({ error: 'Ошибка входа' });
   }
 });
@@ -664,12 +686,16 @@ app.post('/api/change-password', auth, loadUser, async (req, res) => {
   try {
     const { oldPassword, newPassword } = req.body;
     if (!newPassword || newPassword.length < 4) return res.status(400).json({ error: 'Новый пароль: мин 4' });
-    const ok = await bcrypt.compare(oldPassword, req.dbUser.password_hash);
+    if (!req.dbUser.password_hash) {
+      return res.status(400).json({ error: 'Текущий пароль не задан, обратитесь к администратору' });
+    }
+    const ok = await bcrypt.compare(oldPassword || '', req.dbUser.password_hash);
     if (!ok) return res.status(400).json({ error: 'Старый пароль неверен' });
     const hash = await bcrypt.hash(newPassword, 10);
     await query('UPDATE users SET password_hash = $1 WHERE id = $2', [hash, req.dbUser.id]);
     res.json({ ok: true });
   } catch (e) {
+    console.error(e);
     res.status(500).json({ error: 'Ошибка' });
   }
 });
