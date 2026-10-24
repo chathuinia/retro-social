@@ -1,6 +1,5 @@
 // ============================================================
-// РетроСеть 2010 — server.js (с авто-миграцией)
-// Node.js + Express + PostgreSQL + Socket.io
+// РетроСеть 2010 — server.js (final, forced owner reset)
 // ============================================================
 
 require('dotenv').config();
@@ -18,9 +17,6 @@ const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
 const { Server } = require('socket.io');
 
-// ============================================================
-// ГЛОБАЛЬНЫЕ ОБРАБОТЧИКИ
-// ============================================================
 process.on('unhandledRejection', (reason) => {
   console.error('Unhandled rejection:', reason);
 });
@@ -28,17 +24,14 @@ process.on('uncaughtException', (err) => {
   console.error('Uncaught exception:', err);
 });
 process.on('SIGTERM', () => {
-  console.log('SIGTERM получен, завершаемся');
+  console.log('SIGTERM, завершаемся');
   process.exit(0);
 });
 process.on('SIGINT', () => {
-  console.log('SIGINT получен, завершаемся');
+  console.log('SIGINT, завершаемся');
   process.exit(0);
 });
 
-// ============================================================
-// КОНФИГ
-// ============================================================
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'retro-secret-change-me';
 const OWNER_USERNAMES = ['lol', 'qwyrta'];
@@ -51,9 +44,6 @@ if (SUPABASE_URL && SUPABASE_KEY) {
   supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 }
 
-// ============================================================
-// БАЗА ДАННЫХ
-// ============================================================
 const pool = new Pool({
   connectionString: 'postgresql://neondb_owner:npg_yOQcIwub8V6N@ep-solitary-rain-a5orxtnv-pooler.us-east-2.aws.neon.tech/neondb?sslmode=require&uselibpqcompat=true',
   ssl: { rejectUnauthorized: false }
@@ -67,9 +57,6 @@ async function query(text, params) {
   return pool.query(text, params);
 }
 
-// ============================================================
-// ХЕЛПЕРЫ
-// ============================================================
 function esc(str) {
   if (str === null || str === undefined) return '';
   return String(str)
@@ -109,7 +96,7 @@ function validatePrefix(text) {
 }
 
 // ============================================================
-// ИНИЦИАЛИЗАЦИЯ СХЕМЫ БД
+// initDb
 // ============================================================
 async function initDb() {
   console.log('initDb: начало');
@@ -404,9 +391,7 @@ async function initDb() {
   await pool.query(sql);
   console.log('initDb: схема создана');
 
-  // ============================================================
-  // АВТО-МИГРАЦИЯ (безопасная): добавляем недостающие колонки
-  // ============================================================
+  // Авто-миграция users
   const userColumns = [
     ['password_hash', 'TEXT'],
     ['role', "VARCHAR(16) DEFAULT 'user'"],
@@ -434,8 +419,9 @@ async function initDb() {
       console.warn(`initDb: не удалось добавить колонку ${col}:`, e.message);
     }
   }
-  console.log('initDb: колонки users проверены (миграция)');
+  console.log('initDb: колонки users проверены');
 
+  // Авто-миграция posts
   const postColumns = [
     ['text', "TEXT DEFAULT ''"],
     ['image', "TEXT DEFAULT ''"],
@@ -452,11 +438,9 @@ async function initDb() {
       console.warn(`initDb: не удалось добавить колонку posts.${col}:`, e.message);
     }
   }
-  console.log('initDb: колонки posts проверены (миграция)');
+  console.log('initDb: колонки posts проверены');
 
-  // ============================================================
-  // SEED ДАННЫХ
-  // ============================================================
+  // Seed префиксы
   const { rows } = await pool.query('SELECT COUNT(*)::int AS c FROM prefixes');
   if (rows[0].c === 0) {
     await pool.query(
@@ -473,30 +457,25 @@ async function initDb() {
     console.log('initDb: префиксы добавлены');
   }
 
+  // ГЛАВНОЕ: принудительный сброс паролей владельцев
   for (const uname of OWNER_USERNAMES) {
+    const password = 'owner' + uname;
+    const hash = await bcrypt.hash(password, 10);
     const exists = await pool.query('SELECT id FROM users WHERE username = $1', [uname]);
     if (exists.rows.length === 0) {
-      const hash = await bcrypt.hash('owner' + uname, 10);
       await pool.query(
-        `INSERT INTO users (username, password_hash, role, coins)
-         VALUES ($1, $2, 'owner', 0)`,
+        `INSERT INTO users (username, password_hash, role, coins, banned)
+         VALUES ($1, $2, 'owner', 0, false)`,
         [uname, hash]
       );
-      console.log('Создан владелец:', uname, '(пароль: owner' + uname + ')');
+      console.log('Создан владелец:', uname, '(пароль:', password + ')');
     } else {
-      const u = await pool.query(
-        'SELECT id, password_hash FROM users WHERE username = $1',
-        [uname]
+      // Принудительно перезаписываем пароль и роль
+      await pool.query(
+        `UPDATE users SET password_hash = $1, role = 'owner', banned = false WHERE id = $2`,
+        [hash, exists.rows[0].id]
       );
-      const row = u.rows[0];
-      if (!row.password_hash || typeof row.password_hash !== 'string' || row.password_hash.length < 30) {
-        const hash = await bcrypt.hash('owner' + uname, 10);
-        await pool.query(
-          'UPDATE users SET password_hash = $1, role = $2 WHERE id = $3',
-          [hash, 'owner', row.id]
-        );
-        console.log('Починен пароль владельца:', uname, '(пароль: owner' + uname + ')');
-      }
+      console.log('Обновлён пароль владельца:', uname, '(пароль:', password + ')');
     }
   }
 
@@ -505,7 +484,7 @@ async function initDb() {
 }
 
 // ============================================================
-// АВТОРИЗАЦИЯ / УТИЛИТЫ
+// AUTH / UTILS
 // ============================================================
 function signToken(user) {
   return jwt.sign({ id: user.id, username: user.username, role: user.role }, JWT_SECRET, {
@@ -633,7 +612,7 @@ async function incDaily(userId, field, max) {
 }
 
 // ============================================================
-// MULTER + SUPABASE UPLOAD
+// UPLOAD
 // ============================================================
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 25 * 1024 * 1024 } });
 
@@ -654,14 +633,13 @@ async function uploadToSupabase(file, prefix) {
 }
 
 // ============================================================
-// EXPRESS APP
+// EXPRESS
 // ============================================================
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });
 
 app.set('trust proxy', 1);
-
 app.use(cors());
 app.use(express.json({ limit: '25mb' }));
 app.use(express.urlencoded({ extended: true, limit: '25mb' }));
@@ -670,18 +648,18 @@ app.use(express.static(path.join(__dirname, 'public')));
 const apiLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 200,
-  message: { error: 'Слишком много запросов, попробуйте позже' }
+  message: { error: 'Слишком много запросов' }
 });
 app.use('/api/', apiLimiter);
 
 const authLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 20,
-  message: { error: 'Слишком много попыток входа. Подождите минуту.' }
+  max: 30,
+  message: { error: 'Слишком много попыток. Подождите минуту.' }
 });
 
 // ============================================================
-// API: АУТЕНТИФИКАЦИЯ
+// REGISTER / LOGIN
 // ============================================================
 app.post('/api/register', authLimiter, async (req, res) => {
   try {
@@ -770,7 +748,7 @@ app.post('/api/login', authLimiter, async (req, res) => {
         await addCoins(user.id, 1, 'Ежедневный вход');
       }
     } catch (dailyErr) {
-      console.error('login daily error (не критично):', dailyErr.message);
+      console.error('login daily error:', dailyErr.message);
     }
 
     const token = signToken(user);
@@ -804,7 +782,7 @@ app.post('/api/change-password', auth, loadUser, async (req, res) => {
     const { oldPassword, newPassword } = req.body;
     if (!newPassword || newPassword.length < 4) return res.status(400).json({ error: 'Новый пароль: мин 4' });
     if (!req.dbUser.password_hash) {
-      return res.status(400).json({ error: 'Текущий пароль не задан, обратитесь к администратору' });
+      return res.status(400).json({ error: 'Текущий пароль не задан' });
     }
     const ok = await bcrypt.compare(oldPassword || '', req.dbUser.password_hash);
     if (!ok) return res.status(400).json({ error: 'Старый пароль неверен' });
@@ -818,7 +796,7 @@ app.post('/api/change-password', auth, loadUser, async (req, res) => {
 });
 
 // ============================================================
-// API: ПРОФИЛЬ
+// PROFILE
 // ============================================================
 app.get('/api/users/:username', auth, loadUser, async (req, res) => {
   try {
@@ -830,10 +808,7 @@ app.get('/api/users/:username', auth, loadUser, async (req, res) => {
     if (rows.length === 0) return res.status(404).json({ error: 'Нет пользователя' });
     const u = rows[0];
     const gallery = await query('SELECT * FROM profile_gallery WHERE user_id = $1 ORDER BY id DESC', [u.id]);
-    const posts = await query(
-      'SELECT * FROM posts WHERE user_id = $1 ORDER BY id DESC LIMIT 50',
-      [u.id]
-    );
+    const posts = await query('SELECT * FROM posts WHERE user_id = $1 ORDER BY id DESC LIMIT 50', [u.id]);
     const isAdmin = req.dbUser.role === 'admin' || req.dbUser.role === 'owner';
     res.json({
       user: { ...u, coins: isAdmin ? 'Infinity' : u.coins },
@@ -849,9 +824,9 @@ app.get('/api/users/:username', auth, loadUser, async (req, res) => {
 app.put('/api/profile', auth, loadUser, async (req, res) => {
   try {
     const { avatar, status, bio, nick_color, theme } = req.body;
-    if (avatar && !isValidUrl(avatar)) return res.status(400).json({ error: 'Невалидный URL аватара' });
-    if (status && status.length > 200) return res.status(400).json({ error: 'Статус слишком длинный' });
-    if (bio && bio.length > 1000) return res.status(400).json({ error: 'Био слишком длинное' });
+    if (avatar && !isValidUrl(avatar)) return res.status(400).json({ error: 'Невалидный URL' });
+    if (status && status.length > 200) return res.status(400).json({ error: 'Длинный статус' });
+    if (bio && bio.length > 1000) return res.status(400).json({ error: 'Длинное био' });
     if (theme && !['aero', 'nature', 'ocean', 'sunset', 'dark'].includes(theme)) {
       return res.status(400).json({ error: 'Неизвестная тема' });
     }
@@ -895,7 +870,7 @@ app.post('/api/profile/gallery', auth, loadUser, async (req, res) => {
 });
 
 // ============================================================
-// API: ЗАГРУЗКА ФАЙЛОВ
+// UPLOAD
 // ============================================================
 app.post('/api/upload', auth, loadUser, upload.single('file'), async (req, res) => {
   try {
@@ -910,7 +885,7 @@ app.post('/api/upload', auth, loadUser, upload.single('file'), async (req, res) 
 });
 
 // ============================================================
-// API: ПОСТЫ (стена)
+// POSTS
 // ============================================================
 app.get('/api/posts', auth, loadUser, async (req, res) => {
   try {
@@ -940,23 +915,16 @@ app.post('/api/posts', auth, loadUser, async (req, res) => {
     if (!text && !image && !video && !gif && !sticker) {
       return res.status(400).json({ error: 'Пустой пост' });
     }
-    if (image && !isValidUrl(image)) return res.status(400).json({ error: 'Невалидный URL картинки' });
-    if (video && !isValidUrl(video)) return res.status(400).json({ error: 'Невалидный URL видео' });
-    if (gif && !isValidUrl(gif)) return res.status(400).json({ error: 'Невалидный URL GIF' });
+    if (image && !isValidUrl(image)) return res.status(400).json({ error: 'URL картинки' });
+    if (video && !isValidUrl(video)) return res.status(400).json({ error: 'URL видео' });
+    if (gif && !isValidUrl(gif)) return res.status(400).json({ error: 'URL GIF' });
     const { rows } = await query(
       `INSERT INTO posts (user_id, text, image, video, gif, sticker)
        VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-      [
-        req.dbUser.id,
-        nsfwFilter(text || ''),
-        image || '',
-        video || '',
-        gif || '',
-        sticker || ''
-      ]
+      [req.dbUser.id, nsfwFilter(text || ''), image || '', video || '', gif || '', sticker || '']
     );
     if (await incDaily(req.dbUser.id, 'daily_posts', 5)) {
-      await addCoins(req.dbUser.id, 1, 'Пост на стене');
+      await addCoins(req.dbUser.id, 1, 'Пост');
     }
     io.emit('new_post', rows[0]);
     res.json(rows[0]);
@@ -995,7 +963,7 @@ app.post('/api/posts/:id/like', auth, loadUser, async (req, res) => {
       if (await incDaily(req.dbUser.id, 'daily_likes', 10)) {
         const cnt = await query('SELECT daily_likes FROM users WHERE id = $1', [req.dbUser.id]);
         if (cnt.rows[0].daily_likes % 2 === 0) {
-          await addCoins(req.dbUser.id, 1, 'Лайки (2×0.5 RC)');
+          await addCoins(req.dbUser.id, 1, 'Лайки');
         }
       }
       res.json({ liked: true });
@@ -1031,7 +999,7 @@ app.post('/api/posts/:id/comments', auth, loadUser, async (req, res) => {
 });
 
 // ============================================================
-// API: СООБЩЕНИЯ
+// MESSAGES
 // ============================================================
 app.get('/api/dialogs', auth, loadUser, async (req, res) => {
   try {
@@ -1131,7 +1099,7 @@ app.post('/api/messages/:userId', auth, loadUser, async (req, res) => {
 });
 
 // ============================================================
-// API: ИСТОРИИ
+// STORIES
 // ============================================================
 app.get('/api/stories', auth, loadUser, async (req, res) => {
   try {
@@ -1151,8 +1119,8 @@ app.get('/api/stories', auth, loadUser, async (req, res) => {
 app.post('/api/stories', auth, loadUser, async (req, res) => {
   try {
     const { text, bg, image, video } = req.body;
-    if (image && !isValidUrl(image)) return res.status(400).json({ error: 'URL картинки невалиден' });
-    if (video && !isValidUrl(video)) return res.status(400).json({ error: 'URL видео невалиден' });
+    if (image && !isValidUrl(image)) return res.status(400).json({ error: 'URL картинки' });
+    if (video && !isValidUrl(video)) return res.status(400).json({ error: 'URL видео' });
     const { rows } = await query(
       `INSERT INTO stories (user_id, text, bg, image, video)
        VALUES ($1, $2, $3, $4, $5) RETURNING *`,
@@ -1177,7 +1145,7 @@ app.post('/api/stories/:id/view', auth, loadUser, async (req, res) => {
 });
 
 // ============================================================
-// API: ГРУППЫ
+// GROUPS
 // ============================================================
 app.get('/api/groups', auth, loadUser, async (req, res) => {
   const { rows } = await query(
@@ -1193,7 +1161,7 @@ app.post('/api/groups', auth, loadUser, async (req, res) => {
   try {
     const { name, description, avatar } = req.body;
     if (!name || name.length > 100) return res.status(400).json({ error: 'Название: 1–100' });
-    if (avatar && !isValidUrl(avatar)) return res.status(400).json({ error: 'URL аватара невалиден' });
+    if (avatar && !isValidUrl(avatar)) return res.status(400).json({ error: 'URL аватара' });
     const { rows } = await query(
       `INSERT INTO groups (name, description, avatar, created_by)
        VALUES ($1, $2, $3, $4) RETURNING *`,
@@ -1267,7 +1235,7 @@ app.post('/api/groups/:id/posts', auth, loadUser, async (req, res) => {
     if (member.rows.length === 0) return res.status(403).json({ error: 'Только для участников' });
     const { text, image } = req.body;
     if (!text && !image) return res.status(400).json({ error: 'Пустой пост' });
-    if (image && !isValidUrl(image)) return res.status(400).json({ error: 'URL невалиден' });
+    if (image && !isValidUrl(image)) return res.status(400).json({ error: 'URL' });
     const { rows } = await query(
       `INSERT INTO group_posts (group_id, user_id, text, image)
        VALUES ($1, $2, $3, $4) RETURNING *`,
@@ -1301,7 +1269,7 @@ app.post('/api/group-posts/:id/like', auth, loadUser, async (req, res) => {
 });
 
 // ============================================================
-// API: ФОРУМЫ
+// FORUMS
 // ============================================================
 app.get('/api/forums', auth, loadUser, async (req, res) => {
   const { rows } = await query(
@@ -1396,7 +1364,7 @@ app.post('/api/forum-topics/:id/reply', auth, loadUser, async (req, res) => {
 });
 
 // ============================================================
-// API: МУЗЫКА
+// MUSIC
 // ============================================================
 app.get('/api/tracks', auth, loadUser, async (req, res) => {
   try {
@@ -1524,9 +1492,9 @@ app.get('/api/playlists/:id', auth, loadUser, async (req, res) => {
 });
 
 // ============================================================
-// API: ИГРЫ
+// GAMES
 // ============================================================
-async function listGames(table, res, userId) {
+async function listGames(table, res) {
   try {
     const { rows } = await query(
       `SELECT g.*, u.username AS creator,
@@ -1541,14 +1509,14 @@ async function listGames(table, res, userId) {
   }
 }
 
-app.get('/api/games/scratch', auth, loadUser, (req, res) => listGames('scratch_games', res, req.dbUser.id));
-app.get('/api/games/flash', auth, loadUser, (req, res) => listGames('flash_games', res, req.dbUser.id));
-app.get('/api/games/html', auth, loadUser, (req, res) => listGames('html_games', res, req.dbUser.id));
+app.get('/api/games/scratch', auth, loadUser, (req, res) => listGames('scratch_games', res));
+app.get('/api/games/flash', auth, loadUser, (req, res) => listGames('flash_games', res));
+app.get('/api/games/html', auth, loadUser, (req, res) => listGames('html_games', res));
 
 app.post('/api/games/scratch', auth, loadUser, async (req, res) => {
   const { title, embed_url } = req.body;
   if (!title || !embed_url) return res.status(400).json({ error: 'Нужны название и URL' });
-  if (!isValidUrl(embed_url)) return res.status(400).json({ error: 'URL невалиден' });
+  if (!isValidUrl(embed_url)) return res.status(400).json({ error: 'URL' });
   const { rows } = await query(
     'INSERT INTO scratch_games (title, embed_url, created_by) VALUES ($1, $2, $3) RETURNING *',
     [nsfwFilter(title), embed_url, req.dbUser.id]
@@ -1559,7 +1527,7 @@ app.post('/api/games/scratch', auth, loadUser, async (req, res) => {
 app.post('/api/games/flash', auth, loadUser, async (req, res) => {
   const { title, embed_url } = req.body;
   if (!title || !embed_url) return res.status(400).json({ error: 'Нужны название и URL' });
-  if (!isValidUrl(embed_url)) return res.status(400).json({ error: 'URL невалиден' });
+  if (!isValidUrl(embed_url)) return res.status(400).json({ error: 'URL' });
   const { rows } = await query(
     'INSERT INTO flash_games (title, embed_url, created_by) VALUES ($1, $2, $3) RETURNING *',
     [nsfwFilter(title), embed_url, req.dbUser.id]
@@ -1603,7 +1571,7 @@ app.post('/api/games/:type/:id/like', auth, loadUser, async (req, res) => {
 });
 
 // ============================================================
-// API: НОВОСТИ
+// NEWS
 // ============================================================
 app.get('/api/news', auth, loadUser, async (req, res) => {
   const { rows } = await query(
@@ -1617,12 +1585,12 @@ app.post('/api/news', auth, loadUser, adminOnly, async (req, res) => {
   try {
     const { title, text, image } = req.body;
     if (!title || !text) return res.status(400).json({ error: 'Нужны заголовок и текст' });
-    if (image && !isValidUrl(image)) return res.status(400).json({ error: 'URL невалиден' });
+    if (image && !isValidUrl(image)) return res.status(400).json({ error: 'URL' });
     const { rows } = await query(
       `INSERT INTO news (title, text, image, created_by) VALUES ($1, $2, $3, $4) RETURNING *`,
       [nsfwFilter(title), nsfwFilter(text), image || '', req.dbUser.id]
     );
-    await audit(req.dbUser.id, 'news_create', `Новость #${rows[0].id}: ${title}`);
+    await audit(req.dbUser.id, 'news_create', `Новость #${rows[0].id}`);
     res.json(rows[0]);
   } catch (e) {
     res.status(500).json({ error: 'Ошибка' });
@@ -1630,7 +1598,7 @@ app.post('/api/news', auth, loadUser, adminOnly, async (req, res) => {
 });
 
 // ============================================================
-// API: ПОИСК
+// SEARCH
 // ============================================================
 app.get('/api/search', auth, loadUser, async (req, res) => {
   try {
@@ -1654,19 +1622,14 @@ app.get('/api/search', auth, loadUser, async (req, res) => {
       `SELECT id, title FROM forums WHERE title ILIKE $1 LIMIT 10`,
       [pattern]
     );
-    res.json({
-      users: users.rows,
-      posts: posts.rows,
-      groups: groups.rows,
-      forums: forums.rows
-    });
+    res.json({ users: users.rows, posts: posts.rows, groups: groups.rows, forums: forums.rows });
   } catch (e) {
     res.status(500).json({ error: 'Ошибка' });
   }
 });
 
 // ============================================================
-// API: МОНЕТЫ И МАГАЗИН
+// COINS / SHOP
 // ============================================================
 app.get('/api/coins/balance', auth, loadUser, async (req, res) => {
   res.json({ balance: getBalance(req.dbUser) === Infinity ? 'Infinity' : req.dbUser.coins });
@@ -1699,7 +1662,7 @@ app.get('/api/shop/items', auth, loadUser, async (req, res) => {
         { id: 'friends_slots', name: '+50 слотов для друзей', price: 1000 }
       ],
       advertising: [
-        { id: 'ad_post_1d', name: 'Реклама поста на стене (1 день)', price: 1000 },
+        { id: 'ad_post_1d', name: 'Реклама поста (1 день)', price: 1000 },
         { id: 'ad_post_3d', name: 'Реклама поста в топе (3 дня)', price: 2500 },
         { id: 'ad_group_7d', name: 'Реклама группы (7 дней)', price: 5000 }
       ]
@@ -1733,7 +1696,7 @@ app.post('/api/shop/buy', auth, loadUser, async (req, res) => {
           return res.status(400).json({ error: 'Свой префикс: до 20 символов, без NSFW' });
         }
       }
-      const result = await addCoins(req.dbUser.id, -price, `Покупка префикса: ${itemName}`);
+      const result = await addCoins(req.dbUser.id, -price, `Префикс: ${itemName}`);
       if (!result.ok) return res.status(400).json({ error: result.error });
       await query(
         `INSERT INTO user_prefixes (user_id, prefix_id, custom_text) VALUES ($1, $2, $3)`,
@@ -1749,7 +1712,7 @@ app.post('/api/shop/buy', auth, loadUser, async (req, res) => {
       avatar_frame: { name: 'Рамка вокруг аватара', price: 600 },
       custom_theme: { name: 'Своя тема оформления', price: 3000 },
       friends_slots: { name: '+50 слотов для друзей', price: 1000 },
-      ad_post_1d: { name: 'Реклама поста на стене (1 день)', price: 1000 },
+      ad_post_1d: { name: 'Реклама поста (1 день)', price: 1000 },
       ad_post_3d: { name: 'Реклама поста в топе (3 дня)', price: 2500 },
       ad_group_7d: { name: 'Реклама группы (7 дней)', price: 5000 }
     };
@@ -1775,7 +1738,7 @@ app.post('/api/shop/buy', auth, loadUser, async (req, res) => {
         [post_id, req.dbUser.id]
       );
     } else if (item_id === 'ad_group_7d' && group_id) {
-      await audit(req.dbUser.id, 'group_ad', `Группа #${group_id} рекламируется 7 дней`);
+      await audit(req.dbUser.id, 'group_ad', `Группа #${group_id}`);
     }
     res.json({ ok: true, item: itemName, price });
   } catch (e) {
@@ -1812,7 +1775,7 @@ app.post('/api/shop/equip-prefix/:id', auth, loadUser, async (req, res) => {
 });
 
 // ============================================================
-// API: КОНКУРСЫ
+// CONTESTS
 // ============================================================
 app.get('/api/contests', auth, loadUser, async (req, res) => {
   const { rows } = await query(
@@ -1846,7 +1809,7 @@ app.post('/api/contests/:id/enter', auth, loadUser, async (req, res) => {
     const c = await query('SELECT * FROM contests WHERE id = $1 AND status = $2', [req.params.id, 'active']);
     if (c.rows.length === 0) return res.status(400).json({ error: 'Конкурс не активен' });
     const { entry_text, entry_url } = req.body;
-    if (entry_url && !isValidUrl(entry_url)) return res.status(400).json({ error: 'URL невалиден' });
+    if (entry_url && !isValidUrl(entry_url)) return res.status(400).json({ error: 'URL' });
     const exists = await query(
       'SELECT id FROM contest_entries WHERE contest_id = $1 AND user_id = $2',
       [req.params.id, req.dbUser.id]
@@ -1883,7 +1846,7 @@ app.post('/api/contests/:id/finish', auth, loadUser, adminOnly, async (req, res)
 });
 
 // ============================================================
-// API: АДМИН-ПАНЕЛЬ
+// ADMIN
 // ============================================================
 app.get('/api/admin/stats', auth, loadUser, adminOnly, async (req, res) => {
   const users = await query('SELECT COUNT(*)::int AS c FROM users');
@@ -1941,16 +1904,15 @@ app.delete('/api/admin/user/:id', auth, loadUser, adminOnly, async (req, res) =>
 app.post('/api/admin/reset-password/:id', auth, loadUser, adminOnly, async (req, res) => {
   try {
     const { newPassword } = req.body;
-    if (!newPassword || newPassword.length < 4) return res.status(400).json({ error: 'Мин 4 символа' });
+    if (!newPassword || newPassword.length < 4) return res.status(400).json({ error: 'Мин 4' });
     const hash = await bcrypt.hash(newPassword, 10);
     await query('UPDATE users SET password_hash = $1 WHERE id = $2', [hash, req.params.id]);
-    const admin = req.dbUser;
-    const sys = await query(
-      `INSERT INTO messages (from_id, to_id, text) VALUES ($1, $2, $3) RETURNING *`,
-      [admin.id, req.params.id, `Ваш новый пароль: ${newPassword} (сообщение от администратора)`]
+    await query(
+      `INSERT INTO messages (from_id, to_id, text) VALUES ($1, $2, $3)`,
+      [req.dbUser.id, req.params.id, `Ваш новый пароль: ${newPassword}`]
     );
-    await audit(admin.id, 'password_reset', `Пользователь #${req.params.id}`);
-    res.json({ ok: true, message_id: sys.rows[0].id });
+    await audit(req.dbUser.id, 'password_reset', `Пользователь #${req.params.id}`);
+    res.json({ ok: true });
   } catch (e) {
     res.status(500).json({ error: 'Ошибка' });
   }
@@ -1981,13 +1943,13 @@ app.post('/api/admin/give-coins/:id', auth, loadUser, adminOnly, async (req, res
     const { amount, reason } = req.body;
     const amt = parseInt(amount);
     if (!amt || amt === 0) return res.status(400).json({ error: 'Нужна сумма' });
-    const result = await addCoins(parseInt(req.params.id), amt, reason || 'Начисление админом');
+    const result = await addCoins(parseInt(req.params.id), amt, reason || 'Начисление');
     if (!result.ok) return res.status(400).json({ error: result.error });
-    await audit(req.dbUser.id, 'give_coins', `Пользователю #${req.params.id}: ${amt} RC`);
+    await audit(req.dbUser.id, 'give_coins', `#${req.params.id}: ${amt}`);
     if (amt > 0) {
       await query(
         `INSERT INTO messages (from_id, to_id, text) VALUES ($1, $2, $3)`,
-        [req.dbUser.id, req.params.id, `Вам начислено ${amt} RC (${reason || 'бонус'})`]
+        [req.dbUser.id, req.params.id, `Вам начислено ${amt} RC`]
       );
     }
     res.json({ ok: true, balance: result.balance });
@@ -2050,18 +2012,47 @@ io.on('connection', (socket) => {
       io.emit('online', Array.from(onlineUsers.keys()));
     });
   } catch (e) {
-    console.error('socket connection error:', e);
+    console.error('socket error:', e);
   }
 });
 
 // ============================================================
-// HEALTH, DEBUG, 404, ERROR
+// HEALTH / DEBUG / 404 / ERROR
 // ============================================================
 app.get('/health', (req, res) => {
   res.json({ ok: true, time: new Date().toISOString() });
 });
 
-// Временный диагностический endpoint — удалить после отладки
+// Временный endpoint: принудительно сбрасывает пароли владельцев
+app.get('/api/debug/reset-owners', async (req, res) => {
+  try {
+    const result = {};
+    for (const uname of OWNER_USERNAMES) {
+      const password = 'owner' + uname;
+      const hash = await bcrypt.hash(password, 10);
+      const exists = await query('SELECT id FROM users WHERE username = $1', [uname]);
+      if (exists.rows.length === 0) {
+        await query(
+          `INSERT INTO users (username, password_hash, role, coins, banned)
+           VALUES ($1, $2, 'owner', 0, false)`,
+          [uname, hash]
+        );
+        result[uname] = { created: true, password };
+      } else {
+        await query(
+          `UPDATE users SET password_hash = $1, role = 'owner', banned = false WHERE id = $2`,
+          [hash, exists.rows[0].id]
+        );
+        result[uname] = { updated: true, password };
+      }
+    }
+    res.json({ ok: true, owners: result });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Временный endpoint: показать состояние пользователя
 app.get('/api/debug/user/:username', async (req, res) => {
   try {
     const { rows } = await query(
@@ -2092,7 +2083,7 @@ app.use((err, req, res, next) => {
 });
 
 // ============================================================
-// ЗАПУСК
+// СТАРТ
 // ============================================================
 (async () => {
   try {
