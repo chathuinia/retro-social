@@ -1,10 +1,7 @@
 {
-  "name": "ЗАМОРОЗКА ПРОЕКТА РЕТРО СЕТЬ",
-  "short_name": "ЗАМОРОЗКА ПРОЕКТА РЕТРО СЕТЬ",
-  "description": "ЗАМОРОЗКА ПРОЕКТА РЕТРО СЕТЬ",{
   "name": "retro-social-2010",
   "version": "1.0.0",
-  "description": "РетроСеть 2010 — социальная сеть в стиле Frutiger Aero",
+  "description": "Retro Social 2010",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
@@ -24,14 +21,4 @@
     "express-rate-limit": "^7.4.0",
     "cors": "^2.8.5"
   }
-}
-  "start_url": "/",
-  "display": "standalone",
-  "orientation": "portrait",
-  "background_color": "#87CEEB",
-  "theme_color": "#1583d7",
-  "icons": [
-    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
-    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
-  ]
 }
